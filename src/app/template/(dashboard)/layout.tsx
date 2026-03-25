@@ -3,7 +3,6 @@
 import React from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { ThemeCustomizer, ThemeCustomizerTrigger } from "@/components/theme-customizer";
 import { UpgradeToProButton } from "@/components/upgrade-to-pro-button";
@@ -42,7 +41,6 @@ export default function DashboardLayout({
                 </div>
               </div>
             </div>
-            <SiteFooter />
           </SidebarInset>
         </>
       ) : (
@@ -56,7 +54,6 @@ export default function DashboardLayout({
                 </div>
               </div>
             </div>
-            <SiteFooter />
           </SidebarInset>
           <AppSidebar
             variant={config.variant}

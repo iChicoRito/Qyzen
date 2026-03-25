@@ -1,7 +1,13 @@
 'use client'
 
 import * as React from 'react'
-import { IconBrandNextjs, IconLayoutDashboard, IconUser } from '@tabler/icons-react'
+import {
+  IconBrandNextjs,
+  IconCalendarStats,
+  IconLayoutDashboard,
+  IconUser,
+  IconSettings2,
+} from '@tabler/icons-react'
 import Link from 'next/link'
 import { NavMain } from '@/components/nav-main'
 import { NavUser } from '@/components/nav-user'
@@ -41,8 +47,27 @@ const data = {
           icon: IconUser,
           items: [
             {
-              title: 'View All Users',
+              title: 'View all Users',
               url: '/admin/users',
+            },
+          ],
+        },
+        {
+          title: 'Academic Settings',
+          url: '#',
+          icon: IconSettings2,
+          items: [
+            {
+              title: 'Semester',
+              url: '/admin/semester',
+            },
+            {
+              title: 'Academic Term',
+              url: '/admin/academic-term',
+            },
+            {
+              title: 'Academic Year',
+              url: '/admin/academic-year',
             },
           ],
         },

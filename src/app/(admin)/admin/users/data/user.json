@@ -1,0 +1,90 @@
+[
+  {
+    "id": "2024-2260",
+    "givenName": "Mark",
+    "surname": "Dela Cruz",
+    "email": "mark.delacruz@example.edu",
+    "status": "active",
+    "userType": "instructor"
+  },
+  {
+    "id": "2025-47263",
+    "givenName": "Angela",
+    "surname": "Santos",
+    "email": "angela.santos@example.edu",
+    "status": "active",
+    "userType": "student"
+  },
+  {
+    "id": "2025-31584",
+    "givenName": "Joshua",
+    "surname": "Reyes",
+    "email": "joshua.reyes@example.edu",
+    "status": "inactive",
+    "userType": "student"
+  },
+  {
+    "id": "2024-3418",
+    "givenName": "Bea",
+    "surname": "Navarro",
+    "email": "bea.navarro@example.edu",
+    "status": "active",
+    "userType": "instructor"
+  },
+  {
+    "id": "2025-58192",
+    "givenName": "Carlo",
+    "surname": "Mendoza",
+    "email": "carlo.mendoza@example.edu",
+    "status": "active",
+    "userType": "student"
+  },
+  {
+    "id": "2025-60417",
+    "givenName": "Denise",
+    "surname": "Flores",
+    "email": "denise.flores@example.edu",
+    "status": "inactive",
+    "userType": "student"
+  },
+  {
+    "id": "2024-4175",
+    "givenName": "Francis",
+    "surname": "Garcia",
+    "email": "francis.garcia@example.edu",
+    "status": "active",
+    "userType": "instructor"
+  },
+  {
+    "id": "2025-44820",
+    "givenName": "Hannah",
+    "surname": "Torres",
+    "email": "hannah.torres@example.edu",
+    "status": "active",
+    "userType": "student"
+  },
+  {
+    "id": "2025-52941",
+    "givenName": "Ivan",
+    "surname": "Castro",
+    "email": "ivan.castro@example.edu",
+    "status": "inactive",
+    "userType": "student"
+  },
+  {
+    "id": "2024-5083",
+    "givenName": "Janelle",
+    "surname": "Aquino",
+    "email": "janelle.aquino@example.edu",
+    "status": "active",
+    "userType": "instructor"
+  },
+  {
+    "id": "2025-38471",
+    "givenName": "Joey",
+    "surname": "Bading",
+    "email": "joey.bading@example.edu",
+    "status": "active",
+    "userType": "student"
+  }
+]
