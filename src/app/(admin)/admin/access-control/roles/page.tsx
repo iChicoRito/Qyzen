@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { columns } from './components/columns'
 import { DataTable } from './components/data-table'
 import { roleSchema, type Role } from './data/schema'
-import rolesData from './data/term.json'
+import rolesData from './data/data.json'
 
 // getRoles - load static role data
 async function getRoles() {

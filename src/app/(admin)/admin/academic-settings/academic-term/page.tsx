@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { columns } from './components/columns'
 import { DataTable } from './components/data-table'
 import { academicTermSchema, type AcademicTerm } from './data/schema'
-import academicTermsData from './data/term.json'
+import academicTermsData from './data/data.json'
 
 // getAcademicTerms - load static academic term data
 async function getAcademicTerms() {

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { columns } from './components/columns'
 import { DataTable } from './components/data-table'
 import { academicYearSchema, type AcademicYear } from './data/schema'
-import academicYearsData from './data/year.json'
+import academicYearsData from './data/data.json'
 
 // getAcademicYears - load static academic year data
 async function getAcademicYears() {

@@ -1,0 +1,26 @@
+[
+  {
+    "permissionName": "View Users",
+    "description": "Allows the selected role to view user records.",
+    "role": "Administrator",
+    "action": "view",
+    "module": "Users",
+    "status": "active"
+  },
+  {
+    "permissionName": "Create Roles",
+    "description": "Allows the selected role to create new roles.",
+    "role": "Administrator",
+    "action": "create",
+    "module": "Roles",
+    "status": "active"
+  },
+  {
+    "permissionName": "Update Academic Settings",
+    "description": "Allows the selected role to update academic configuration.",
+    "role": "Registrar",
+    "action": "update",
+    "module": "Academic Settings",
+    "status": "inactive"
+  }
+]
