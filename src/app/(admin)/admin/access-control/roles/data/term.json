@@ -1,0 +1,20 @@
+[
+  {
+    "roleName": "Administrator",
+    "description": "Full access to all modules and management settings.",
+    "status": "active",
+    "isSystem": true
+  },
+  {
+    "roleName": "Registrar",
+    "description": "Manages enrollment, academic records, and school setup data.",
+    "status": "active",
+    "isSystem": true
+  },
+  {
+    "roleName": "Department Staff",
+    "description": "Handles day-to-day academic coordination with limited access.",
+    "status": "inactive",
+    "isSystem": false
+  }
+]

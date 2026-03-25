@@ -7,6 +7,7 @@ import {
   IconLayoutDashboard,
   IconUser,
   IconSettings2,
+  IconShieldCheck,
 } from '@tabler/icons-react'
 import Link from 'next/link'
 import { NavMain } from '@/components/nav-main'
@@ -64,6 +65,26 @@ const data = {
             {
               title: 'Academic Year',
               url: '/admin/academic-settings/academic-year',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      label: 'System',
+      items: [
+        {
+          title: 'Access Control',
+          url: '#',
+          icon: IconShieldCheck,
+          items: [
+            {
+              title: 'Roles',
+              url: '/admin/access-control/roles',
+            },
+            {
+              title: 'Permissions',
+              url: '/admin/access-control/permissions',
             },
           ],
         },
