@@ -58,16 +58,12 @@ const data = {
           icon: IconSettings2,
           items: [
             {
-              title: 'Semester',
-              url: '/admin/semester',
-            },
-            {
               title: 'Academic Term',
-              url: '/admin/academic-term',
+              url: '/admin/academic-settings/academic-term',
             },
             {
               title: 'Academic Year',
-              url: '/admin/academic-year',
+              url: '/admin/academic-settings/academic-year',
             },
           ],
         },

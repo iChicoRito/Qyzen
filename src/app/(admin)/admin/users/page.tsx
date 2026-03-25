@@ -61,7 +61,7 @@ export default function UsersPage() {
   return (
     <>
       <div className="flex flex-col gap-2 px-4 md:px-6">
-        <h1 className="text-2xl font-bold tracking-tight">Users</h1>
+        <h1 className="text-2xl font-bold tracking-tight">User Management</h1>
         <p className="text-muted-foreground">
           View and manage user information for instructors and students.
         </p>
