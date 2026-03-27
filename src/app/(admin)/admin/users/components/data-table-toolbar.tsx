@@ -1,26 +1,26 @@
-"use client"
+'use client'
 
-import type { Table } from "@tanstack/react-table"
-import { IconRefresh } from "@tabler/icons-react"
+import type { Table } from '@tanstack/react-table'
+import { IconRefresh } from '@tabler/icons-react'
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { DataTableViewOptions } from "./data-table-view-options"
-import { AddUserModal } from "./add-user-modal"
+} from '@/components/ui/select'
+import { DataTableViewOptions } from './data-table-view-options'
+import { AddUserModal } from './add-user-modal'
 
-import { statuses, userTypes } from "../data/data"
-import type { User } from "../data/schema"
+import { statuses, userTypes } from '../data/data'
+import type { CreateUserInput } from '@/lib/supabase/users'
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
-  onAddUser?: (user: User) => void
+  onAddUser?: (user: CreateUserInput) => Promise<void>
 }
 
 export function DataTableToolbar<TData>({
@@ -31,7 +31,7 @@ export function DataTableToolbar<TData>({
 
   const handleStatusChange = (value: string) => {
     const column = table.getColumn("status")
-    if (value === "all") {
+    if (value === 'all') {
       column?.setFilterValue(undefined)
     } else {
       column?.setFilterValue(value)
@@ -40,22 +40,22 @@ export function DataTableToolbar<TData>({
 
   const handleUserTypeChange = (value: string) => {
     const column = table.getColumn("userType")
-    if (value === "all") {
+    if (value === 'all') {
       column?.setFilterValue(undefined)
     } else {
       column?.setFilterValue(value)
     }
   }
 
-  const statusFilter = table.getColumn("status")?.getFilterValue() as string | undefined
-  const userTypeFilter = table.getColumn("userType")?.getFilterValue() as string | undefined
+  const statusFilter = table.getColumn('status')?.getFilterValue() as string | undefined
+  const userTypeFilter = table.getColumn('userType')?.getFilterValue() as string | undefined
 
   return (
     <div className="space-y-4">
       <div className="space-y-3">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <Select
-            value={statusFilter || "all"}
+            value={statusFilter || 'all'}
             onValueChange={handleStatusChange}
           >
             <SelectTrigger className="w-full cursor-pointer">
@@ -81,7 +81,7 @@ export function DataTableToolbar<TData>({
           </Select>
 
           <Select
-            value={userTypeFilter || "all"}
+            value={userTypeFilter || 'all'}
             onValueChange={handleUserTypeChange}
           >
             <SelectTrigger className="w-full cursor-pointer">
@@ -107,9 +107,9 @@ export function DataTableToolbar<TData>({
         <div className="flex flex-1 items-center space-x-2">
           <Input
             placeholder="Search email"
-            value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
+            value={(table.getColumn('email')?.getFilterValue() as string) ?? ''}
             onChange={(event) =>
-              table.getColumn("email")?.setFilterValue(event.target.value)
+              table.getColumn('email')?.setFilterValue(event.target.value)
             }
             className="w-[200px] cursor-text lg:w-[300px]"
           />

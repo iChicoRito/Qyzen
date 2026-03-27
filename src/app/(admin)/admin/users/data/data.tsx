@@ -1,25 +1,25 @@
-import { IconCircleOff, IconShieldCheck } from "@tabler/icons-react"
+import { IconCircleOff, IconShieldCheck } from '@tabler/icons-react'
 
 export const userTypes = [
   {
-    value: "instructor",
-    label: "Instructor",
+    value: 'educator',
+    label: 'Educator',
   },
   {
-    value: "student",
-    label: "Student",
+    value: 'student',
+    label: 'Student',
   },
 ]
 
 export const statuses = [
   {
-    value: "active",
-    label: "Active",
+    value: 'active',
+    label: 'Active',
     icon: IconShieldCheck,
   },
   {
-    value: "inactive",
-    label: "Inactive",
+    value: 'inactive',
+    label: 'Inactive',
     icon: IconCircleOff,
   },
 ]

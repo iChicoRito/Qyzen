@@ -1,11 +1,14 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { IconPlus } from "@tabler/icons-react"
-import { toast } from "sonner"
-import { z } from "zod"
+import { useEffect, useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { IconPlus } from '@tabler/icons-react'
+import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
+import { z } from 'zod'
 
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -13,125 +16,167 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from '@/components/ui/dialog'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select'
+import { fetchRoles, type RoleRecord } from '@/lib/supabase/access-control'
+import type { CreateUserInput } from '@/lib/supabase/users'
 
-import { statuses, userTypes } from "../data/data"
-import type { User } from "../data/schema"
+import { statuses, userTypes } from '../data/data'
 
-const userFormSchema = z.object({
-  id: z.string().min(1, "User ID is required"),
-  givenName: z.string().min(1, "Given name is required"),
-  surname: z.string().min(1, "Surname is required"),
-  email: z.string().email("A valid email is required"),
-  status: z.string(),
-  userType: z.string(),
-}).superRefine((data, ctx) => {
-  const studentPattern = /^\d{4}-\d{5}$/
-  const instructorPattern = /^\d{4}-\d{4}$/
+const addUserFormSchema = z
+  .object({
+    userId: z.string().min(1, 'User ID is required'),
+    givenName: z.string().min(1, 'Given name is required'),
+    surname: z.string().min(1, 'Surname is required'),
+    email: z.string().email('A valid email is required'),
+    status: z.enum(['active', 'inactive']),
+    userType: z.enum(['student', 'educator']),
+    roleNames: z.array(z.string()).min(1, 'Select at least one role'),
+  })
+  .superRefine((data, ctx) => {
+    const studentPattern = /^\d{4}-\d{5}$/
+    const educatorPattern = /^\d{4}-\d{4}$/
 
-  if (data.userType === "student" && !studentPattern.test(data.id)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["id"],
-      message: "Student ID must use the format YYYY-#####",
-    })
-  }
+    if (data.userType === 'student' && !studentPattern.test(data.userId)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['userId'],
+        message: 'Student ID must use the format 1234-12345.',
+      })
+    }
 
-  if (data.userType === "instructor" && !instructorPattern.test(data.id)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["id"],
-      message: "Instructor ID must use the format YYYY-####",
-    })
-  }
-})
+    if (data.userType === 'educator' && !educatorPattern.test(data.userId)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['userId'],
+        message: 'Educator ID must use the format 1234-1234.',
+      })
+    }
+  })
 
-type UserFormData = z.infer<typeof userFormSchema>
+type AddUserFormData = z.infer<typeof addUserFormSchema>
 
 interface AddUserModalProps {
-  onAddUser?: (user: User) => void
+  onAddUser?: (user: CreateUserInput) => Promise<void>
   trigger?: React.ReactNode
 }
 
+// AddUserModal - add a new user and assign roles
 export function AddUserModal({ onAddUser, trigger }: AddUserModalProps) {
+  // ==================== STATE ====================
   const [open, setOpen] = useState(false)
-  const [formData, setFormData] = useState<UserFormData>({
-    id: "",
-    givenName: "",
-    surname: "",
-    email: "",
-    status: "active",
-    userType: "student",
+  const [isLoadingRoles, setIsLoadingRoles] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [roles, setRoles] = useState<RoleRecord[]>([])
+
+  // ==================== FORM SETUP ====================
+  const form = useForm<AddUserFormData>({
+    resolver: zodResolver(addUserFormSchema),
+    defaultValues: {
+      userId: '',
+      givenName: '',
+      surname: '',
+      email: '',
+      status: 'active',
+      userType: 'student',
+      roleNames: [],
+    },
   })
-  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-
+  // loadRoles - fetch role options for checkboxes
+  const loadRoles = async () => {
     try {
-      const validatedData = userFormSchema.parse(formData)
-
-      const newUser: User = {
-        id: validatedData.id,
-        givenName: validatedData.givenName,
-        surname: validatedData.surname,
-        email: validatedData.email,
-        status: validatedData.status,
-        userType: validatedData.userType,
-      }
-
-      onAddUser?.(newUser)
-      toast.success("User added successfully", {
-        description: `${newUser.givenName} ${newUser.surname} has been created.`,
-      })
-
-      setFormData({
-        id: "",
-        givenName: "",
-        surname: "",
-        email: "",
-        status: "active",
-        userType: "student",
-      })
-      setErrors({})
-      setOpen(false)
+      setIsLoadingRoles(true)
+      const roleList = await fetchRoles()
+      setRoles(roleList)
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        const newErrors: Record<string, string> = {}
-        error.issues.forEach((issue) => {
-          if (issue.path[0]) {
-            newErrors[issue.path[0] as string] = issue.message
-          }
-        })
-        setErrors(newErrors)
-      }
+      toast.error(error instanceof Error ? error.message : 'Failed to load roles.')
+    } finally {
+      setIsLoadingRoles(false)
     }
   }
 
-  const handleCancel = () => {
-    setFormData({
-      id: "",
-      givenName: "",
-      surname: "",
-      email: "",
-      status: "active",
-      userType: "student",
-    })
-    setErrors({})
-    setOpen(false)
+  useEffect(() => {
+    if (open) {
+      loadRoles()
+    }
+  }, [open])
+
+  // handleRoleCheckedChange - toggle selected role name
+  const handleRoleCheckedChange = (roleName: string, checked: boolean) => {
+    const currentRoleNames = form.getValues('roleNames')
+
+    if (checked) {
+      form.setValue('roleNames', [...currentRoleNames, roleName], {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+      return
+    }
+
+    form.setValue(
+      'roleNames',
+      currentRoleNames.filter((value) => value !== roleName),
+      {
+        shouldDirty: true,
+        shouldValidate: true,
+      }
+    )
+  }
+
+  // handleSubmit - create a new user row
+  const handleSubmit = async (values: AddUserFormData) => {
+    const newUser: CreateUserInput = {
+      userId: values.userId,
+      givenName: values.givenName,
+      surname: values.surname,
+      email: values.email,
+      status: values.status,
+      userType: values.userType,
+      roleNames: values.roleNames,
+    }
+
+    try {
+      setIsSubmitting(true)
+      await onAddUser?.(newUser)
+      toast.success('User added successfully', {
+        description: `${newUser.givenName} ${newUser.surname} has been created.`,
+      })
+      form.reset()
+      setOpen(false)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to add user.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // handleOpenChange - reset form when dialog closes
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen)
+
+    if (!nextOpen) {
+      form.reset()
+    }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="default" size="sm" className="cursor-pointer">
@@ -140,131 +185,212 @@ export function AddUserModal({ onAddUser, trigger }: AddUserModalProps) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[525px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[640px]">
         <DialogHeader>
           <DialogTitle>Add New User</DialogTitle>
           <DialogDescription>
-            Create a new user record with a given name, surname, status, and user type.
+            Create a new student or educator and assign one or more roles.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="id">User ID *</Label>
-              <Input
-                id="id"
-                placeholder={formData.userType === "student" ? "2025-47263" : "2024-2260"}
-                value={formData.id}
-                onChange={(e) => setFormData((prev) => ({ ...prev, id: e.target.value }))}
-                className={errors.id ? "border-red-500" : ""}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            {/* user id and given name */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="userId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>User ID</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={
+                          form.watch('userType') === 'student' ? '2025-47263' : '2024-2260'
+                        }
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.id && (
-                <p className="text-sm text-red-500">{errors.id}</p>
-              )}
+
+              <FormField
+                control={form.control}
+                name="givenName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Given Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter given name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="givenName">Given Name *</Label>
-              <Input
-                id="givenName"
-                placeholder="Enter given name"
-                value={formData.givenName}
-                onChange={(e) => setFormData((prev) => ({ ...prev, givenName: e.target.value }))}
-                className={errors.givenName ? "border-red-500" : ""}
+            {/* surname and email */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="surname"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Surname</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter surname" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.givenName && (
-                <p className="text-sm text-red-500">{errors.givenName}</p>
-              )}
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="surname">Surname *</Label>
-              <Input
-                id="surname"
-                placeholder="Enter surname"
-                value={formData.surname}
-                onChange={(e) => setFormData((prev) => ({ ...prev, surname: e.target.value }))}
-                className={errors.surname ? "border-red-500" : ""}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="Enter email address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.surname && (
-                <p className="text-sm text-red-500">{errors.surname}</p>
-              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter email address"
-                value={formData.email}
-                onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-                className={errors.email ? "border-red-500" : ""}
+            {/* status and user type */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full cursor-pointer">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {statuses.map((status) => (
+                          <SelectItem
+                            key={status.value}
+                            value={status.value}
+                            className="cursor-pointer"
+                          >
+                            <div className="flex items-center">
+                              {status.icon && (
+                                <status.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                              )}
+                              {status.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email}</p>
-              )}
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, status: value }))}
+              <FormField
+                control={form.control}
+                name="userType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>User Type</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full cursor-pointer">
+                          <SelectValue placeholder="Select user type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {userTypes.map((userType) => (
+                          <SelectItem
+                            key={userType.value}
+                            value={userType.value}
+                            className="cursor-pointer"
+                          >
+                            {userType.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* role selection */}
+            <FormField
+              control={form.control}
+              name="roleNames"
+              render={() => (
+                <FormItem>
+                  <FormLabel>Select Role</FormLabel>
+                  <div className="space-y-3 rounded-md border p-4">
+                    {isLoadingRoles ? (
+                      <p className="text-sm text-muted-foreground">Loading roles...</p>
+                    ) : roles.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No roles found.</p>
+                    ) : (
+                      roles.map((role) => {
+                        const isChecked = form.watch('roleNames').includes(role.roleName)
+
+                        return (
+                          <div
+                            key={role.roleName}
+                            className="flex items-center space-x-3 rounded-md border p-3"
+                          >
+                            <Checkbox
+                              checked={isChecked}
+                              onCheckedChange={(checked) =>
+                                handleRoleCheckedChange(role.roleName, Boolean(checked))
+                              }
+                              className="cursor-pointer"
+                            />
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium">{role.roleName}</p>
+                              <p className="text-xs text-muted-foreground">{role.description}</p>
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+                className="cursor-pointer"
+                disabled={isSubmitting}
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statuses.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      <div className="flex items-center">
-                        {status.icon && (
-                          <status.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                        )}
-                        {status.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="userType">User Type</Label>
-              <Select
-                value={formData.userType}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, userType: value }))}
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="cursor-pointer"
+                disabled={isSubmitting || isLoadingRoles}
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select user type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {userTypes.map((userType) => (
-                    <SelectItem key={userType.value} value={userType.value}>
-                      {userType.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <IconPlus className="mr-2 h-4 w-4" stroke={2} />
+                {isSubmitting ? 'Creating...' : 'Create User'}
+              </Button>
             </div>
-          </div>
-
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={handleCancel} className="cursor-pointer">
-              Cancel
-            </Button>
-            <Button type="submit" className="cursor-pointer">
-              <IconPlus className="mr-2 h-4 w-4" stroke={2} />
-              Create User
-            </Button>
-          </div>
-        </form>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   )
