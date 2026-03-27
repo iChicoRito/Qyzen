@@ -32,7 +32,7 @@ import type { AcademicYear } from '../data/schema'
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
-  onAddAcademicYear?: (academicYear: AcademicYear) => void
+  onAddAcademicYear?: (academicYear: AcademicYear) => Promise<void>
 }
 
 // DataTable - render the academic year table

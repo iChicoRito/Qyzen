@@ -20,7 +20,7 @@ import type { AcademicYear } from '../data/schema'
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
-  onAddAcademicYear?: (academicYear: AcademicYear) => void
+  onAddAcademicYear?: (academicYear: AcademicYear) => Promise<void>
 }
 
 // DataTableToolbar - filter and add academic year rows

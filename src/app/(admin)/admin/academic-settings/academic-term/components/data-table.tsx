@@ -29,16 +29,23 @@ import { DataTablePagination } from './data-table-pagination'
 import { DataTableToolbar } from './data-table-toolbar'
 import type { AcademicTerm } from '../data/schema'
 
+interface AcademicYearOption {
+  value: string
+  label: string
+}
+
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
-  onAddAcademicTerm?: (academicTerm: AcademicTerm) => void
+  academicYearOptions: AcademicYearOption[]
+  onAddAcademicTerm?: (academicTerm: AcademicTerm) => Promise<void>
 }
 
 // DataTable - render the academic term table
 export function DataTable<TData, TValue>({
   columns,
   data,
+  academicYearOptions,
   onAddAcademicTerm,
 }: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = React.useState({})
@@ -70,7 +77,11 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      <DataTableToolbar table={table} onAddAcademicTerm={onAddAcademicTerm} />
+      <DataTableToolbar
+        table={table}
+        academicYearOptions={academicYearOptions}
+        onAddAcademicTerm={onAddAcademicTerm}
+      />
       <div className="rounded-md border">
         <Table>
           <TableHeader>

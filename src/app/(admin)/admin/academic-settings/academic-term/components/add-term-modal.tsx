@@ -33,27 +33,47 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-import { academicYears, semesters, statuses } from '../data/data'
+import { semesters, statuses } from '../data/data'
 import type { AcademicTerm } from '../data/schema'
 
-const academicTermFormSchema = z.object({
+const baseAcademicTermFormSchema = z.object({
   academicTermName: z.string().min(1, 'Academic Term Name is required'),
   semester: z.enum(['1st Semester', '2nd Semester']),
-  academicYear: z.enum(['2024 - 2025', '2025 - 2026']),
+  academicYear: z.string().min(1, 'Academic Year is required'),
   status: z.enum(['active', 'inactive']),
 })
 
-type AcademicTermFormData = z.infer<typeof academicTermFormSchema>
+type AcademicTermFormData = z.infer<typeof baseAcademicTermFormSchema>
+
+interface AcademicYearOption {
+  value: string
+  label: string
+}
 
 interface AddAcademicTermModalProps {
-  onAddAcademicTerm?: (academicTerm: AcademicTerm) => void
+  academicYearOptions: AcademicYearOption[]
+  onAddAcademicTerm?: (academicTerm: AcademicTerm) => Promise<void>
   trigger?: React.ReactNode
 }
 
 // AddAcademicTermModal - add a new academic term
-export function AddAcademicTermModal({ onAddAcademicTerm, trigger }: AddAcademicTermModalProps) {
+export function AddAcademicTermModal({
+  academicYearOptions,
+  onAddAcademicTerm,
+  trigger,
+}: AddAcademicTermModalProps) {
   // ==================== STATE ====================
   const [open, setOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // academicTermFormSchema - validate with current academic year list
+  const academicTermFormSchema = baseAcademicTermFormSchema.refine(
+    (values) => academicYearOptions.some((academicYear) => academicYear.value === values.academicYear),
+    {
+      message: 'Selected academic year is not available.',
+      path: ['academicYear'],
+    }
+  )
 
   // ==================== FORM SETUP ====================
   const form = useForm<AcademicTermFormData>({
@@ -61,13 +81,13 @@ export function AddAcademicTermModal({ onAddAcademicTerm, trigger }: AddAcademic
     defaultValues: {
       academicTermName: '',
       semester: '1st Semester',
-      academicYear: '2024 - 2025',
+      academicYear: academicYearOptions[0]?.value || '',
       status: 'active',
     },
   })
 
   // handleSubmit - save a new academic term row
-  const handleSubmit = (values: AcademicTermFormData) => {
+  const handleSubmit = async (values: AcademicTermFormData) => {
     const newAcademicTerm: AcademicTerm = {
       academicTermName: values.academicTermName,
       semester: values.semester,
@@ -75,13 +95,25 @@ export function AddAcademicTermModal({ onAddAcademicTerm, trigger }: AddAcademic
       status: values.status,
     }
 
-    onAddAcademicTerm?.(newAcademicTerm)
-    toast.success('Academic term added successfully', {
-      description: `${newAcademicTerm.academicTermName} has been created.`,
-    })
+    try {
+      setIsSubmitting(true)
+      await onAddAcademicTerm?.(newAcademicTerm)
+      toast.success('Academic term added successfully', {
+        description: `${newAcademicTerm.academicTermName} has been created.`,
+      })
 
-    form.reset()
-    setOpen(false)
+      form.reset({
+        academicTermName: '',
+        semester: '1st Semester',
+        academicYear: academicYearOptions[0]?.value || '',
+        status: 'active',
+      })
+      setOpen(false)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to add academic term.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // handleOpenChange - reset form when dialog closes
@@ -89,7 +121,12 @@ export function AddAcademicTermModal({ onAddAcademicTerm, trigger }: AddAcademic
     setOpen(nextOpen)
 
     if (!nextOpen) {
-      form.reset()
+      form.reset({
+        academicTermName: '',
+        semester: '1st Semester',
+        academicYear: academicYearOptions[0]?.value || '',
+        status: 'active',
+      })
     }
   }
 
@@ -173,7 +210,7 @@ export function AddAcademicTermModal({ onAddAcademicTerm, trigger }: AddAcademic
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {academicYears.map((academicYear) => (
+                      {academicYearOptions.map((academicYear) => (
                         <SelectItem
                           key={academicYear.value}
                           value={academicYear.value}
@@ -230,12 +267,17 @@ export function AddAcademicTermModal({ onAddAcademicTerm, trigger }: AddAcademic
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
                 className="cursor-pointer"
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" className="cursor-pointer">
+              <Button
+                type="submit"
+                className="cursor-pointer"
+                disabled={isSubmitting || academicYearOptions.length === 0}
+              >
                 <IconPlus className="mr-2 h-4 w-4" stroke={2} />
-                Create Academic Term
+                {isSubmitting ? 'Creating...' : 'Create Academic Term'}
               </Button>
             </div>
           </form>

@@ -10,7 +10,13 @@ import type { AcademicYear } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
 
-export const columns: ColumnDef<AcademicYear>[] = [
+interface GetColumnsProps {
+  onDeleteAcademicYear?: (academicYear: AcademicYear) => Promise<void>
+}
+
+// getColumns - build academic year columns
+export function getColumns({ onDeleteAcademicYear }: GetColumnsProps): ColumnDef<AcademicYear>[] {
+  return [
   {
     id: 'select',
     header: ({ table }) => (
@@ -71,6 +77,9 @@ export const columns: ColumnDef<AcademicYear>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    cell: ({ row }) => (
+      <DataTableRowActions row={row} onDeleteAcademicYear={onDeleteAcademicYear} />
+    ),
   },
-]
+  ]
+}

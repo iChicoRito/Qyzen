@@ -10,7 +10,13 @@ import type { AcademicTerm } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
 
-export const columns: ColumnDef<AcademicTerm>[] = [
+interface GetColumnsProps {
+  onDeleteAcademicTerm?: (academicTerm: AcademicTerm) => Promise<void>
+}
+
+// getColumns - build academic term columns
+export function getColumns({ onDeleteAcademicTerm }: GetColumnsProps): ColumnDef<AcademicTerm>[] {
+  return [
   {
     id: 'select',
     header: ({ table }) => (
@@ -94,6 +100,9 @@ export const columns: ColumnDef<AcademicTerm>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    cell: ({ row }) => (
+      <DataTableRowActions row={row} onDeleteAcademicTerm={onDeleteAcademicTerm} />
+    ),
   },
-]
+  ]
+}

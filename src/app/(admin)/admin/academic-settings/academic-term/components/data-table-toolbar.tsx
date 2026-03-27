@@ -18,14 +18,21 @@ import { AddAcademicTermModal } from './add-term-modal'
 import { semesters, statuses } from '../data/data'
 import type { AcademicTerm } from '../data/schema'
 
+interface AcademicYearOption {
+  value: string
+  label: string
+}
+
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
-  onAddAcademicTerm?: (academicTerm: AcademicTerm) => void
+  academicYearOptions: AcademicYearOption[]
+  onAddAcademicTerm?: (academicTerm: AcademicTerm) => Promise<void>
 }
 
 // DataTableToolbar - filter and add academic term rows
 export function DataTableToolbar<TData>({
   table,
+  academicYearOptions,
   onAddAcademicTerm,
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0
@@ -116,7 +123,10 @@ export function DataTableToolbar<TData>({
         </div>
         <div className="flex items-center space-x-2">
           <DataTableViewOptions table={table} />
-          <AddAcademicTermModal onAddAcademicTerm={onAddAcademicTerm} />
+          <AddAcademicTermModal
+            academicYearOptions={academicYearOptions}
+            onAddAcademicTerm={onAddAcademicTerm}
+          />
         </div>
       </div>
     </div>

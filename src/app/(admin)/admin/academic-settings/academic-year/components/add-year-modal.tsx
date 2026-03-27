@@ -46,7 +46,7 @@ const academicYearFormSchema = z.object({
 type AcademicYearFormData = z.infer<typeof academicYearFormSchema>
 
 interface AddAcademicYearModalProps {
-  onAddAcademicYear?: (academicYear: AcademicYear) => void
+  onAddAcademicYear?: (academicYear: AcademicYear) => Promise<void>
   trigger?: React.ReactNode
 }
 
@@ -54,6 +54,7 @@ interface AddAcademicYearModalProps {
 export function AddAcademicYearModal({ onAddAcademicYear, trigger }: AddAcademicYearModalProps) {
   // ==================== STATE ====================
   const [open, setOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // ==================== FORM SETUP ====================
   const form = useForm<AcademicYearFormData>({
@@ -65,19 +66,26 @@ export function AddAcademicYearModal({ onAddAcademicYear, trigger }: AddAcademic
   })
 
   // handleSubmit - save a new academic year row
-  const handleSubmit = (values: AcademicYearFormData) => {
+  const handleSubmit = async (values: AcademicYearFormData) => {
     const newAcademicYear: AcademicYear = {
       academicYear: values.academicYear,
       status: values.status,
     }
 
-    onAddAcademicYear?.(newAcademicYear)
-    toast.success('Academic year added successfully', {
-      description: `${newAcademicYear.academicYear} has been created.`,
-    })
+    try {
+      setIsSubmitting(true)
+      await onAddAcademicYear?.(newAcademicYear)
+      toast.success('Academic year added successfully', {
+        description: `${newAcademicYear.academicYear} has been created.`,
+      })
 
-    form.reset()
-    setOpen(false)
+      form.reset()
+      setOpen(false)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to add academic year.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // handleOpenChange - reset form when dialog closes
@@ -165,12 +173,13 @@ export function AddAcademicYearModal({ onAddAcademicYear, trigger }: AddAcademic
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
                 className="cursor-pointer"
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" className="cursor-pointer">
+              <Button type="submit" className="cursor-pointer" disabled={isSubmitting}>
                 <IconPlus className="mr-2 h-4 w-4" stroke={2} />
-                Create Academic Year
+                {isSubmitting ? 'Creating...' : 'Create Academic Year'}
               </Button>
             </div>
           </form>

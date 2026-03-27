@@ -20,29 +20,39 @@ import type { AcademicYear } from '../data/schema'
 
 interface DeleteConfirmationModalProps {
   academicYear: AcademicYear
+  onDeleteAcademicYear?: (academicYear: AcademicYear) => Promise<void>
   trigger: React.ReactNode
 }
 
 // DeleteConfirmationModal - show delete confirmation for academic year
 export function DeleteConfirmationModal({
   academicYear,
+  onDeleteAcademicYear,
   trigger,
 }: DeleteConfirmationModalProps) {
   // ==================== STATE ====================
   const [open, setOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // handleOpenChange - update dialog state
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen)
   }
 
-  // handleDeleteClick - close static dialog
-  const handleDeleteClick = () => {
-    toast.success('Academic year deleted', {
-      description: `${academicYear.academicYear} was removed successfully.`,
-    })
-
-    setOpen(false)
+  // handleDeleteClick - delete academic year row
+  const handleDeleteClick = async () => {
+    try {
+      setIsDeleting(true)
+      await onDeleteAcademicYear?.(academicYear)
+      toast.success('Academic year deleted', {
+        description: `${academicYear.academicYear} was removed successfully.`,
+      })
+      setOpen(false)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete academic year.')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   return (
@@ -66,11 +76,12 @@ export function DeleteConfirmationModal({
             variant="destructive"
             className="w-full cursor-pointer"
             onClick={handleDeleteClick}
+            disabled={isDeleting}
           >
-            Delete
+            {isDeleting ? 'Deleting...' : 'Delete'}
           </Button>
           <DialogClose asChild>
-            <Button type="button" variant="outline" className="w-full cursor-pointer">
+            <Button type="button" variant="outline" className="w-full cursor-pointer" disabled={isDeleting}>
               Cancel
             </Button>
           </DialogClose>
