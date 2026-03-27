@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Spinner } from '@/components/ui/spinner'
 
 import { statuses } from '../data/data'
 import type { AcademicYear } from '../data/schema'
@@ -178,8 +179,12 @@ export function AddAcademicYearModal({ onAddAcademicYear, trigger }: AddAcademic
                 Cancel
               </Button>
               <Button type="submit" className="cursor-pointer" disabled={isSubmitting}>
-                <IconPlus className="mr-2 h-4 w-4" stroke={2} />
-                {isSubmitting ? 'Creating...' : 'Create Academic Year'}
+                {isSubmitting ? (
+                  <Spinner className="mr-2 h-4 w-4" />
+                ) : (
+                  <IconPlus className="mr-2 h-4 w-4" stroke={2} />
+                )}
+                Create Academic Year
               </Button>
             </div>
           </form>

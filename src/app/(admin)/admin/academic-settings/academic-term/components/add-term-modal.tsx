@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Spinner } from '@/components/ui/spinner'
 
 import { semesters, statuses } from '../data/data'
 import type { AcademicTerm } from '../data/schema'
@@ -276,8 +277,12 @@ export function AddAcademicTermModal({
                 className="cursor-pointer"
                 disabled={isSubmitting || academicYearOptions.length === 0}
               >
-                <IconPlus className="mr-2 h-4 w-4" stroke={2} />
-                {isSubmitting ? 'Creating...' : 'Create Academic Term'}
+                {isSubmitting ? (
+                  <Spinner className="mr-2 h-4 w-4" />
+                ) : (
+                  <IconPlus className="mr-2 h-4 w-4" stroke={2} />
+                )}
+                Create Academic Term
               </Button>
             </div>
           </form>

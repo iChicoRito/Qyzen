@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 
 import { statuses } from '../data/data'
@@ -227,8 +228,12 @@ export function AddRolesModal({ onAddRole, trigger }: AddRolesModalProps) {
                 Cancel
               </Button>
               <Button type="submit" className="cursor-pointer" disabled={isSubmitting}>
-                <IconPlus className="mr-2 h-4 w-4" stroke={2} />
-                {isSubmitting ? 'Creating...' : 'Create Role'}
+                {isSubmitting ? (
+                  <Spinner className="mr-2 h-4 w-4" />
+                ) : (
+                  <IconPlus className="mr-2 h-4 w-4" stroke={2} />
+                )}
+                Create Role
               </Button>
             </div>
           </form>

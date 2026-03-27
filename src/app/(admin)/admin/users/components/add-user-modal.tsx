@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Spinner } from '@/components/ui/spinner'
 import { fetchRoles, type RoleRecord } from '@/lib/supabase/access-control'
 import type { CreateUserInput } from '@/lib/supabase/users'
 
@@ -385,8 +386,12 @@ export function AddUserModal({ onAddUser, trigger }: AddUserModalProps) {
                 className="cursor-pointer"
                 disabled={isSubmitting || isLoadingRoles}
               >
-                <IconPlus className="mr-2 h-4 w-4" stroke={2} />
-                {isSubmitting ? 'Creating...' : 'Create User'}
+                {isSubmitting ? (
+                  <Spinner className="mr-2 h-4 w-4" />
+                ) : (
+                  <IconPlus className="mr-2 h-4 w-4" stroke={2} />
+                )}
+                Create User
               </Button>
             </div>
           </form>
