@@ -1,6 +1,8 @@
 'use client'
 
-import { IconClock, IconEye, IconInfoCircle, IconShield } from '@tabler/icons-react'
+import { useEffect, useState } from 'react'
+import { IconEye, IconInfoCircle, IconShield } from '@tabler/icons-react'
+import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -15,6 +17,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
+import { fetchPermissionsForRole, type PermissionRecord } from '@/lib/supabase/access-control'
 import type { Role } from '../data/schema'
 
 interface ViewRolesModalProps {
@@ -24,13 +27,37 @@ interface ViewRolesModalProps {
 
 // ViewRolesModal - view role details
 export function ViewRolesModal({ role, trigger }: ViewRolesModalProps) {
+  const [open, setOpen] = useState(false)
+  const [permissions, setPermissions] = useState<PermissionRecord[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+
   const statusClassName =
     role.status === 'active'
       ? 'rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500'
       : 'rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500'
 
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    const loadPermissions = async () => {
+      try {
+        setIsLoading(true)
+        const assignedPermissions = await fetchPermissionsForRole(role.roleName)
+        setPermissions(assignedPermissions)
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to load role permissions.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadPermissions()
+  }, [open, role.roleName])
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" size="sm" className="cursor-pointer text-xs">
@@ -62,106 +89,52 @@ export function ViewRolesModal({ role, trigger }: ViewRolesModalProps) {
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <IconClock className="h-4 w-4 text-muted-foreground" stroke={2} />
-                <h3 className="text-xs font-semibold">Timeline</h3>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Created At</p>
-                  <p className="text-xs">2026-03-24</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Last Updated</p>
-                  <p className="text-xs">2026-03-24</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <h3 className="text-xs font-semibold">Assigned Permissions</h3>
                 <Badge variant="secondary" className="rounded-md px-2.5 py-0.5 text-xs">
-                  {role.isSystem ? '3' : '1'}
+                  {permissions.length}
                 </Badge>
               </div>
 
-              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                {role.isSystem ? 'Core Access Module' : 'Custom Access Module'}
-              </p>
-
               <div className="space-y-2.5">
-                <div className="rounded-xl border bg-card p-3.5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <IconShield className="mt-1 h-4 w-4 text-muted-foreground" stroke={2} />
-                      <div className="space-y-0.5">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-xs">{role.isSystem ? 'role:manage' : 'role:view'}</p>
-                          <Badge variant="outline" className="rounded-md px-2.5 py-0.5 text-xs capitalize">
-                            {role.isSystem ? 'manage' : 'view'}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {role.isSystem
-                            ? 'Manage role assignments and access control settings.'
-                            : 'View role details and assigned access.'}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className={`${statusClassName} text-xs`}>
-                      {role.status === 'active' ? 'Active' : 'Inactive'}
-                    </Badge>
+                {isLoading ? (
+                  <div className="rounded-xl border bg-card p-3.5">
+                    <p className="text-xs text-muted-foreground">Loading assigned permissions...</p>
                   </div>
-                </div>
-
-                {role.isSystem && (
-                  <>
-                    <div className="rounded-xl border bg-card p-3.5">
+                ) : permissions.length === 0 ? (
+                  <div className="rounded-xl border bg-card p-3.5">
+                    <p className="text-xs text-muted-foreground">No permissions assigned.</p>
+                  </div>
+                ) : (
+                  permissions.map((permission) => (
+                    <div
+                      key={permission.permissionString}
+                      className="rounded-xl border bg-card p-3.5"
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3">
                           <IconShield className="mt-1 h-4 w-4 text-muted-foreground" stroke={2} />
                           <div className="space-y-0.5">
                             <div className="flex flex-wrap items-center gap-2">
-                              <p className="text-xs">permission:assign</p>
-                              <Badge variant="outline" className="rounded-md px-2.5 py-0.5 text-xs">
-                                assign
+                              <p className="text-xs">{permission.permissionString}</p>
+                              <Badge
+                                variant="outline"
+                                className="rounded-md px-2.5 py-0.5 text-xs capitalize"
+                              >
+                                {permission.action}
                               </Badge>
                             </div>
                             <p className="text-xs text-muted-foreground">
-                              Assign permissions and configure role access.
+                              {permission.description}
                             </p>
                           </div>
                         </div>
                         <Badge variant="outline" className={`${statusClassName} text-xs`}>
-                          {role.status === 'active' ? 'Active' : 'Inactive'}
+                          {permission.status === 'active' ? 'Active' : 'Inactive'}
                         </Badge>
                       </div>
                     </div>
-
-                    <div className="rounded-xl border bg-card p-3.5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3">
-                          <IconShield className="mt-1 h-4 w-4 text-muted-foreground" stroke={2} />
-                          <div className="space-y-0.5">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="text-xs">user:assign-role</p>
-                              <Badge variant="outline" className="rounded-md px-2.5 py-0.5 text-xs">
-                                assign
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              Link users to this role for controlled access.
-                            </p>
-                          </div>
-                        </div>
-                        <Badge variant="outline" className={`${statusClassName} text-xs`}>
-                          {role.status === 'active' ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </>
+                  ))
                 )}
               </div>
             </div>

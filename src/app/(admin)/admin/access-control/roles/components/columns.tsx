@@ -11,11 +11,15 @@ import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
 
 interface GetColumnsProps {
+  onRoleUpdated?: (currentRoleName: string, updatedRole: Role) => void
   onDeleteRole?: (role: Role) => Promise<void>
 }
 
 // getColumns - build role columns
-export function getColumns({ onDeleteRole }: GetColumnsProps): ColumnDef<Role>[] {
+export function getColumns({
+  onRoleUpdated,
+  onDeleteRole,
+}: GetColumnsProps): ColumnDef<Role>[] {
   return [
   {
     id: 'select',
@@ -51,6 +55,15 @@ export function getColumns({ onDeleteRole }: GetColumnsProps): ColumnDef<Role>[]
     header: ({ column }) => <DataTableColumnHeader column={column} title="Description" />,
     cell: ({ row }) => (
       <div className="max-w-[320px] truncate text-muted-foreground">{row.getValue('description')}</div>
+    ),
+  },
+  {
+    accessorKey: 'permissionsCount',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Permissions" />,
+    cell: ({ row }) => (
+      <div className="w-[120px] text-muted-foreground">
+        {row.getValue<number>('permissionsCount')} applied
+      </div>
     ),
   },
   {
@@ -103,7 +116,13 @@ export function getColumns({ onDeleteRole }: GetColumnsProps): ColumnDef<Role>[]
   },
   {
     id: 'actions',
-    cell: ({ row }) => <DataTableRowActions row={row} onDeleteRole={onDeleteRole} />,
+    cell: ({ row }) => (
+      <DataTableRowActions
+        row={row}
+        onRoleUpdated={onRoleUpdated}
+        onDeleteRole={onDeleteRole}
+      />
+    ),
   },
   ]
 }

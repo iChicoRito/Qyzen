@@ -77,6 +77,7 @@ export function AddRolesModal({ onAddRole, trigger }: AddRolesModalProps) {
     const newRole: Role = {
       roleName: values.roleName,
       description: values.description,
+      permissionsCount: 0,
       status: values.status,
       isSystem: values.isSystem,
     }

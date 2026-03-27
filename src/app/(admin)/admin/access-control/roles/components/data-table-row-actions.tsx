@@ -15,10 +15,17 @@ import {
 
 import { roleSchema } from '../data/schema'
 import { DeleteConfirmationModal } from './delete-confirmation-modal'
+import { EditRoleModal } from './edit-role-modal'
 import { ViewRolesModal } from './view-roles-modal'
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
+  onRoleUpdated?: (currentRoleName: string, updatedRole: {
+    roleName: string
+    description: string
+    status: 'active' | 'inactive'
+    isSystem: boolean
+  }) => void
   onDeleteRole?: (role: {
     roleName: string
     description: string
@@ -28,7 +35,11 @@ interface DataTableRowActionsProps<TData> {
 }
 
 // DataTableRowActions - show row actions
-export function DataTableRowActions<TData>({ row, onDeleteRole }: DataTableRowActionsProps<TData>) {
+export function DataTableRowActions<TData>({
+  row,
+  onRoleUpdated,
+  onDeleteRole,
+}: DataTableRowActionsProps<TData>) {
   const role = roleSchema.parse(row.original)
 
   return (
@@ -47,7 +58,15 @@ export function DataTableRowActions<TData>({ row, onDeleteRole }: DataTableRowAc
           role={role}
           trigger={<DropdownMenuItem onSelect={(event) => event.preventDefault()} className="cursor-pointer">View Role</DropdownMenuItem>}
         />
-        <DropdownMenuItem className="cursor-pointer">Edit Role</DropdownMenuItem>
+        <EditRoleModal
+          role={role}
+          onRoleUpdated={onRoleUpdated}
+          trigger={
+            <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="cursor-pointer">
+              Edit Role
+            </DropdownMenuItem>
+          }
+        />
         <DropdownMenuSeparator />
         <DeleteConfirmationModal
           role={role}

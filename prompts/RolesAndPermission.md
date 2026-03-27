@@ -53,6 +53,14 @@ Objective #3: Junction table or pivot table for Roles and Permission
         - role_id                   (FK -> roles.id)
         - permission_id             (FK -> permissions.id)
 
+Objective #4: Applying those permissions to roles
+
+  1). In the roles, make the view functionalities reflect the data.
+
+  2). Now in the edit roles, I can edit the roles itself and for the real goal here, it shows all the list of permissions that has been created. It shows those permission as checkbox so the roles can have multiple permissions.
+
+  3). If success, it stores in the junction table which is the "role_permissions" table.
+
 Instructions and Objective in JSON format for better readability:
 
 {
@@ -179,31 +187,21 @@ Instructions and Objective in JSON format for better readability:
             "final_fields": [
               {
                 "row": 1,
-                "fields": [
-                  "Permission Name"
-                ]
+                "fields": ["Permission Name"]
               },
               {
                 "row": 2,
-                "fields": [
-                  "Description"
-                ]
+                "fields": ["Description"]
               },
               {
                 "row": 3,
                 "layout": "same_row",
-                "fields": [
-                  "resource",
-                  "action"
-                ]
+                "fields": ["resource", "action"]
               },
               {
                 "row": 4,
                 "layout": "same_row",
-                "fields": [
-                  "Module",
-                  "Status"
-                ]
+                "fields": ["Module", "Status"]
               }
             ]
           },
@@ -261,6 +259,40 @@ Instructions and Objective in JSON format for better readability:
           }
         ]
       }
+    },
+    {
+      "objective_number": 4,
+      "objective_title": "Applying Permissions to Roles via UI",
+      "ui_tasks": [
+        {
+          "task_number": 1,
+          "target": "roles view",
+          "action": "reflect_data",
+          "instruction": "The view functionalities in the roles section must reflect actual data from the database"
+        },
+        {
+          "task_number": 2,
+          "target": "edit roles",
+          "action": "enhance_edit_modal",
+          "instruction": "In the edit roles interface, provide two capabilities",
+          "capabilities": [
+            {
+              "capability": "edit_role_itself",
+              "description": "The user can edit the role's own data"
+            },
+            {
+              "capability": "assign_permissions",
+              "description": "Display all permissions that have been created as a list of checkboxes, allowing a role to be assigned multiple permissions"
+            }
+          ]
+        },
+        {
+          "task_number": 3,
+          "target": "role_permissions table",
+          "action": "store_on_success",
+          "instruction": "Upon successful submission, the selected permission assignments for the role must be stored in the role_permissions junction table"
+        }
+      ]
     }
   ]
 }

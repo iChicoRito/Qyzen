@@ -47,6 +47,13 @@ export default function RolesPage() {
     setRoles((prev) => prev.filter((item) => item.roleName !== role.roleName))
   }
 
+  // handleRoleUpdated - update role row in state
+  const handleRoleUpdated = (currentRoleName: string, updatedRole: Role) => {
+    setRoles((prev) =>
+      prev.map((role) => (role.roleName === currentRoleName ? updatedRole : role))
+    )
+  }
+
   if (loading) {
     return (
       <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
@@ -111,7 +118,10 @@ export default function RolesPage() {
           <CardContent>
             <DataTable
               data={roles}
-              columns={getColumns({ onDeleteRole: handleDeleteRole })}
+              columns={getColumns({
+                onRoleUpdated: handleRoleUpdated,
+                onDeleteRole: handleDeleteRole,
+              })}
               onAddRole={handleAddRole}
             />
           </CardContent>
