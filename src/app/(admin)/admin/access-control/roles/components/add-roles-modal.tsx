@@ -39,7 +39,10 @@ import { statuses } from '../data/data'
 import type { Role } from '../data/schema'
 
 const roleFormSchema = z.object({
-  roleName: z.string().min(1, 'Role Name is required'),
+  roleName: z
+    .string()
+    .min(1, 'Role Name is required')
+    .regex(/^[a-z]+(?:_[a-z]+)*$/, 'Role Name must use snake_case or lowercase'),
   description: z.string().min(1, 'Description is required'),
   status: z.enum(['active', 'inactive']),
   isSystem: z.boolean(),
@@ -48,7 +51,7 @@ const roleFormSchema = z.object({
 type RoleFormData = z.infer<typeof roleFormSchema>
 
 interface AddRolesModalProps {
-  onAddRole?: (role: Role) => void
+  onAddRole?: (role: Role) => Promise<void>
   trigger?: React.ReactNode
 }
 
@@ -56,6 +59,7 @@ interface AddRolesModalProps {
 export function AddRolesModal({ onAddRole, trigger }: AddRolesModalProps) {
   // ==================== STATE ====================
   const [open, setOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // ==================== FORM SETUP ====================
   const form = useForm<RoleFormData>({
@@ -69,7 +73,7 @@ export function AddRolesModal({ onAddRole, trigger }: AddRolesModalProps) {
   })
 
   // handleSubmit - save a new role row
-  const handleSubmit = (values: RoleFormData) => {
+  const handleSubmit = async (values: RoleFormData) => {
     const newRole: Role = {
       roleName: values.roleName,
       description: values.description,
@@ -77,13 +81,20 @@ export function AddRolesModal({ onAddRole, trigger }: AddRolesModalProps) {
       isSystem: values.isSystem,
     }
 
-    onAddRole?.(newRole)
-    toast.success('Role added successfully', {
-      description: `${newRole.roleName} has been created.`,
-    })
+    try {
+      setIsSubmitting(true)
+      await onAddRole?.(newRole)
+      toast.success('Role added successfully', {
+        description: `${newRole.roleName} has been created.`,
+      })
 
-    form.reset()
-    setOpen(false)
+      form.reset()
+      setOpen(false)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to add role.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // handleOpenChange - reset form when dialog closes
@@ -123,7 +134,7 @@ export function AddRolesModal({ onAddRole, trigger }: AddRolesModalProps) {
                 <FormItem>
                   <FormLabel>Role Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Administrator" {...field} />
+                    <Input placeholder="super_admin" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -210,12 +221,13 @@ export function AddRolesModal({ onAddRole, trigger }: AddRolesModalProps) {
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
                 className="cursor-pointer"
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" className="cursor-pointer">
+              <Button type="submit" className="cursor-pointer" disabled={isSubmitting}>
                 <IconPlus className="mr-2 h-4 w-4" stroke={2} />
-                Create Role
+                {isSubmitting ? 'Creating...' : 'Create Role'}
               </Button>
             </div>
           </form>

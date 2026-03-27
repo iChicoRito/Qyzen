@@ -20,7 +20,7 @@ import type { Role } from '../data/schema'
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
-  onAddRole?: (role: Role) => void
+  onAddRole?: (role: Role) => Promise<void>
 }
 
 // DataTableToolbar - filter and add role rows

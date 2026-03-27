@@ -10,7 +10,13 @@ import type { Role } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
 
-export const columns: ColumnDef<Role>[] = [
+interface GetColumnsProps {
+  onDeleteRole?: (role: Role) => Promise<void>
+}
+
+// getColumns - build role columns
+export function getColumns({ onDeleteRole }: GetColumnsProps): ColumnDef<Role>[] {
+  return [
   {
     id: 'select',
     header: ({ table }) => (
@@ -97,6 +103,7 @@ export const columns: ColumnDef<Role>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    cell: ({ row }) => <DataTableRowActions row={row} onDeleteRole={onDeleteRole} />,
   },
-]
+  ]
+}

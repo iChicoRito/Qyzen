@@ -1,50 +1,94 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { z } from 'zod'
 
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { columns } from './components/columns'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  createPermissions,
+  deletePermission,
+  fetchPermissions,
+} from '@/lib/supabase/access-control'
+import { getColumns } from './components/columns'
 import { DataTable } from './components/data-table'
 import { permissionSchema, type Permission } from './data/schema'
-import permissionsData from './data/data.json'
-
-// getPermissions - load static permission data
-async function getPermissions() {
-  return z.array(permissionSchema).parse(permissionsData)
-}
 
 // PermissionsPage - manage permission records
 export default function PermissionsPage() {
   // ==================== STATE ====================
   const [permissions, setPermissions] = useState<Permission[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // loadPermissions - fetch permission data
+  const loadPermissions = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const permissionList = await fetchPermissions()
+      setPermissions(permissionSchema.array().parse(permissionList))
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Failed to load permissions.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    // loadPermissions - fetch sample permission data
-    const loadPermissions = async () => {
-      try {
-        const permissionList = await getPermissions()
-        setPermissions(permissionList)
-      } catch (error) {
-        console.error('Failed to load permissions:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     loadPermissions()
   }, [])
 
   // handleAddPermissions - add new permission rows
-  const handleAddPermissions = (newPermissions: Permission[]) => {
-    setPermissions((prev) => [...newPermissions, ...prev])
+  const handleAddPermissions = async (newPermissions: Permission[]) => {
+    const createdPermissions = await createPermissions(newPermissions)
+    setPermissions((prev) => [...createdPermissions, ...prev])
+  }
+
+  // handleDeletePermission - remove permission row
+  const handleDeletePermission = async (permission: Permission) => {
+    await deletePermission(permission)
+    setPermissions((prev) =>
+      prev.filter((item) => item.permissionString !== permission.permissionString)
+    )
   }
 
   if (loading) {
     return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="text-muted-foreground">Loading permissions...</div>
+      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-52" />
+            <Skeleton className="h-4 w-72" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Permissions Management</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              type="button"
+              variant="outline"
+              className="cursor-pointer"
+              onClick={loadPermissions}
+            >
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -78,7 +122,7 @@ export default function PermissionsPage() {
           <CardContent>
             <DataTable
               data={permissions}
-              columns={columns}
+              columns={getColumns({ onDeletePermission: handleDeletePermission })}
               onAddPermissions={handleAddPermissions}
             />
           </CardContent>

@@ -10,7 +10,13 @@ import type { Permission } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
 
-export const columns: ColumnDef<Permission>[] = [
+interface GetColumnsProps {
+  onDeletePermission?: (permission: Permission) => Promise<void>
+}
+
+// getColumns - build permission columns
+export function getColumns({ onDeletePermission }: GetColumnsProps): ColumnDef<Permission>[] {
+  return [
   {
     id: 'select',
     header: ({ table }) => (
@@ -43,14 +49,19 @@ export const columns: ColumnDef<Permission>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: 'role',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Role" />,
-    cell: ({ row }) => <div className="w-[160px]">{row.getValue('role')}</div>,
+    accessorKey: 'permissionString',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Permission String" />,
+    cell: ({ row }) => <div className="w-[180px]">{row.getValue('permissionString')}</div>,
   },
   {
     accessorKey: 'action',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Action" />,
     cell: ({ row }) => <div className="capitalize">{row.getValue('action')}</div>,
+  },
+  {
+    accessorKey: 'resource',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Resource" />,
+    cell: ({ row }) => <div>{row.getValue('resource')}</div>,
   },
   {
     accessorKey: 'module',
@@ -88,6 +99,9 @@ export const columns: ColumnDef<Permission>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    cell: ({ row }) => (
+      <DataTableRowActions row={row} onDeletePermission={onDeletePermission} />
+    ),
   },
-]
+  ]
+}

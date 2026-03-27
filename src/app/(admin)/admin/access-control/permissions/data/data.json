@@ -1,25 +1,28 @@
 [
   {
     "permissionName": "View Users",
-    "description": "Allows the selected role to view user records.",
-    "role": "Administrator",
+    "description": "Allows user records to be viewed.",
+    "resource": "users",
     "action": "view",
+    "permissionString": "users:view",
     "module": "Users",
     "status": "active"
   },
   {
     "permissionName": "Create Roles",
-    "description": "Allows the selected role to create new roles.",
-    "role": "Administrator",
+    "description": "Allows new role records to be created.",
+    "resource": "roles",
     "action": "create",
+    "permissionString": "roles:create",
     "module": "Roles",
     "status": "active"
   },
   {
     "permissionName": "Update Academic Settings",
-    "description": "Allows the selected role to update academic configuration.",
-    "role": "Registrar",
+    "description": "Allows academic settings configuration to be updated.",
+    "resource": "academic_settings",
     "action": "update",
+    "permissionString": "academic_settings:update",
     "module": "Academic Settings",
     "status": "inactive"
   }

@@ -18,13 +18,11 @@ import { DeleteConfirmationModal } from './delete-confirmation-modal'
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
-  onDeleteAcademicYear?: (academicYear: { academicYear: string; status: 'active' | 'inactive' }) => Promise<void>
 }
 
 // DataTableRowActions - show row actions
 export function DataTableRowActions<TData>({
   row,
-  onDeleteAcademicYear,
 }: DataTableRowActionsProps<TData>) {
   const academicYear = academicYearSchema.parse(row.original)
 
@@ -45,7 +43,6 @@ export function DataTableRowActions<TData>({
         <DropdownMenuSeparator />
         <DeleteConfirmationModal
           academicYear={academicYear}
-          onDeleteAcademicYear={onDeleteAcademicYear}
           trigger={
             <DropdownMenuItem
               onSelect={(event) => event.preventDefault()}

@@ -77,9 +77,7 @@ export function getColumns({ onDeleteAcademicYear }: GetColumnsProps): ColumnDef
   },
   {
     id: 'actions',
-    cell: ({ row }) => (
-      <DataTableRowActions row={row} onDeleteAcademicYear={onDeleteAcademicYear} />
-    ),
+    cell: ({ row }) => <DataTableRowActions row={row} />,
   },
   ]
 }

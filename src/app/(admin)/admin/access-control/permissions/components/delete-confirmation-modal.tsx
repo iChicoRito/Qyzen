@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { IconAlertTriangle } from '@tabler/icons-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -20,57 +19,63 @@ import type { Permission } from '../data/schema'
 
 interface DeleteConfirmationModalProps {
   permission: Permission
+  onDeletePermission?: (permission: Permission) => Promise<void>
   trigger: React.ReactNode
 }
 
-// DeleteConfirmationModal - show delete confirmation for permission
-export function DeleteConfirmationModal({ permission, trigger }: DeleteConfirmationModalProps) {
+// DeleteConfirmationModal - show delete confirmation
+export function DeleteConfirmationModal({
+  permission,
+  onDeletePermission,
+  trigger,
+}: DeleteConfirmationModalProps) {
   // ==================== STATE ====================
   const [open, setOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
-  // handleOpenChange - update dialog state
-  const handleOpenChange = (nextOpen: boolean) => {
-    setOpen(nextOpen)
-  }
-
-  // handleDeleteClick - close static dialog
-  const handleDeleteClick = () => {
-    toast.success('Permission deleted', {
-      description: `${permission.permissionName} was removed successfully.`,
-    })
-
-    setOpen(false)
+  // handleDeleteClick - delete permission row
+  const handleDeleteClick = async () => {
+    try {
+      setIsDeleting(true)
+      await onDeletePermission?.(permission)
+      toast.success('Permission deleted', {
+        description: `${permission.permissionName} was removed successfully.`,
+      })
+      setOpen(false)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete permission.')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader className="items-center text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-500/10 text-rose-500">
-            <IconAlertTriangle size={28} stroke={2} />
-          </div>
-          <DialogTitle className="text-center">Delete Permission</DialogTitle>
-          <DialogDescription className="text-center">
+        <DialogHeader>
+          <DialogTitle>Delete Permission</DialogTitle>
+          <DialogDescription>
             Are you sure you want to delete {permission.permissionName}? This action is static for
             now.
           </DialogDescription>
         </DialogHeader>
 
-        <DialogFooter className="grid grid-cols-2 gap-2 sm:grid-cols-2">
-          <Button
-            type="button"
-            variant="destructive"
-            className="w-full cursor-pointer"
-            onClick={handleDeleteClick}
-          >
-            Delete
-          </Button>
+        <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline" className="w-full cursor-pointer">
+            <Button type="button" variant="outline" className="cursor-pointer">
               Cancel
             </Button>
           </DialogClose>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleDeleteClick}
+            className="cursor-pointer"
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

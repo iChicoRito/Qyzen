@@ -18,18 +18,11 @@ import { DeleteConfirmationModal } from './delete-confirmation-modal'
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
-  onDeleteAcademicTerm?: (academicTerm: {
-    academicTermName: string
-    semester: '1st Semester' | '2nd Semester'
-    academicYear: string
-    status: 'active' | 'inactive'
-  }) => Promise<void>
 }
 
 // DataTableRowActions - show row actions
 export function DataTableRowActions<TData>({
   row,
-  onDeleteAcademicTerm,
 }: DataTableRowActionsProps<TData>) {
   const academicTerm = academicTermSchema.parse(row.original)
 
@@ -50,7 +43,6 @@ export function DataTableRowActions<TData>({
         <DropdownMenuSeparator />
         <DeleteConfirmationModal
           academicTerm={academicTerm}
-          onDeleteAcademicTerm={onDeleteAcademicTerm}
           trigger={
             <DropdownMenuItem
               onSelect={(event) => event.preventDefault()}

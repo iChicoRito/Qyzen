@@ -97,11 +97,7 @@ export function ViewPermissionsModal({ permission, trigger }: ViewPermissionsMod
                     <IconShield className="mt-1 h-4 w-4 text-muted-foreground" stroke={2} />
                     <div className="space-y-0.5">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-xs">
-                          {permission.module.toLowerCase().replace(/\s+/g, '-')}:{
-                            permission.action
-                          }
-                        </p>
+                        <p className="text-xs">{permission.permissionString}</p>
                         <Badge variant="outline" className="rounded-md px-2.5 py-0.5 text-xs capitalize">
                           {permission.action}
                         </Badge>
@@ -122,7 +118,7 @@ export function ViewPermissionsModal({ permission, trigger }: ViewPermissionsMod
                 <div>
                   <p className="text-xs font-medium text-blue-500">Permission Management</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Review and adjust the role, module, and action pairing in the edit section.
+                    Review and adjust the resource, module, and action pairing in the edit section.
                   </p>
                 </div>
               </div>

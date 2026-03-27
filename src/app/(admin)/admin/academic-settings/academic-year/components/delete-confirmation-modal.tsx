@@ -1,8 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { IconAlertTriangle } from '@tabler/icons-react'
-import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -20,71 +18,48 @@ import type { AcademicYear } from '../data/schema'
 
 interface DeleteConfirmationModalProps {
   academicYear: AcademicYear
-  onDeleteAcademicYear?: (academicYear: AcademicYear) => Promise<void>
   trigger: React.ReactNode
 }
 
-// DeleteConfirmationModal - show delete confirmation for academic year
+// DeleteConfirmationModal - show delete confirmation
 export function DeleteConfirmationModal({
   academicYear,
-  onDeleteAcademicYear,
   trigger,
 }: DeleteConfirmationModalProps) {
   // ==================== STATE ====================
   const [open, setOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
 
-  // handleOpenChange - update dialog state
-  const handleOpenChange = (nextOpen: boolean) => {
-    setOpen(nextOpen)
-  }
-
-  // handleDeleteClick - delete academic year row
-  const handleDeleteClick = async () => {
-    try {
-      setIsDeleting(true)
-      await onDeleteAcademicYear?.(academicYear)
-      toast.success('Academic year deleted', {
-        description: `${academicYear.academicYear} was removed successfully.`,
-      })
-      setOpen(false)
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete academic year.')
-    } finally {
-      setIsDeleting(false)
-    }
+  // handleDeleteClick - close static modal
+  const handleDeleteClick = () => {
+    setOpen(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader className="items-center text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-500/10 text-rose-500">
-            <IconAlertTriangle size={28} stroke={2} />
-          </div>
-          <DialogTitle className="text-center">Delete Academic Year</DialogTitle>
-          <DialogDescription className="text-center">
+        <DialogHeader>
+          <DialogTitle>Delete Academic Year</DialogTitle>
+          <DialogDescription>
             Are you sure you want to delete {academicYear.academicYear}? This action is static for
             now.
           </DialogDescription>
         </DialogHeader>
 
-        <DialogFooter className="grid grid-cols-2 gap-2 sm:grid-cols-2">
-          <Button
-            type="button"
-            variant="destructive"
-            className="w-full cursor-pointer"
-            onClick={handleDeleteClick}
-            disabled={isDeleting}
-          >
-            {isDeleting ? 'Deleting...' : 'Delete'}
-          </Button>
+        <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline" className="w-full cursor-pointer" disabled={isDeleting}>
+            <Button type="button" variant="outline" className="cursor-pointer">
               Cancel
             </Button>
           </DialogClose>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleDeleteClick}
+            className="cursor-pointer"
+          >
+            Delete
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

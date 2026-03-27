@@ -1,50 +1,83 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { z } from 'zod'
 
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { columns } from './components/columns'
+import { Skeleton } from '@/components/ui/skeleton'
+import { createRole, deleteRole, fetchRoles } from '@/lib/supabase/access-control'
+import { getColumns } from './components/columns'
 import { DataTable } from './components/data-table'
 import { roleSchema, type Role } from './data/schema'
-import rolesData from './data/data.json'
-
-// getRoles - load static role data
-async function getRoles() {
-  return z.array(roleSchema).parse(rolesData)
-}
 
 // RolesPage - manage role records
 export default function RolesPage() {
   // ==================== STATE ====================
   const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // loadRoles - fetch role data
+  const loadRoles = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const roleList = await fetchRoles()
+      setRoles(roleSchema.array().parse(roleList))
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Failed to load roles.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    // loadRoles - fetch sample role data
-    const loadRoles = async () => {
-      try {
-        const roleList = await getRoles()
-        setRoles(roleList)
-      } catch (error) {
-        console.error('Failed to load roles:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     loadRoles()
   }, [])
 
   // handleAddRole - add a new role row
-  const handleAddRole = (newRole: Role) => {
-    setRoles((prev) => [newRole, ...prev])
+  const handleAddRole = async (newRole: Role) => {
+    const createdRole = await createRole(newRole)
+    setRoles((prev) => [createdRole, ...prev])
+  }
+
+  // handleDeleteRole - remove role row
+  const handleDeleteRole = async (role: Role) => {
+    await deleteRole(role)
+    setRoles((prev) => prev.filter((item) => item.roleName !== role.roleName))
   }
 
   if (loading) {
     return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="text-muted-foreground">Loading roles...</div>
+      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-72" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Roles Management</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button type="button" variant="outline" className="cursor-pointer" onClick={loadRoles}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -76,7 +109,11 @@ export default function RolesPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <DataTable data={roles} columns={columns} onAddRole={handleAddRole} />
+            <DataTable
+              data={roles}
+              columns={getColumns({ onDeleteRole: handleDeleteRole })}
+              onAddRole={handleAddRole}
+            />
           </CardContent>
         </Card>
       </div>

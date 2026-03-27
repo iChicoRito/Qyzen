@@ -19,10 +19,16 @@ import { ViewRolesModal } from './view-roles-modal'
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
+  onDeleteRole?: (role: {
+    roleName: string
+    description: string
+    status: 'active' | 'inactive'
+    isSystem: boolean
+  }) => Promise<void>
 }
 
 // DataTableRowActions - show row actions
-export function DataTableRowActions<TData>({ row }: DataTableRowActionsProps<TData>) {
+export function DataTableRowActions<TData>({ row, onDeleteRole }: DataTableRowActionsProps<TData>) {
   const role = roleSchema.parse(row.original)
 
   return (
@@ -45,6 +51,7 @@ export function DataTableRowActions<TData>({ row }: DataTableRowActionsProps<TDa
         <DropdownMenuSeparator />
         <DeleteConfirmationModal
           role={role}
+          onDeleteRole={onDeleteRole}
           trigger={
             <DropdownMenuItem
               onSelect={(event) => event.preventDefault()}

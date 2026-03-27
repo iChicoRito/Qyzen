@@ -32,7 +32,7 @@ import type { Permission } from '../data/schema'
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
-  onAddPermissions?: (permissions: Permission[]) => void
+  onAddPermissions?: (permissions: Permission[]) => Promise<void>
 }
 
 // DataTable - render the permissions table

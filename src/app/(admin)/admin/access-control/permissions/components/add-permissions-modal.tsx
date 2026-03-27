@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { IconPlus, IconTrash } from '@tabler/icons-react'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -34,15 +34,16 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 
-import { actions, modules, roles, statuses } from '../data/data'
+import { statuses } from '../data/data'
 import type { Permission } from '../data/schema'
 
 const permissionItemSchema = z.object({
   permissionName: z.string().min(1, 'Permission Name is required'),
   description: z.string().min(1, 'Description is required'),
-  role: z.string().min(1, 'Role is required'),
+  resource: z.string().min(1, 'Resource is required'),
   action: z.string().min(1, 'Action is required'),
   module: z.string().min(1, 'Module is required'),
+  permissionString: z.string(),
   status: z.enum(['active', 'inactive']),
 })
 
@@ -53,23 +54,37 @@ const permissionFormSchema = z.object({
 type PermissionFormData = z.infer<typeof permissionFormSchema>
 
 interface AddPermissionsModalProps {
-  onAddPermissions?: (permissions: Permission[]) => void
+  onAddPermissions?: (permissions: Permission[]) => Promise<void>
   trigger?: React.ReactNode
 }
 
 const defaultPermission: Permission = {
   permissionName: '',
   description: '',
-  role: 'Administrator',
-  action: 'view',
-  module: 'Users',
+  resource: '',
+  action: '',
+  module: '',
+  permissionString: '',
   status: 'active',
+}
+
+// buildPermissionString - combine resource and action
+function buildPermissionString(resource: string, action: string) {
+  const normalizedResource = resource.trim().toLowerCase().replace(/\s+/g, '_')
+  const normalizedAction = action.trim().toLowerCase().replace(/\s+/g, '_')
+
+  if (!normalizedResource || !normalizedAction) {
+    return ''
+  }
+
+  return `${normalizedResource}:${normalizedAction}`
 }
 
 // AddPermissionsModal - add multiple permissions
 export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermissionsModalProps) {
   // ==================== STATE ====================
   const [open, setOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // ==================== FORM SETUP ====================
   const form = useForm<PermissionFormData>({
@@ -84,17 +99,42 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
     name: 'permissions',
   })
 
-  // handleSubmit - save new permission rows
-  const handleSubmit = (values: PermissionFormData) => {
-    onAddPermissions?.(values.permissions)
-    toast.success('Permissions added successfully', {
-      description: `${values.permissions.length} permission record(s) have been created.`,
-    })
+  const watchedPermissions = useWatch({
+    control: form.control,
+    name: 'permissions',
+  })
 
-    form.reset({
-      permissions: [defaultPermission],
+  useEffect(() => {
+    watchedPermissions?.forEach((permission, index) => {
+      const permissionString = buildPermissionString(permission.resource, permission.action)
+
+      if (permission.permissionString !== permissionString) {
+        form.setValue(`permissions.${index}.permissionString`, permissionString, {
+          shouldDirty: true,
+          shouldValidate: false,
+        })
+      }
     })
-    setOpen(false)
+  }, [form, watchedPermissions])
+
+  // handleSubmit - save new permission rows
+  const handleSubmit = async (values: PermissionFormData) => {
+    try {
+      setIsSubmitting(true)
+      await onAddPermissions?.(values.permissions)
+      toast.success('Permissions added successfully', {
+        description: `${values.permissions.length} permission record(s) have been created.`,
+      })
+
+      form.reset({
+        permissions: [defaultPermission],
+      })
+      setOpen(false)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to add permissions.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // handleAddItem - append a new repeater row
@@ -144,7 +184,7 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
                       variant="outline"
                       size="sm"
                       onClick={() => remove(index)}
-                      disabled={fields.length === 1}
+                      disabled={fields.length === 1 || isSubmitting}
                       className="cursor-pointer"
                     >
                       <IconTrash className="h-4 w-4" stroke={2} />
@@ -152,52 +192,20 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {/* permission name field */}
-                    <FormField
-                      control={form.control}
-                      name={`permissions.${index}.permissionName`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Permission Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="View Users" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* role field */}
-                    <FormField
-                      control={form.control}
-                      name={`permissions.${index}.role`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Select Role</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="w-full cursor-pointer">
-                                <SelectValue placeholder="Select role" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {roles.map((role) => (
-                                <SelectItem
-                                  key={role.value}
-                                  value={role.value}
-                                  className="cursor-pointer"
-                                >
-                                  {role.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  {/* permission name field */}
+                  <FormField
+                    control={form.control}
+                    name={`permissions.${index}.permissionName`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Permission Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="View Users" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   {/* description field */}
                   <FormField
@@ -214,7 +222,22 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
                     )}
                   />
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {/* resource field */}
+                    <FormField
+                      control={form.control}
+                      name={`permissions.${index}.resource`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Resource</FormLabel>
+                          <FormControl>
+                            <Input placeholder="users" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
                     {/* action field */}
                     <FormField
                       control={form.control}
@@ -222,29 +245,16 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Action</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="w-full cursor-pointer">
-                                <SelectValue placeholder="Select action" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {actions.map((action) => (
-                                <SelectItem
-                                  key={action.value}
-                                  value={action.value}
-                                  className="cursor-pointer"
-                                >
-                                  {action.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <Input placeholder="view" {...field} />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                  </div>
 
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     {/* module field */}
                     <FormField
                       control={form.control}
@@ -252,24 +262,9 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Module</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="w-full cursor-pointer">
-                                <SelectValue placeholder="Select module" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {modules.map((module) => (
-                                <SelectItem
-                                  key={module.value}
-                                  value={module.value}
-                                  className="cursor-pointer"
-                                >
-                                  {module.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <Input placeholder="Users" {...field} />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -310,6 +305,26 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
                       )}
                     />
                   </div>
+
+                  {/* permission string field */}
+                  <FormField
+                    control={form.control}
+                    name={`permissions.${index}.permissionString`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Permission String</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            readOnly
+                            placeholder="users:view"
+                            className="bg-muted"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               ))}
             </div>
@@ -320,6 +335,7 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
                 variant="outline"
                 onClick={handleAddItem}
                 className="cursor-pointer"
+                disabled={isSubmitting}
               >
                 <IconPlus className="mr-2 h-4 w-4" stroke={2} />
                 Add Another Permission
@@ -331,12 +347,13 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
                   variant="outline"
                   onClick={() => handleOpenChange(false)}
                   className="cursor-pointer"
+                  disabled={isSubmitting}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="cursor-pointer">
+                <Button type="submit" className="cursor-pointer" disabled={isSubmitting}>
                   <IconPlus className="mr-2 h-4 w-4" stroke={2} />
-                  Create Permissions
+                  {isSubmitting ? 'Creating...' : 'Create Permissions'}
                 </Button>
               </div>
             </div>

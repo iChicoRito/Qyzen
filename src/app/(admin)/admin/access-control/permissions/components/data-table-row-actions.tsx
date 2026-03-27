@@ -19,10 +19,22 @@ import { ViewPermissionsModal } from './view-permissions-modal'
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
+  onDeletePermission?: (permission: {
+    permissionName: string
+    description: string
+    resource: string
+    action: string
+    module: string
+    permissionString: string
+    status: 'active' | 'inactive'
+  }) => Promise<void>
 }
 
 // DataTableRowActions - show row actions
-export function DataTableRowActions<TData>({ row }: DataTableRowActionsProps<TData>) {
+export function DataTableRowActions<TData>({
+  row,
+  onDeletePermission,
+}: DataTableRowActionsProps<TData>) {
   const permission = permissionSchema.parse(row.original)
 
   return (
@@ -49,6 +61,7 @@ export function DataTableRowActions<TData>({ row }: DataTableRowActionsProps<TDa
         <DropdownMenuSeparator />
         <DeleteConfirmationModal
           permission={permission}
+          onDeletePermission={onDeletePermission}
           trigger={
             <DropdownMenuItem
               onSelect={(event) => event.preventDefault()}

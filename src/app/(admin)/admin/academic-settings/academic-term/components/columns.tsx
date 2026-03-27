@@ -100,9 +100,7 @@ export function getColumns({ onDeleteAcademicTerm }: GetColumnsProps): ColumnDef
   },
   {
     id: 'actions',
-    cell: ({ row }) => (
-      <DataTableRowActions row={row} onDeleteAcademicTerm={onDeleteAcademicTerm} />
-    ),
+    cell: ({ row }) => <DataTableRowActions row={row} />,
   },
   ]
 }

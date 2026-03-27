@@ -32,7 +32,7 @@ import type { Role } from '../data/schema'
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
-  onAddRole?: (role: Role) => void
+  onAddRole?: (role: Role) => Promise<void>
 }
 
 // DataTable - render the roles table

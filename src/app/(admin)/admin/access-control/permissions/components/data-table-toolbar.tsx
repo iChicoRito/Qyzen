@@ -15,12 +15,12 @@ import {
 import { AddPermissionsModal } from './add-permissions-modal'
 import { DataTableViewOptions } from './data-table-view-options'
 
-import { roles, statuses } from '../data/data'
+import { statuses } from '../data/data'
 import type { Permission } from '../data/schema'
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
-  onAddPermissions?: (permissions: Permission[]) => void
+  onAddPermissions?: (permissions: Permission[]) => Promise<void>
 }
 
 // DataTableToolbar - filter and add permission rows
@@ -40,9 +40,9 @@ export function DataTableToolbar<TData>({
     }
   }
 
-  // handleRoleChange - update the role filter
-  const handleRoleChange = (value: string) => {
-    const column = table.getColumn('role')
+  // handleResourceChange - update the resource filter
+  const handleResourceChange = (value: string) => {
+    const column = table.getColumn('resource')
     if (value === 'all') {
       column?.setFilterValue(undefined)
     } else {
@@ -51,25 +51,29 @@ export function DataTableToolbar<TData>({
   }
 
   const statusFilter = table.getColumn('status')?.getFilterValue() as string | undefined
-  const roleFilter = table.getColumn('role')?.getFilterValue() as string | undefined
+  const resourceFilter = table.getColumn('resource')?.getFilterValue() as string | undefined
 
   return (
     <div className="space-y-4">
       <div className="space-y-3">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <Select value={roleFilter || 'all'} onValueChange={handleRoleChange}>
+          <Select value={resourceFilter || 'all'} onValueChange={handleResourceChange}>
             <SelectTrigger className="w-full cursor-pointer">
-              <SelectValue placeholder="Role" />
+              <SelectValue placeholder="Resource" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all" className="cursor-pointer">
-                All Roles
+                All Resources
               </SelectItem>
-              {roles.map((role) => (
-                <SelectItem key={role.value} value={role.value} className="cursor-pointer">
-                  {role.label}
-                </SelectItem>
-              ))}
+              <SelectItem value="users" className="cursor-pointer">
+                users
+              </SelectItem>
+              <SelectItem value="roles" className="cursor-pointer">
+                roles
+              </SelectItem>
+              <SelectItem value="academic_settings" className="cursor-pointer">
+                academic_settings
+              </SelectItem>
             </SelectContent>
           </Select>
 
