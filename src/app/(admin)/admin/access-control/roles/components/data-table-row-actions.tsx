@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 import { roleSchema } from '../data/schema'
+import { DeleteConfirmationModal } from './delete-confirmation-modal'
 import { ViewRolesModal } from './view-roles-modal'
 
 interface DataTableRowActionsProps<TData> {
@@ -42,10 +43,19 @@ export function DataTableRowActions<TData>({ row }: DataTableRowActionsProps<TDa
         />
         <DropdownMenuItem className="cursor-pointer">Edit Role</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer" variant="destructive">
-          Delete
-          <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
-        </DropdownMenuItem>
+        <DeleteConfirmationModal
+          role={role}
+          trigger={
+            <DropdownMenuItem
+              onSelect={(event) => event.preventDefault()}
+              className="cursor-pointer"
+              variant="destructive"
+            >
+              Delete
+              <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
+            </DropdownMenuItem>
+          }
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   )

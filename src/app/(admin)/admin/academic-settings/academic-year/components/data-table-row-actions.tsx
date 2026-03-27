@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 import { academicYearSchema } from '../data/schema'
+import { DeleteConfirmationModal } from './delete-confirmation-modal'
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
@@ -21,7 +22,7 @@ interface DataTableRowActionsProps<TData> {
 
 // DataTableRowActions - show row actions
 export function DataTableRowActions<TData>({ row }: DataTableRowActionsProps<TData>) {
-  academicYearSchema.parse(row.original)
+  const academicYear = academicYearSchema.parse(row.original)
 
   return (
     <DropdownMenu>
@@ -38,10 +39,19 @@ export function DataTableRowActions<TData>({ row }: DataTableRowActionsProps<TDa
         <DropdownMenuItem className="cursor-pointer">View Academic Year</DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer">Edit Academic Year</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer" variant="destructive">
-          Delete
-          <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
-        </DropdownMenuItem>
+        <DeleteConfirmationModal
+          academicYear={academicYear}
+          trigger={
+            <DropdownMenuItem
+              onSelect={(event) => event.preventDefault()}
+              className="cursor-pointer"
+              variant="destructive"
+            >
+              Delete
+              <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
+            </DropdownMenuItem>
+          }
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   )

@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 import { permissionSchema } from '../data/schema'
+import { DeleteConfirmationModal } from './delete-confirmation-modal'
 import { ViewPermissionsModal } from './view-permissions-modal'
 
 interface DataTableRowActionsProps<TData> {
@@ -46,10 +47,19 @@ export function DataTableRowActions<TData>({ row }: DataTableRowActionsProps<TDa
         />
         <DropdownMenuItem className="cursor-pointer">Edit Permission</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer" variant="destructive">
-          Delete
-          <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
-        </DropdownMenuItem>
+        <DeleteConfirmationModal
+          permission={permission}
+          trigger={
+            <DropdownMenuItem
+              onSelect={(event) => event.preventDefault()}
+              className="cursor-pointer"
+              variant="destructive"
+            >
+              Delete
+              <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
+            </DropdownMenuItem>
+          }
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   )

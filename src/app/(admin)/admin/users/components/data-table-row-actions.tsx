@@ -14,15 +14,17 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 import { userSchema } from "../data/schema"
+import { DeleteConfirmationModal } from "./delete-confirmation-modal"
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
 }
 
+// DataTableRowActions - show row actions
 export function DataTableRowActions<TData>({
   row,
 }: DataTableRowActionsProps<TData>) {
-  userSchema.parse(row.original)
+  const user = userSchema.parse(row.original)
 
   return (
     <DropdownMenu>
@@ -39,10 +41,19 @@ export function DataTableRowActions<TData>({
         <DropdownMenuItem className="cursor-pointer">View User</DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer">Edit User</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer" variant="destructive">
-          Delete
-          <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
-        </DropdownMenuItem>
+        <DeleteConfirmationModal
+          user={user}
+          trigger={
+            <DropdownMenuItem
+              onSelect={(event) => event.preventDefault()}
+              className="cursor-pointer"
+              variant="destructive"
+            >
+              Delete
+              <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
+            </DropdownMenuItem>
+          }
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   )
