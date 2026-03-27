@@ -1,0 +1,117 @@
+Objective #1: User Creation along with Roles and Permissions.
+
+  1). In the database, create a new table name "users" with these columns
+
+      - id
+      - user_type (admin, student and educator)
+      - user_id (this column is not for referrencing, it is like user_number)
+      - given_name
+      - surname
+      - email
+      - (no password for now)
+      - is_active?
+
+  2). Now in the adding of the users, it has 2 user_type for now, the student and educator/instructor (let's just use the term educator). Every user has own format of their user ID format, for student 1234-12345 and for educator 1234-1234. If the user is created as student, the user_type would be student, and educator for educator.
+
+  3). Now here in the adding of the users, add field for checkbox for selecting the role that is connected to the tables roles along with the permissions.
+
+  4). To make a junction table for users and roles, make a new table name "user_roles_permissions"  with these columns
+
+      tbl_user_roles
+      - id                        (PK)
+      - user_id                   (FK -> users.id)
+      - role_id                   (FK -> roles.id)
+      add a timestamps here and other ***_at columns.
+
+  5). For the table creation, no RLS for now, just disabled it upon creation.
+
+  6). Before you proceed to the execution, give a summary of the process, what codes will be modified or added and delete (risky) and wait for the "Go!" command.
+
+Objective #2: Users Password and using the Auth Schema
+
+  1). Now in the creation of the users, since we don't have any creation of password yet, I wanted that every user created, they're password is automatically created by using their combined given_name + surname e.g Given Name + Surname(Mark_Adrianne_Salunga).
+
+    - Mark_Adrianne <- given_name, always put underscore everytime it has spaces
+    - Salunga <- surname, always put underscore everytime it has spaces if ever.
+
+  2). Now, to let the user that they have an account created, it will be emailed to their email address. In the email address, it shows their user information.
+
+    - Surname
+    - Given Name
+    - Email Address
+    - Password
+    - Status
+    - User Type
+    - Role
+
+  3). Now in the email, since supabase has their own email module. In their (https://supabase.com/dashboard/project/*******/auth/templates). They had this (just see the image I pasted) that can be costumized.
+
+Instructions and Objective in JSON format for better readability:
+
+{
+  "objectives": [
+    {
+      "objective_number": 2,
+      "objective_title": "Users Password and using the Auth Schema",
+      "tasks": [
+        {
+          "task_number": 1,
+          "task_title": "Automatic Password Generation Upon User Creation",
+          "logic": {
+            "trigger": "Every time a new user is created",
+            "password_generation_rule": {
+              "formula": "given_name + surname",
+              "formatting_rules": [
+                {
+                  "field": "given_name",
+                  "rule": "Replace all spaces with underscores"
+                },
+                {
+                  "field": "surname",
+                  "rule": "Replace all spaces with underscores if spaces exist"
+                }
+              ],
+              "combination_format": "{given_name}_{surname}",
+              "example": {
+                "given_name": "Mark Adrianne",
+                "surname": "Salunga",
+                "formatted_given_name": "Mark_Adrianne",
+                "formatted_surname": "Salunga",
+                "resulting_password": "Mark_Adrianne_Salunga"
+              }
+            }
+          }
+        },
+        {
+          "task_number": 2,
+          "task_title": "Email Notification Upon User Account Creation",
+          "trigger": "Upon successful creation of a user account",
+          "email_task": {
+            "recipient": "The email address of the newly created user",
+            "content": {
+              "description": "The email must display the user's account information",
+              "fields_to_show": [
+                "Surname",
+                "Given Name",
+                "Email Address",
+                "Password",
+                "Status",
+                "User Type",
+                "Role"
+              ]
+            }
+          }
+        },
+        {
+          "task_number": 3,
+          "task_title": "Email Template Customization via Supabase Auth Templates",
+          "platform": "Supabase",
+          "reference": "https://supabase.com/dashboard/project/*******/auth/templates",
+          "instruction": "Use the Supabase built-in email module and its customizable email templates to send the account creation email",
+          "note": "The specific template design and content customization is based on the image provided by the user alongside this instruction",
+          "image_provided": true
+        }
+      ]
+    }
+  ]
+}

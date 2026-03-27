@@ -155,7 +155,7 @@ export function AddUserModal({ onAddUser, trigger }: AddUserModalProps) {
       setIsSubmitting(true)
       await onAddUser?.(newUser)
       toast.success('User added successfully', {
-        description: `${newUser.givenName} ${newUser.surname} has been created.`,
+        description: `${newUser.givenName} ${newUser.surname} has been created and emailed.`,
       })
       form.reset()
       setOpen(false)

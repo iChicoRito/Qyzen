@@ -1,5 +1,3 @@
-'use client'
-
 import { getSupabaseClientConfig, getSupabaseClientHeaders } from './client'
 
 export interface UserRecord {
@@ -134,56 +132,18 @@ export async function fetchUsers() {
 
 // createUser - insert a user and assign roles
 export async function createUser(user: CreateUserInput) {
-  const { url } = getSupabaseClientConfig()
-  const createUserResponse = await fetch(`${url}/rest/v1/users`, {
+  const response = await fetch('/api/users', {
     method: 'POST',
     headers: {
-      ...getSupabaseClientHeaders(),
-      Prefer: 'return=representation',
+      'Content-Type': 'application/json',
     },
-    body: JSON.stringify([
-      {
-        user_type: user.userType,
-        user_id: user.userId,
-        given_name: user.givenName,
-        surname: user.surname,
-        email: user.email,
-        is_active: user.status === 'active',
-      },
-    ]),
+    body: JSON.stringify(user),
   })
 
-  if (!createUserResponse.ok) {
-    const error = (await createUserResponse.json()) as SupabaseErrorResponse
-
-    if (error.code === '23505') {
-      throw new Error('User ID or email already exists.')
-    }
-
+  if (!response.ok) {
+    const error = (await response.json()) as SupabaseErrorResponse
     throw new Error(getSupabaseErrorMessage(error, 'Failed to create user.'))
   }
 
-  const createdRows = (await createUserResponse.json()) as UserRow[]
-  const createdUser = createdRows[0]
-  const roleIds = await getRoleIdsByNames(user.roleNames)
-
-  if (roleIds.length > 0) {
-    const assignRolesResponse = await fetch(`${url}/rest/v1/user_roles`, {
-      method: 'POST',
-      headers: getSupabaseClientHeaders(),
-      body: JSON.stringify(
-        roleIds.map((roleId) => ({
-          user_id: createdUser.id,
-          role_id: roleId,
-        }))
-      ),
-    })
-
-    if (!assignRolesResponse.ok) {
-      const error = (await assignRolesResponse.json()) as SupabaseErrorResponse
-      throw new Error(getSupabaseErrorMessage(error, 'Failed to assign user roles.'))
-    }
-  }
-
-  return mapUserRow(createdUser, user.roleNames)
+  return (await response.json()) as UserRecord
 }
