@@ -93,7 +93,7 @@ async function getRoleIdsByNames(roleNames: string[]) {
 
   const { url } = getSupabaseConfig()
   const joinedRoleNames = roleNames.map((roleName) => `"${roleName}"`).join(',')
-  const response = await fetch(`${url}/rest/v1/roles?select=id,name&name=in.(${joinedRoleNames})`, {
+  const response = await fetch(`${url}/rest/v1/tbl_roles?select=id,name&name=in.(${joinedRoleNames})`, {
     headers: getSupabaseHeaders(),
     cache: 'no-store',
   })
@@ -137,7 +137,7 @@ async function createAuthUser(user: CreateUserInput, password: string) {
 // createPublicUser - insert public user record
 async function createPublicUser(user: CreateUserInput) {
   const { url } = getSupabaseConfig()
-  const response = await fetch(`${url}/rest/v1/users`, {
+  const response = await fetch(`${url}/rest/v1/tbl_users`, {
     method: 'POST',
     headers: {
       ...getSupabaseHeaders(),
@@ -178,7 +178,7 @@ async function assignUserRoles(userId: number, roleNames: string[]) {
   }
 
   const { url } = getSupabaseConfig()
-  const response = await fetch(`${url}/rest/v1/user_roles`, {
+  const response = await fetch(`${url}/rest/v1/tbl_user_roles`, {
     method: 'POST',
     headers: getSupabaseHeaders(),
     body: JSON.stringify(

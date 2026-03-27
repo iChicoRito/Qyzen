@@ -83,7 +83,7 @@ function mapPermissionRow(row: PermissionRow): PermissionRecord {
 async function getRoleIdByName(roleName: string) {
   const { url } = getSupabaseClientConfig()
   const response = await fetch(
-    `${url}/rest/v1/roles?select=id&name=eq.${encodeURIComponent(roleName)}&limit=1`,
+    `${url}/rest/v1/tbl_roles?select=id&name=eq.${encodeURIComponent(roleName)}&limit=1`,
     {
       headers: getSupabaseClientHeaders(),
       cache: 'no-store',
@@ -115,7 +115,7 @@ async function getPermissionIdsByStrings(permissionStrings: string[]) {
     .map((permissionString) => `"${permissionString}"`)
     .join(',')
   const response = await fetch(
-    `${url}/rest/v1/permissions?select=id,permission_string&permission_string=in.(${joinedPermissionStrings})`,
+    `${url}/rest/v1/tbl_permissions?select=id,permission_string&permission_string=in.(${joinedPermissionStrings})`,
     {
       headers: getSupabaseClientHeaders(),
       cache: 'no-store',
@@ -135,11 +135,11 @@ async function getPermissionIdsByStrings(permissionStrings: string[]) {
 export async function fetchRoles() {
   const { url } = getSupabaseClientConfig()
   const [rolesResponse, assignmentsResponse] = await Promise.all([
-    fetch(`${url}/rest/v1/roles?select=id,name,description,is_system,is_active&order=id.desc`, {
+    fetch(`${url}/rest/v1/tbl_roles?select=id,name,description,is_system,is_active&order=id.desc`, {
       headers: getSupabaseClientHeaders(),
       cache: 'no-store',
     }),
-    fetch(`${url}/rest/v1/role_permissions?select=role_id`, {
+    fetch(`${url}/rest/v1/tbl_role_permissions?select=role_id`, {
       headers: getSupabaseClientHeaders(),
       cache: 'no-store',
     }),
@@ -171,7 +171,7 @@ export async function fetchRoles() {
 // createRole - insert role row
 export async function createRole(role: RoleRecord) {
   const { url } = getSupabaseClientConfig()
-  const response = await fetch(`${url}/rest/v1/roles`, {
+  const response = await fetch(`${url}/rest/v1/tbl_roles`, {
     method: 'POST',
     headers: {
       ...getSupabaseClientHeaders(),
@@ -204,7 +204,7 @@ export async function createRole(role: RoleRecord) {
 // deleteRole - remove role row
 export async function deleteRole(role: RoleRecord) {
   const { url } = getSupabaseClientConfig()
-  const response = await fetch(`${url}/rest/v1/roles?name=eq.${encodeURIComponent(role.roleName)}`, {
+  const response = await fetch(`${url}/rest/v1/tbl_roles?name=eq.${encodeURIComponent(role.roleName)}`, {
     method: 'DELETE',
     headers: getSupabaseClientHeaders(),
   })
@@ -221,7 +221,7 @@ export async function fetchPermissionsForRole(roleName: string) {
   const roleId = await getRoleIdByName(roleName)
   const query =
     'select=permission:permission_id(id,name,description,resource,action,module,permission_string,is_active)'
-  const response = await fetch(`${url}/rest/v1/role_permissions?role_id=eq.${roleId}&${query}`, {
+  const response = await fetch(`${url}/rest/v1/tbl_role_permissions?role_id=eq.${roleId}&${query}`, {
     headers: getSupabaseClientHeaders(),
     cache: 'no-store',
   })
@@ -247,7 +247,7 @@ export async function updateRoleWithPermissions(
   const { url } = getSupabaseClientConfig()
   const roleId = await getRoleIdByName(currentRoleName)
 
-  const updateRoleResponse = await fetch(`${url}/rest/v1/roles?id=eq.${roleId}`, {
+  const updateRoleResponse = await fetch(`${url}/rest/v1/tbl_roles?id=eq.${roleId}`, {
     method: 'PATCH',
     headers: {
       ...getSupabaseClientHeaders(),
@@ -271,7 +271,7 @@ export async function updateRoleWithPermissions(
     throw new Error(getSupabaseErrorMessage(error, 'Failed to update role.'))
   }
 
-  const deleteAssignmentsResponse = await fetch(`${url}/rest/v1/role_permissions?role_id=eq.${roleId}`, {
+  const deleteAssignmentsResponse = await fetch(`${url}/rest/v1/tbl_role_permissions?role_id=eq.${roleId}`, {
     method: 'DELETE',
     headers: getSupabaseClientHeaders(),
   })
@@ -284,7 +284,7 @@ export async function updateRoleWithPermissions(
   const permissionIds = await getPermissionIdsByStrings(permissionStrings)
 
   if (permissionIds.length > 0) {
-    const insertAssignmentsResponse = await fetch(`${url}/rest/v1/role_permissions`, {
+    const insertAssignmentsResponse = await fetch(`${url}/rest/v1/tbl_role_permissions`, {
       method: 'POST',
       headers: getSupabaseClientHeaders(),
       body: JSON.stringify(
@@ -308,7 +308,7 @@ export async function updateRoleWithPermissions(
 export async function fetchPermissions() {
   const { url } = getSupabaseClientConfig()
   const response = await fetch(
-    `${url}/rest/v1/permissions?select=id,name,description,resource,action,module,permission_string,is_active&order=id.desc`,
+    `${url}/rest/v1/tbl_permissions?select=id,name,description,resource,action,module,permission_string,is_active&order=id.desc`,
     {
       headers: getSupabaseClientHeaders(),
       cache: 'no-store',
@@ -327,7 +327,7 @@ export async function fetchPermissions() {
 // createPermissions - insert permission rows
 export async function createPermissions(permissions: PermissionRecord[]) {
   const { url } = getSupabaseClientConfig()
-  const response = await fetch(`${url}/rest/v1/permissions`, {
+  const response = await fetch(`${url}/rest/v1/tbl_permissions`, {
     method: 'POST',
     headers: {
       ...getSupabaseClientHeaders(),
@@ -363,7 +363,7 @@ export async function createPermissions(permissions: PermissionRecord[]) {
 export async function deletePermission(permission: PermissionRecord) {
   const { url } = getSupabaseClientConfig()
   const response = await fetch(
-    `${url}/rest/v1/permissions?permission_string=eq.${encodeURIComponent(permission.permissionString)}`,
+    `${url}/rest/v1/tbl_permissions?permission_string=eq.${encodeURIComponent(permission.permissionString)}`,
     {
       method: 'DELETE',
       headers: getSupabaseClientHeaders(),

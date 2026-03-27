@@ -67,7 +67,7 @@ function mapAcademicTermRow(row: AcademicTermRow): AcademicTermRecord {
 export async function fetchAcademicYears() {
   const { url } = getSupabaseClientConfig()
   const response = await fetch(
-    `${url}/rest/v1/academic_year?select=id,year,is_active&order=year.desc`,
+    `${url}/rest/v1/tbl_academic_year?select=id,year,is_active&order=year.desc`,
     {
       headers: getSupabaseClientHeaders(),
       cache: 'no-store',
@@ -86,7 +86,7 @@ export async function fetchAcademicYears() {
 // createAcademicYear - insert academic year row
 export async function createAcademicYear(academicYear: AcademicYearRecord) {
   const { url } = getSupabaseClientConfig()
-  const response = await fetch(`${url}/rest/v1/academic_year`, {
+  const response = await fetch(`${url}/rest/v1/tbl_academic_year`, {
     method: 'POST',
     headers: {
       ...getSupabaseClientHeaders(),
@@ -119,7 +119,7 @@ export async function fetchAcademicTerms() {
   const { url } = getSupabaseClientConfig()
   const query =
     'select=id,term_name,semester,academic_year_id,is_active,academic_year:academic_year_id(year)&order=id.desc'
-  const response = await fetch(`${url}/rest/v1/academic_term?${query}`, {
+  const response = await fetch(`${url}/rest/v1/tbl_academic_term?${query}`, {
     headers: getSupabaseClientHeaders(),
     cache: 'no-store',
   })
@@ -137,7 +137,7 @@ export async function fetchAcademicTerms() {
 async function getAcademicYearIdByYear(academicYear: string) {
   const { url } = getSupabaseClientConfig()
   const response = await fetch(
-    `${url}/rest/v1/academic_year?select=id&year=eq.${encodeURIComponent(academicYear)}&limit=1`,
+    `${url}/rest/v1/tbl_academic_year?select=id&year=eq.${encodeURIComponent(academicYear)}&limit=1`,
     {
       headers: getSupabaseClientHeaders(),
       cache: 'no-store',
@@ -164,7 +164,7 @@ export async function deleteAcademicYear(academicYear: string) {
   const academicYearId = await getAcademicYearIdByYear(academicYear)
 
   const deleteTermsResponse = await fetch(
-    `${url}/rest/v1/academic_term?academic_year_id=eq.${academicYearId}`,
+    `${url}/rest/v1/tbl_academic_term?academic_year_id=eq.${academicYearId}`,
     {
       method: 'DELETE',
       headers: getSupabaseClientHeaders(),
@@ -177,7 +177,7 @@ export async function deleteAcademicYear(academicYear: string) {
   }
 
   const deleteYearResponse = await fetch(
-    `${url}/rest/v1/academic_year?year=eq.${encodeURIComponent(academicYear)}`,
+    `${url}/rest/v1/tbl_academic_year?year=eq.${encodeURIComponent(academicYear)}`,
     {
       method: 'DELETE',
       headers: getSupabaseClientHeaders(),
@@ -194,7 +194,7 @@ export async function deleteAcademicYear(academicYear: string) {
 export async function createAcademicTerm(academicTerm: AcademicTermRecord) {
   const { url } = getSupabaseClientConfig()
   const academicYearId = await getAcademicYearIdByYear(academicTerm.academicYear)
-  const response = await fetch(`${url}/rest/v1/academic_term`, {
+  const response = await fetch(`${url}/rest/v1/tbl_academic_term`, {
     method: 'POST',
     headers: {
       ...getSupabaseClientHeaders(),
@@ -239,7 +239,7 @@ export async function deleteAcademicTerm(academicTerm: AcademicTermRecord) {
     `&semester=eq.${encodeURIComponent(academicTerm.semester)}` +
     `&academic_year_id=eq.${academicYearId}`
 
-  const response = await fetch(`${url}/rest/v1/academic_term?${query}`, {
+  const response = await fetch(`${url}/rest/v1/tbl_academic_term?${query}`, {
     method: 'DELETE',
     headers: getSupabaseClientHeaders(),
   })

@@ -73,7 +73,7 @@ async function getRoleIdsByNames(roleNames: string[]) {
 
   const { url } = getSupabaseClientConfig()
   const joinedRoleNames = roleNames.map((roleName) => `"${roleName}"`).join(',')
-  const response = await fetch(`${url}/rest/v1/roles?select=id,name&name=in.(${joinedRoleNames})`, {
+  const response = await fetch(`${url}/rest/v1/tbl_roles?select=id,name&name=in.(${joinedRoleNames})`, {
     headers: getSupabaseClientHeaders(),
     cache: 'no-store',
   })
@@ -92,13 +92,13 @@ export async function fetchUsers() {
   const { url } = getSupabaseClientConfig()
   const [usersResponse, rolesResponse] = await Promise.all([
     fetch(
-      `${url}/rest/v1/users?select=id,user_type,user_id,given_name,surname,email,is_active&order=id.desc`,
+      `${url}/rest/v1/tbl_users?select=id,user_type,user_id,given_name,surname,email,is_active&order=id.desc`,
       {
         headers: getSupabaseClientHeaders(),
         cache: 'no-store',
       }
     ),
-    fetch(`${url}/rest/v1/user_roles?select=user_id,role:role_id(id,name)`, {
+    fetch(`${url}/rest/v1/tbl_user_roles?select=user_id,role:role_id(id,name)`, {
       headers: getSupabaseClientHeaders(),
       cache: 'no-store',
     }),
