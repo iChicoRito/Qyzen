@@ -1,4 +1,4 @@
-import { getSupabaseClientConfig, getSupabaseClientHeaders } from './client'
+import { createClient } from './client'
 
 export interface UserRecord {
   id: number
@@ -47,8 +47,8 @@ interface SupabaseErrorResponse {
 }
 
 // getSupabaseErrorMessage - normalize api errors
-function getSupabaseErrorMessage(error: SupabaseErrorResponse, fallbackMessage: string) {
-  return error.message || fallbackMessage
+function getSupabaseErrorMessage(error: SupabaseErrorResponse | null, fallbackMessage: string) {
+  return error?.message || fallbackMessage
 }
 
 // mapUserRow - convert db row to ui record
@@ -65,69 +65,41 @@ function mapUserRow(row: UserRow, roleNames: string[]): UserRecord {
   }
 }
 
-// getRoleIdsByNames - resolve role ids by role names
-async function getRoleIdsByNames(roleNames: string[]) {
-  if (roleNames.length === 0) {
-    return [] as number[]
-  }
-
-  const { url } = getSupabaseClientConfig()
-  const joinedRoleNames = roleNames.map((roleName) => `"${roleName}"`).join(',')
-  const response = await fetch(`${url}/rest/v1/tbl_roles?select=id,name&name=in.(${joinedRoleNames})`, {
-    headers: getSupabaseClientHeaders(),
-    cache: 'no-store',
-  })
-
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
-    throw new Error(getSupabaseErrorMessage(error, 'Failed to resolve roles.'))
-  }
-
-  const rows = (await response.json()) as RoleLookupRow[]
-  return rows.map((row) => row.id)
-}
-
 // fetchUsers - load users with assigned roles
 export async function fetchUsers() {
-  const { url } = getSupabaseClientConfig()
-  const [usersResponse, rolesResponse] = await Promise.all([
-    fetch(
-      `${url}/rest/v1/tbl_users?select=id,user_type,user_id,given_name,surname,email,is_active&order=id.desc`,
-      {
-        headers: getSupabaseClientHeaders(),
-        cache: 'no-store',
+  const supabase = createClient()
+  const [{ data: userRows, error: usersError }, { data: userRoleRows, error: rolesError }] =
+    await Promise.all([
+      supabase
+        .from('tbl_users')
+        .select('id,user_type,user_id,given_name,surname,email,is_active')
+        .order('id', { ascending: false }),
+      supabase.from('tbl_user_roles').select('user_id,role:role_id(id,name)'),
+    ])
+
+  if (usersError) {
+    throw new Error(getSupabaseErrorMessage(usersError, 'Failed to load users.'))
+  }
+
+  if (rolesError) {
+    throw new Error(getSupabaseErrorMessage(rolesError, 'Failed to load user roles.'))
+  }
+
+  const roleMap = ((userRoleRows || []) as unknown as UserRoleRow[]).reduce<Record<number, string[]>>(
+    (result: Record<number, string[]>, row: UserRoleRow) => {
+      const role = Array.isArray(row.role) ? row.role[0] : row.role
+
+      if (!role) {
+        return result
       }
-    ),
-    fetch(`${url}/rest/v1/tbl_user_roles?select=user_id,role:role_id(id,name)`, {
-      headers: getSupabaseClientHeaders(),
-      cache: 'no-store',
-    }),
-  ])
 
-  if (!usersResponse.ok) {
-    const error = (await usersResponse.json()) as SupabaseErrorResponse
-    throw new Error(getSupabaseErrorMessage(error, 'Failed to load users.'))
-  }
-
-  if (!rolesResponse.ok) {
-    const error = (await rolesResponse.json()) as SupabaseErrorResponse
-    throw new Error(getSupabaseErrorMessage(error, 'Failed to load user roles.'))
-  }
-
-  const userRows = (await usersResponse.json()) as UserRow[]
-  const userRoleRows = (await rolesResponse.json()) as UserRoleRow[]
-  const roleMap = userRoleRows.reduce<Record<number, string[]>>((result, row) => {
-    const role = Array.isArray(row.role) ? row.role[0] : row.role
-
-    if (!role) {
+      result[row.user_id] = [...(result[row.user_id] || []), role.name]
       return result
-    }
+    },
+    {}
+  )
 
-    result[row.user_id] = [...(result[row.user_id] || []), role.name]
-    return result
-  }, {})
-
-  return userRows.map((row) => mapUserRow(row, roleMap[row.id] || []))
+  return ((userRows || []) as UserRow[]).map((row) => mapUserRow(row, roleMap[row.id] || []))
 }
 
 // createUser - insert a user and assign roles

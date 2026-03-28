@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 
+import { createClient } from '@/lib/supabase/server'
+
 interface CreateUserInput {
   userId: string
   givenName: string
@@ -28,32 +30,6 @@ interface RoleLookupRow {
 interface SupabaseErrorResponse {
   code?: string
   message?: string
-}
-
-// getSupabaseConfig - read server env values
-function getSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!url || !anonKey) {
-    throw new Error('Supabase environment variables are missing.')
-  }
-
-  return {
-    url,
-    anonKey,
-  }
-}
-
-// getSupabaseHeaders - build request headers
-function getSupabaseHeaders() {
-  const { anonKey } = getSupabaseConfig()
-
-  return {
-    apikey: anonKey,
-    Authorization: `Bearer ${anonKey}`,
-    'Content-Type': 'application/json',
-  }
 }
 
 // getSupabaseErrorMessage - normalize api errors
@@ -91,31 +67,26 @@ async function getRoleIdsByNames(roleNames: string[]) {
     return [] as number[]
   }
 
-  const { url } = getSupabaseConfig()
-  const joinedRoleNames = roleNames.map((roleName) => `"${roleName}"`).join(',')
-  const response = await fetch(`${url}/rest/v1/tbl_roles?select=id,name&name=in.(${joinedRoleNames})`, {
-    headers: getSupabaseHeaders(),
-    cache: 'no-store',
-  })
+  const supabase = await createClient()
+  const { data: rows, error } = await supabase
+    .from('tbl_roles')
+    .select('id,name')
+    .in('name', roleNames)
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
+  if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to resolve roles.'))
   }
 
-  const rows = (await response.json()) as RoleLookupRow[]
-  return rows.map((row) => row.id)
+  return (rows as RoleLookupRow[]).map((row: RoleLookupRow) => row.id)
 }
 
 // createAuthUser - create auth user and trigger email confirmation
 async function createAuthUser(user: CreateUserInput, password: string) {
-  const { url } = getSupabaseConfig()
-  const response = await fetch(`${url}/auth/v1/signup`, {
-    method: 'POST',
-    headers: getSupabaseHeaders(),
-    body: JSON.stringify({
-      email: user.email,
-      password,
+  const supabase = await createClient()
+  const { error } = await supabase.auth.signUp({
+    email: user.email,
+    password,
+    options: {
       data: {
         surname: user.surname,
         given_name: user.givenName,
@@ -125,38 +96,31 @@ async function createAuthUser(user: CreateUserInput, password: string) {
         user_type: user.userType,
         role: user.roleNames.join(', '),
       },
-    }),
+    },
   })
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
+  if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to create auth user.'))
   }
 }
 
 // createPublicUser - insert public user record
 async function createPublicUser(user: CreateUserInput) {
-  const { url } = getSupabaseConfig()
-  const response = await fetch(`${url}/rest/v1/tbl_users`, {
-    method: 'POST',
-    headers: {
-      ...getSupabaseHeaders(),
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify([
-      {
-        user_type: user.userType,
-        user_id: user.userId,
-        given_name: user.givenName,
-        surname: user.surname,
-        email: user.email,
-        is_active: user.status === 'active',
-      },
-    ]),
-  })
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('tbl_users')
+    .insert({
+      user_type: user.userType,
+      user_id: user.userId,
+      given_name: user.givenName,
+      surname: user.surname,
+      email: user.email,
+      is_active: user.status === 'active',
+    })
+    .select('id,user_type,user_id,given_name,surname,email,is_active')
+    .single()
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
+  if (error) {
 
     if (error.code === '23505') {
       throw new Error('User ID or email already exists.')
@@ -165,8 +129,7 @@ async function createPublicUser(user: CreateUserInput) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to create user record.'))
   }
 
-  const rows = (await response.json()) as UserRow[]
-  return rows[0]
+  return data as UserRow
 }
 
 // assignUserRoles - insert user role records
@@ -177,20 +140,15 @@ async function assignUserRoles(userId: number, roleNames: string[]) {
     return
   }
 
-  const { url } = getSupabaseConfig()
-  const response = await fetch(`${url}/rest/v1/tbl_user_roles`, {
-    method: 'POST',
-    headers: getSupabaseHeaders(),
-    body: JSON.stringify(
-      roleIds.map((roleId) => ({
-        user_id: userId,
-        role_id: roleId,
-      }))
-    ),
-  })
+  const supabase = await createClient()
+  const { error } = await supabase.from('tbl_user_roles').insert(
+    roleIds.map((roleId: number) => ({
+      user_id: userId,
+      role_id: roleId,
+    }))
+  )
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
+  if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to assign user roles.'))
   }
 }

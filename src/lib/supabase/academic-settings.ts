@@ -1,4 +1,4 @@
-import { getSupabaseClientConfig, getSupabaseClientHeaders } from './client'
+import { createClient } from './client'
 
 export interface AcademicYearRecord {
   academicYear: string
@@ -37,8 +37,8 @@ interface SupabaseErrorResponse {
 }
 
 // getSupabaseErrorMessage - normalize api errors
-function getSupabaseErrorMessage(error: SupabaseErrorResponse, fallbackMessage: string) {
-  return error.message || fallbackMessage
+function getSupabaseErrorMessage(error: SupabaseErrorResponse | null, fallbackMessage: string) {
+  return error?.message || fallbackMessage
 }
 
 // mapAcademicYearRow - convert db row to ui record
@@ -65,44 +65,32 @@ function mapAcademicTermRow(row: AcademicTermRow): AcademicTermRecord {
 
 // fetchAcademicYears - load academic year rows
 export async function fetchAcademicYears() {
-  const { url } = getSupabaseClientConfig()
-  const response = await fetch(
-    `${url}/rest/v1/tbl_academic_year?select=id,year,is_active&order=year.desc`,
-    {
-      headers: getSupabaseClientHeaders(),
-      cache: 'no-store',
-    }
-  )
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('tbl_academic_year')
+    .select('id,year,is_active')
+    .order('year', { ascending: false })
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
+  if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to load academic years.'))
   }
 
-  const rows = (await response.json()) as AcademicYearRow[]
-  return rows.map(mapAcademicYearRow)
+  return ((data || []) as AcademicYearRow[]).map(mapAcademicYearRow)
 }
 
 // createAcademicYear - insert academic year row
 export async function createAcademicYear(academicYear: AcademicYearRecord) {
-  const { url } = getSupabaseClientConfig()
-  const response = await fetch(`${url}/rest/v1/tbl_academic_year`, {
-    method: 'POST',
-    headers: {
-      ...getSupabaseClientHeaders(),
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify([
-      {
-        year: academicYear.academicYear,
-        is_active: academicYear.status === 'active',
-      },
-    ]),
-  })
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('tbl_academic_year')
+    .insert({
+      year: academicYear.academicYear,
+      is_active: academicYear.status === 'active',
+    })
+    .select('id,year,is_active')
+    .single()
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
-
+  if (error) {
     if (error.code === '23505') {
       throw new Error('Academic year already exists.')
     }
@@ -110,46 +98,38 @@ export async function createAcademicYear(academicYear: AcademicYearRecord) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to create academic year.'))
   }
 
-  const rows = (await response.json()) as AcademicYearRow[]
-  return mapAcademicYearRow(rows[0])
+  return mapAcademicYearRow(data as AcademicYearRow)
 }
 
 // fetchAcademicTerms - load academic term rows
 export async function fetchAcademicTerms() {
-  const { url } = getSupabaseClientConfig()
-  const query =
-    'select=id,term_name,semester,academic_year_id,is_active,academic_year:academic_year_id(year)&order=id.desc'
-  const response = await fetch(`${url}/rest/v1/tbl_academic_term?${query}`, {
-    headers: getSupabaseClientHeaders(),
-    cache: 'no-store',
-  })
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('tbl_academic_term')
+    .select('id,term_name,semester,academic_year_id,is_active,academic_year:academic_year_id(year)')
+    .order('id', { ascending: false })
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
+  if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to load academic terms.'))
   }
 
-  const rows = (await response.json()) as AcademicTermRow[]
-  return rows.map(mapAcademicTermRow)
+  return ((data || []) as AcademicTermRow[]).map(mapAcademicTermRow)
 }
 
 // getAcademicYearIdByYear - find academic year id from year text
 async function getAcademicYearIdByYear(academicYear: string) {
-  const { url } = getSupabaseClientConfig()
-  const response = await fetch(
-    `${url}/rest/v1/tbl_academic_year?select=id&year=eq.${encodeURIComponent(academicYear)}&limit=1`,
-    {
-      headers: getSupabaseClientHeaders(),
-      cache: 'no-store',
-    }
-  )
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('tbl_academic_year')
+    .select('id')
+    .eq('year', academicYear)
+    .limit(1)
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
+  if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to resolve academic year.'))
   }
 
-  const rows = (await response.json()) as Array<{ id: number }>
+  const rows = (data || []) as Array<{ id: number }>
 
   if (!rows[0]) {
     throw new Error('Selected academic year does not exist.')
@@ -160,67 +140,46 @@ async function getAcademicYearIdByYear(academicYear: string) {
 
 // deleteAcademicYear - remove academic year and related terms
 export async function deleteAcademicYear(academicYear: string) {
-  const { url } = getSupabaseClientConfig()
+  const supabase = createClient()
   const academicYearId = await getAcademicYearIdByYear(academicYear)
 
-  const deleteTermsResponse = await fetch(
-    `${url}/rest/v1/tbl_academic_term?academic_year_id=eq.${academicYearId}`,
-    {
-      method: 'DELETE',
-      headers: getSupabaseClientHeaders(),
-    }
-  )
+  const { error: deleteTermsError } = await supabase
+    .from('tbl_academic_term')
+    .delete()
+    .eq('academic_year_id', academicYearId)
 
-  if (!deleteTermsResponse.ok) {
-    const error = (await deleteTermsResponse.json()) as SupabaseErrorResponse
-    throw new Error(getSupabaseErrorMessage(error, 'Failed to delete related academic terms.'))
+  if (deleteTermsError) {
+    throw new Error(getSupabaseErrorMessage(deleteTermsError, 'Failed to delete related academic terms.'))
   }
 
-  const deleteYearResponse = await fetch(
-    `${url}/rest/v1/tbl_academic_year?year=eq.${encodeURIComponent(academicYear)}`,
-    {
-      method: 'DELETE',
-      headers: getSupabaseClientHeaders(),
-    }
-  )
+  const { error: deleteYearError } = await supabase
+    .from('tbl_academic_year')
+    .delete()
+    .eq('year', academicYear)
 
-  if (!deleteYearResponse.ok) {
-    const error = (await deleteYearResponse.json()) as SupabaseErrorResponse
-    throw new Error(getSupabaseErrorMessage(error, 'Failed to delete academic year.'))
+  if (deleteYearError) {
+    throw new Error(getSupabaseErrorMessage(deleteYearError, 'Failed to delete academic year.'))
   }
 }
 
 // createAcademicTerm - insert academic term row
 export async function createAcademicTerm(academicTerm: AcademicTermRecord) {
-  const { url } = getSupabaseClientConfig()
+  const supabase = createClient()
   const academicYearId = await getAcademicYearIdByYear(academicTerm.academicYear)
-  const response = await fetch(`${url}/rest/v1/tbl_academic_term`, {
-    method: 'POST',
-    headers: {
-      ...getSupabaseClientHeaders(),
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify([
-      {
-        term_name: academicTerm.academicTermName,
-        semester: academicTerm.semester,
-        academic_year_id: academicYearId,
-        is_active: academicTerm.status === 'active',
-      },
-    ]),
+  const { error } = await supabase.from('tbl_academic_term').insert({
+    term_name: academicTerm.academicTermName,
+    semester: academicTerm.semester,
+    academic_year_id: academicYearId,
+    is_active: academicTerm.status === 'active',
   })
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
-
+  if (error) {
     if (error.code === '23505') {
       throw new Error('Academic term already exists for the selected semester and academic year.')
     }
 
     throw new Error(getSupabaseErrorMessage(error, 'Failed to create academic term.'))
   }
-
-  await response.json()
 
   return {
     academicTermName: academicTerm.academicTermName,
@@ -232,20 +191,16 @@ export async function createAcademicTerm(academicTerm: AcademicTermRecord) {
 
 // deleteAcademicTerm - remove academic term row
 export async function deleteAcademicTerm(academicTerm: AcademicTermRecord) {
-  const { url } = getSupabaseClientConfig()
+  const supabase = createClient()
   const academicYearId = await getAcademicYearIdByYear(academicTerm.academicYear)
-  const query =
-    `term_name=eq.${encodeURIComponent(academicTerm.academicTermName)}` +
-    `&semester=eq.${encodeURIComponent(academicTerm.semester)}` +
-    `&academic_year_id=eq.${academicYearId}`
+  const { error } = await supabase
+    .from('tbl_academic_term')
+    .delete()
+    .eq('term_name', academicTerm.academicTermName)
+    .eq('semester', academicTerm.semester)
+    .eq('academic_year_id', academicYearId)
 
-  const response = await fetch(`${url}/rest/v1/tbl_academic_term?${query}`, {
-    method: 'DELETE',
-    headers: getSupabaseClientHeaders(),
-  })
-
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
+  if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to delete academic term.'))
   }
 }

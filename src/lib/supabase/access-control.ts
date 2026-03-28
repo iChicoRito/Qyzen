@@ -1,4 +1,4 @@
-import { getSupabaseClientConfig, getSupabaseClientHeaders } from './client'
+import { createClient } from './client'
 
 export interface RoleRecord {
   roleName: string
@@ -51,8 +51,8 @@ interface SupabaseErrorResponse {
 }
 
 // getSupabaseErrorMessage - normalize api errors
-function getSupabaseErrorMessage(error: SupabaseErrorResponse, fallbackMessage: string) {
-  return error.message || fallbackMessage
+function getSupabaseErrorMessage(error: SupabaseErrorResponse | null, fallbackMessage: string) {
+  return error?.message || fallbackMessage
 }
 
 // mapRoleRow - convert db row to ui record
@@ -81,21 +81,18 @@ function mapPermissionRow(row: PermissionRow): PermissionRecord {
 
 // getRoleIdByName - resolve role id from role name
 async function getRoleIdByName(roleName: string) {
-  const { url } = getSupabaseClientConfig()
-  const response = await fetch(
-    `${url}/rest/v1/tbl_roles?select=id&name=eq.${encodeURIComponent(roleName)}&limit=1`,
-    {
-      headers: getSupabaseClientHeaders(),
-      cache: 'no-store',
-    }
-  )
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('tbl_roles')
+    .select('id')
+    .eq('name', roleName)
+    .limit(1)
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
+  if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to resolve role.'))
   }
 
-  const rows = (await response.json()) as Array<{ id: number }>
+  const rows = (data || []) as Array<{ id: number }>
 
   if (!rows[0]) {
     throw new Error('Selected role does not exist.')
@@ -110,59 +107,48 @@ async function getPermissionIdsByStrings(permissionStrings: string[]) {
     return [] as number[]
   }
 
-  const { url } = getSupabaseClientConfig()
-  const joinedPermissionStrings = permissionStrings
-    .map((permissionString) => `"${permissionString}"`)
-    .join(',')
-  const response = await fetch(
-    `${url}/rest/v1/tbl_permissions?select=id,permission_string&permission_string=in.(${joinedPermissionStrings})`,
-    {
-      headers: getSupabaseClientHeaders(),
-      cache: 'no-store',
-    }
-  )
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('tbl_permissions')
+    .select('id,permission_string')
+    .in('permission_string', permissionStrings)
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
+  if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to resolve permissions.'))
   }
 
-  const rows = (await response.json()) as Array<{ id: number; permission_string: string }>
-  return rows.map((row) => row.id)
+  return ((data || []) as Array<{ id: number }>).map((row) => row.id)
 }
 
 // fetchRoles - load roles
 export async function fetchRoles() {
-  const { url } = getSupabaseClientConfig()
-  const [rolesResponse, assignmentsResponse] = await Promise.all([
-    fetch(`${url}/rest/v1/tbl_roles?select=id,name,description,is_system,is_active&order=id.desc`, {
-      headers: getSupabaseClientHeaders(),
-      cache: 'no-store',
-    }),
-    fetch(`${url}/rest/v1/tbl_role_permissions?select=role_id`, {
-      headers: getSupabaseClientHeaders(),
-      cache: 'no-store',
-    }),
-  ])
+  const supabase = createClient()
+  const [{ data: roleRows, error: rolesError }, { data: assignmentRows, error: assignmentsError }] =
+    await Promise.all([
+      supabase
+        .from('tbl_roles')
+        .select('id,name,description,is_system,is_active')
+        .order('id', { ascending: false }),
+      supabase.from('tbl_role_permissions').select('role_id'),
+    ])
 
-  if (!rolesResponse.ok) {
-    const error = (await rolesResponse.json()) as SupabaseErrorResponse
-    throw new Error(getSupabaseErrorMessage(error, 'Failed to load roles.'))
+  if (rolesError) {
+    throw new Error(getSupabaseErrorMessage(rolesError, 'Failed to load roles.'))
   }
 
-  if (!assignmentsResponse.ok) {
-    const error = (await assignmentsResponse.json()) as SupabaseErrorResponse
-    throw new Error(getSupabaseErrorMessage(error, 'Failed to load role permissions.'))
+  if (assignmentsError) {
+    throw new Error(getSupabaseErrorMessage(assignmentsError, 'Failed to load role permissions.'))
   }
 
-  const rows = (await rolesResponse.json()) as RoleRow[]
-  const assignmentRows = (await assignmentsResponse.json()) as RoleAssignmentRow[]
-  const permissionCounts = assignmentRows.reduce<Record<number, number>>((counts, row) => {
-    counts[row.role_id] = (counts[row.role_id] || 0) + 1
-    return counts
-  }, {})
+  const permissionCounts = ((assignmentRows || []) as RoleAssignmentRow[]).reduce<Record<number, number>>(
+    (counts, row) => {
+      counts[row.role_id] = (counts[row.role_id] || 0) + 1
+      return counts
+    },
+    {}
+  )
 
-  return rows.map((row) => ({
+  return ((roleRows || []) as RoleRow[]).map((row) => ({
     ...mapRoleRow(row),
     permissionsCount: permissionCounts[row.id] || 0,
   }))
@@ -170,26 +156,19 @@ export async function fetchRoles() {
 
 // createRole - insert role row
 export async function createRole(role: RoleRecord) {
-  const { url } = getSupabaseClientConfig()
-  const response = await fetch(`${url}/rest/v1/tbl_roles`, {
-    method: 'POST',
-    headers: {
-      ...getSupabaseClientHeaders(),
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify([
-      {
-        name: role.roleName,
-        description: role.description,
-        is_system: role.isSystem,
-        is_active: role.status === 'active',
-      },
-    ]),
-  })
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('tbl_roles')
+    .insert({
+      name: role.roleName,
+      description: role.description,
+      is_system: role.isSystem,
+      is_active: role.status === 'active',
+    })
+    .select('id,name,description,is_system,is_active')
+    .single()
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
-
+  if (error) {
     if (error.code === '23505') {
       throw new Error('Role already exists.')
     }
@@ -197,42 +176,33 @@ export async function createRole(role: RoleRecord) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to create role.'))
   }
 
-  const rows = (await response.json()) as RoleRow[]
-  return mapRoleRow(rows[0])
+  return mapRoleRow(data as RoleRow)
 }
 
 // deleteRole - remove role row
 export async function deleteRole(role: RoleRecord) {
-  const { url } = getSupabaseClientConfig()
-  const response = await fetch(`${url}/rest/v1/tbl_roles?name=eq.${encodeURIComponent(role.roleName)}`, {
-    method: 'DELETE',
-    headers: getSupabaseClientHeaders(),
-  })
+  const supabase = createClient()
+  const { error } = await supabase.from('tbl_roles').delete().eq('name', role.roleName)
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
+  if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to delete role.'))
   }
 }
 
 // fetchPermissionsForRole - load permissions assigned to a role
 export async function fetchPermissionsForRole(roleName: string) {
-  const { url } = getSupabaseClientConfig()
+  const supabase = createClient()
   const roleId = await getRoleIdByName(roleName)
-  const query =
-    'select=permission:permission_id(id,name,description,resource,action,module,permission_string,is_active)'
-  const response = await fetch(`${url}/rest/v1/tbl_role_permissions?role_id=eq.${roleId}&${query}`, {
-    headers: getSupabaseClientHeaders(),
-    cache: 'no-store',
-  })
+  const { data, error } = await supabase
+    .from('tbl_role_permissions')
+    .select('permission:permission_id(id,name,description,resource,action,module,permission_string,is_active)')
+    .eq('role_id', roleId)
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
+  if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to load role permissions.'))
   }
 
-  const rows = (await response.json()) as RolePermissionRow[]
-  return rows
+  return ((data || []) as RolePermissionRow[])
     .map((row) => (Array.isArray(row.permission) ? row.permission[0] : row.permission))
     .filter((permission): permission is PermissionRow => Boolean(permission))
     .map(mapPermissionRow)
@@ -244,60 +214,48 @@ export async function updateRoleWithPermissions(
   role: RoleRecord,
   permissionStrings: string[]
 ) {
-  const { url } = getSupabaseClientConfig()
+  const supabase = createClient()
   const roleId = await getRoleIdByName(currentRoleName)
 
-  const updateRoleResponse = await fetch(`${url}/rest/v1/tbl_roles?id=eq.${roleId}`, {
-    method: 'PATCH',
-    headers: {
-      ...getSupabaseClientHeaders(),
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify({
+  const { error: updateError } = await supabase
+    .from('tbl_roles')
+    .update({
       name: role.roleName,
       description: role.description,
       is_system: role.isSystem,
       is_active: role.status === 'active',
-    }),
-  })
+    })
+    .eq('id', roleId)
 
-  if (!updateRoleResponse.ok) {
-    const error = (await updateRoleResponse.json()) as SupabaseErrorResponse
-
-    if (error.code === '23505') {
+  if (updateError) {
+    if (updateError.code === '23505') {
       throw new Error('Role already exists.')
     }
 
-    throw new Error(getSupabaseErrorMessage(error, 'Failed to update role.'))
+    throw new Error(getSupabaseErrorMessage(updateError, 'Failed to update role.'))
   }
 
-  const deleteAssignmentsResponse = await fetch(`${url}/rest/v1/tbl_role_permissions?role_id=eq.${roleId}`, {
-    method: 'DELETE',
-    headers: getSupabaseClientHeaders(),
-  })
+  const { error: deleteAssignmentsError } = await supabase
+    .from('tbl_role_permissions')
+    .delete()
+    .eq('role_id', roleId)
 
-  if (!deleteAssignmentsResponse.ok) {
-    const error = (await deleteAssignmentsResponse.json()) as SupabaseErrorResponse
-    throw new Error(getSupabaseErrorMessage(error, 'Failed to reset role permissions.'))
+  if (deleteAssignmentsError) {
+    throw new Error(getSupabaseErrorMessage(deleteAssignmentsError, 'Failed to reset role permissions.'))
   }
 
   const permissionIds = await getPermissionIdsByStrings(permissionStrings)
 
   if (permissionIds.length > 0) {
-    const insertAssignmentsResponse = await fetch(`${url}/rest/v1/tbl_role_permissions`, {
-      method: 'POST',
-      headers: getSupabaseClientHeaders(),
-      body: JSON.stringify(
-        permissionIds.map((permissionId) => ({
-          role_id: roleId,
-          permission_id: permissionId,
-        }))
-      ),
-    })
+    const { error: insertAssignmentsError } = await supabase.from('tbl_role_permissions').insert(
+      permissionIds.map((permissionId) => ({
+        role_id: roleId,
+        permission_id: permissionId,
+      }))
+    )
 
-    if (!insertAssignmentsResponse.ok) {
-      const error = (await insertAssignmentsResponse.json()) as SupabaseErrorResponse
-      throw new Error(getSupabaseErrorMessage(error, 'Failed to save role permissions.'))
+    if (insertAssignmentsError) {
+      throw new Error(getSupabaseErrorMessage(insertAssignmentsError, 'Failed to save role permissions.'))
     }
   }
 
@@ -306,34 +264,25 @@ export async function updateRoleWithPermissions(
 
 // fetchPermissions - load permissions
 export async function fetchPermissions() {
-  const { url } = getSupabaseClientConfig()
-  const response = await fetch(
-    `${url}/rest/v1/tbl_permissions?select=id,name,description,resource,action,module,permission_string,is_active&order=id.desc`,
-    {
-      headers: getSupabaseClientHeaders(),
-      cache: 'no-store',
-    }
-  )
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('tbl_permissions')
+    .select('id,name,description,resource,action,module,permission_string,is_active')
+    .order('id', { ascending: false })
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
+  if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to load permissions.'))
   }
 
-  const rows = (await response.json()) as PermissionRow[]
-  return rows.map(mapPermissionRow)
+  return ((data || []) as PermissionRow[]).map(mapPermissionRow)
 }
 
 // createPermissions - insert permission rows
 export async function createPermissions(permissions: PermissionRecord[]) {
-  const { url } = getSupabaseClientConfig()
-  const response = await fetch(`${url}/rest/v1/tbl_permissions`, {
-    method: 'POST',
-    headers: {
-      ...getSupabaseClientHeaders(),
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify(
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('tbl_permissions')
+    .insert(
       permissions.map((permission) => ({
         name: permission.permissionName,
         description: permission.description,
@@ -342,12 +291,10 @@ export async function createPermissions(permissions: PermissionRecord[]) {
         module: permission.module,
         is_active: permission.status === 'active',
       }))
-    ),
-  })
+    )
+    .select('id,name,description,resource,action,module,permission_string,is_active')
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
-
+  if (error) {
     if (error.code === '23505') {
       throw new Error('One of the permission strings already exists.')
     }
@@ -355,23 +302,18 @@ export async function createPermissions(permissions: PermissionRecord[]) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to create permissions.'))
   }
 
-  const rows = (await response.json()) as PermissionRow[]
-  return rows.map(mapPermissionRow)
+  return ((data || []) as PermissionRow[]).map(mapPermissionRow)
 }
 
 // deletePermission - remove permission row
 export async function deletePermission(permission: PermissionRecord) {
-  const { url } = getSupabaseClientConfig()
-  const response = await fetch(
-    `${url}/rest/v1/tbl_permissions?permission_string=eq.${encodeURIComponent(permission.permissionString)}`,
-    {
-      method: 'DELETE',
-      headers: getSupabaseClientHeaders(),
-    }
-  )
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('tbl_permissions')
+    .delete()
+    .eq('permission_string', permission.permissionString)
 
-  if (!response.ok) {
-    const error = (await response.json()) as SupabaseErrorResponse
+  if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to delete permission.'))
   }
 }

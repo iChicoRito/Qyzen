@@ -82,8 +82,8 @@ export function LoginForm1({ className, ...props }: React.ComponentProps<'div'>)
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Welcome back</CardTitle>
-          <CardDescription>Enter your email below to login to your account</CardDescription>
+          <CardTitle className="text-xl">Account Login</CardTitle>
+          <CardDescription>Please login in your email address.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -139,17 +139,13 @@ export function LoginForm1({ className, ...props }: React.ComponentProps<'div'>)
                     <IconBrandGoogleFilled size={18} />
                     Sign in with Google
                   </Button>
-                  <Button variant="outline" className="w-full cursor-pointer" type="button">
-                    <IconBrandGithubFilled size={18} />
-                    Sign in with GitHub
-                  </Button>
                 </div>
-                <div className="text-center text-sm">
+                {/* <div className="text-center text-sm">
                   Don&apos;t have an account?{' '}
                   <Link href="/auth/sign-up" className="underline underline-offset-4">
                     Sign up
                   </Link>
-                </div>
+                </div> */}
               </div>
             </form>
           </Form>
