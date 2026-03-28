@@ -132,16 +132,6 @@ function getNavigationGroupsByRole(role: AppRole): SidebarNavGroup[] {
             url: '/educator/dashboard',
             icon: IconLayoutDashboard,
           },
-          {
-            title: 'Classes',
-            url: '/educator/dashboard',
-            icon: IconBook2,
-          },
-          {
-            title: 'Students',
-            url: '/educator/dashboard',
-            icon: IconUser,
-          },
         ],
       },
       {

@@ -1,9 +1,11 @@
-"use client"
+'use client'
 
-import type { Row } from "@tanstack/react-table"
-import { MoreHorizontal } from "lucide-react"
+import { useState } from 'react'
+import type { Row } from '@tanstack/react-table'
+import { IconDotsVertical } from '@tabler/icons-react'
+import { toast } from 'sonner'
 
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,42 +13,89 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from '@/components/ui/dropdown-menu'
+import { deleteSubject, updateSubject, type SubjectRecord } from '@/lib/supabase/subjects'
 
-import { taskSchema } from "../data/schema"
+import { subjectSchema } from '../data/schema'
+import { EditSubjectModal } from './edit-subject-modal'
+import { ViewSubjectModal } from './view-subject-modal'
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
+  onSubjectUpdated?: (previousRowIds: number[], subject: SubjectRecord) => void
+  onSubjectDeleted?: (rowIds: number[]) => void
 }
 
+// DataTableRowActions - render row action menu
 export function DataTableRowActions<TData>({
   row,
+  onSubjectUpdated,
+  onSubjectDeleted,
 }: DataTableRowActionsProps<TData>) {
-  const task = taskSchema.parse(row.original)
+  // ==================== DATA ====================
+  const subject = subjectSchema.parse(row.original)
+  const [isViewOpen, setIsViewOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
 
+  // handleDelete - delete current subject
+  const handleDelete = async () => {
+    const isConfirmed = window.confirm(`Delete subject "${subject.subjectName}"?`)
+
+    if (!isConfirmed) {
+      return
+    }
+
+    try {
+      await deleteSubject(subject.rowIds)
+      onSubjectDeleted?.(subject.rowIds)
+      toast.success('Subject deleted successfully.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete subject.')
+    }
+  }
+
+  // ==================== RENDER ====================
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="flex h-8 w-8 p-0 data-[state=open]:bg-muted cursor-pointer"
-        >
-          <MoreHorizontal />
-          <span className="sr-only">Open menu</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[160px]">
-        <DropdownMenuItem className="cursor-pointer">View Task</DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer">Edit Task</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer">Duplicate</DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer">Mark as Favorite</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer" variant="destructive">
-          Delete
-          <DropdownMenuShortcut className="text-destructive">⌘⌫</DropdownMenuShortcut>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            className="flex h-8 w-8 cursor-pointer p-0 data-[state=open]:bg-muted"
+          >
+            <IconDotsVertical size={18} />
+            <span className="sr-only">Open menu</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-[160px]">
+          <DropdownMenuItem className="cursor-pointer" onSelect={() => setIsViewOpen(true)}>
+            View Subject
+          </DropdownMenuItem>
+          <DropdownMenuItem className="cursor-pointer" onSelect={() => setIsEditOpen(true)}>
+            Edit Subject
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="cursor-pointer" variant="destructive" onSelect={handleDelete}>
+            Delete
+            <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <ViewSubjectModal
+        subject={subject}
+        trigger={null}
+        open={isViewOpen}
+        onOpenChange={setIsViewOpen}
+      />
+      <EditSubjectModal
+        subject={subject}
+        onUpdateSubject={updateSubject}
+        onSubjectUpdated={onSubjectUpdated}
+        trigger={null}
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+      />
+    </>
   )
 }

@@ -1,100 +1,166 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
-import { z } from "zod"
-import { ArrowUp, BarChart3, CheckCircle2, Clock, ListTodo } from "lucide-react"
+import { useEffect, useState } from 'react'
+import {
+  IconArrowUp,
+  IconBook2,
+  IconChecklist,
+  IconFolders,
+  IconUsersGroup,
+} from '@tabler/icons-react'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { columns } from "./components/columns"
-import { DataTable } from "./components/data-table"
-import { taskSchema, type Task } from "./data/schema"
-import tasksData from "./data/tasks.json"
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  createSubject,
+  fetchSubjects,
+  type SubjectCreateInput,
+  type SubjectRecord,
+} from '@/lib/supabase/subjects'
 
-// Use static import for tasks data (works in both Vite and Next.js)
-async function getTasks() {
-  return z.array(taskSchema).parse(tasksData)
-}
+import { getColumns } from './components/columns'
+import { DataTable } from './components/data-table'
+import { subjectSchema, type Subject } from './data/schema'
 
-export default function TaskPage() {
-  const [tasks, setTasks] = useState<z.infer<typeof taskSchema>[]>([])
+// SubjectsPage - manage educator subjects
+export default function SubjectsPage() {
+  // ==================== STATE ====================
+  const [subjects, setSubjects] = useState<Subject[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        const taskList = await getTasks()
-        setTasks(taskList)
-      } catch (error) {
-        console.error("Failed to load tasks:", error)
-      } finally {
-        setLoading(false)
-      }
+  // ==================== LOAD DATA ====================
+  const loadSubjects = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const subjectList = await fetchSubjects()
+      setSubjects(subjectSchema.array().parse(subjectList))
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Failed to load subjects.')
+    } finally {
+      setLoading(false)
     }
-
-    loadTasks()
-  }, [])
-
-  const handleAddTask = (newTask: Task) => {
-    setTasks(prev => [newTask, ...prev])
   }
 
-  // Calculate statistics
+  useEffect(() => {
+    loadSubjects()
+  }, [])
+
+  // handleAddSubject - create a new subject
+  const handleAddSubject = async (newSubject: SubjectCreateInput) => {
+    const createdSubject = await createSubject(newSubject)
+    setSubjects((prev) => [subjectSchema.parse(createdSubject), ...prev])
+  }
+
+  // handleUpdateSubject - update existing subject
+  const handleUpdateSubject = async (previousRowIds: number[], updatedSubject: SubjectRecord) => {
+    setSubjects((prev) =>
+      prev.map((subject) =>
+        subject.rowIds.some((rowId) => previousRowIds.includes(rowId))
+          ? subjectSchema.parse(updatedSubject)
+          : subject
+      )
+    )
+  }
+
+  // handleDeleteSubject - remove deleted subject
+  const handleDeleteSubject = (rowIds: number[]) => {
+    setSubjects((prev) =>
+      prev.filter((subject) => !subject.rowIds.some((rowId) => rowIds.includes(rowId)))
+    )
+  }
+
+  // ==================== STATS ====================
   const stats = {
-    total: tasks.length,
-    completed: tasks.filter(t => t.status === "completed").length,
-    inProgress: tasks.filter(t => t.status === "in progress").length,
-    pending: tasks.filter(t => t.status === "pending").length,
+    total: subjects.length,
+    active: subjects.filter((subject) => subject.status === 'active').length,
+    inactive: subjects.filter((subject) => subject.status === 'inactive').length,
+    sectionLinks: subjects.reduce((total, subject) => total + subject.sections.length, 0),
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-muted-foreground">Loading tasks...</div>
+      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Card key={index}>
+              <CardContent>
+                <Skeleton className="h-20 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-72" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Subject Management</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button type="button" variant="outline" className="cursor-pointer" onClick={loadSubjects}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
     <>
-      {/* Page Header */}
       <div className="flex flex-col gap-2 px-4 md:px-6">
-        <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Subjects</h1>
         <p className="text-muted-foreground">
-          A powerful task and issue tracker built with Tanstack Table.
+          Create and manage your subject assignments across multiple classroom sections.
         </p>
       </div>
 
-      {/* Mobile view placeholder - shows message instead of images */}
-      <div className="md:hidden px-4 md:px-6">
-        <div className="flex items-center justify-center h-96 border rounded-lg bg-muted/20">
-          <div className="text-center p-8">
-            <h3 className="text-lg font-semibold mb-2">Tasks Dashboard</h3>
+      <div className="px-4 md:hidden md:px-6">
+        <div className="flex h-96 items-center justify-center rounded-lg border bg-muted/20">
+          <div className="p-8 text-center">
+            <h3 className="mb-2 text-lg font-semibold">Subject Management</h3>
             <p className="text-muted-foreground">
-              Please use a larger screen to view the full tasks interface.
+              Please use a larger screen to view the full subject management interface.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Desktop view */}
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:px-6 md:flex">
-        {/* Stats Cards */}
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <Card>
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground text-sm font-medium">Total Tasks</p>
+                  <p className="text-sm font-medium text-muted-foreground">Total Subjects</p>
                   <div className="mt-1 flex items-baseline gap-2">
                     <span className="text-2xl font-bold">{stats.total}</span>
                     <span className="flex items-center gap-0.5 text-sm text-green-500">
-                      <ArrowUp className="size-3.5" />
-                      {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
+                      <IconArrowUp size={14} />
+                      {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}%
                     </span>
                   </div>
                 </div>
-                <div className="bg-secondary rounded-lg p-3">
-                  <ListTodo className="size-6" />
+                <div className="rounded-lg bg-secondary p-3">
+                  <IconBook2 size={24} />
                 </div>
               </div>
             </CardContent>
@@ -104,17 +170,17 @@ export default function TaskPage() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground text-sm font-medium">Completed</p>
+                  <p className="text-sm font-medium text-muted-foreground">Active Subjects</p>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">{stats.completed}</span>
+                    <span className="text-2xl font-bold">{stats.active}</span>
                     <span className="flex items-center gap-0.5 text-sm text-green-500">
-                      <ArrowUp className="size-3.5" />
-                      {Math.round((stats.completed / stats.total) * 100)}%
+                      <IconArrowUp size={14} />
+                      {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}%
                     </span>
                   </div>
                 </div>
-                <div className="bg-secondary rounded-lg p-3">
-                  <CheckCircle2 className="size-6" />
+                <div className="rounded-lg bg-secondary p-3">
+                  <IconUsersGroup size={24} />
                 </div>
               </div>
             </CardContent>
@@ -124,17 +190,17 @@ export default function TaskPage() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground text-sm font-medium">In Progress</p>
+                  <p className="text-sm font-medium text-muted-foreground">Inactive Subjects</p>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">{stats.inProgress}</span>
-                    <span className="flex items-center gap-0.5 text-sm text-green-500">
-                      <ArrowUp className="size-3.5" />
-                      {Math.round((stats.inProgress / stats.total) * 100)}%
+                    <span className="text-2xl font-bold">{stats.inactive}</span>
+                    <span className="flex items-center gap-0.5 text-sm text-yellow-500">
+                      <IconChecklist size={14} />
+                      {stats.total > 0 ? Math.round((stats.inactive / stats.total) * 100) : 0}%
                     </span>
                   </div>
                 </div>
-                <div className="bg-secondary rounded-lg p-3">
-                  <Clock className="size-6" />
+                <div className="rounded-lg bg-secondary p-3">
+                  <IconChecklist size={24} />
                 </div>
               </div>
             </CardContent>
@@ -144,33 +210,36 @@ export default function TaskPage() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground text-sm font-medium">Pending</p>
+                  <p className="text-sm font-medium text-muted-foreground">Section Links</p>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">{stats.pending}</span>
-                    <span className="flex items-center gap-0.5 text-sm text-orange-500">
-                      <ArrowUp className="size-3.5" />
-                      {Math.round((stats.pending / stats.total) * 100)}%
+                    <span className="text-2xl font-bold">{stats.sectionLinks}</span>
+                    <span className="flex items-center gap-0.5 text-sm text-blue-500">
+                      <IconFolders size={14} />
+                      Assigned
                     </span>
                   </div>
                 </div>
-                <div className="bg-secondary rounded-lg p-3">
-                  <BarChart3 className="size-6" />
+                <div className="rounded-lg bg-secondary p-3">
+                  <IconFolders size={24} />
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Data Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Task Management</CardTitle>
+            <CardTitle>Subject Management</CardTitle>
             <CardDescription>
-              View, filter, and manage all your project tasks in one place
+              View, filter, and manage your educator-owned subject records in one place.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <DataTable data={tasks} columns={columns} onAddTask={handleAddTask} />
+            <DataTable
+              data={subjects}
+              columns={getColumns({ onUpdateSubject: handleUpdateSubject, onDeleteSubject: handleDeleteSubject })}
+              onAddSubject={handleAddSubject}
+            />
           </CardContent>
         </Card>
       </div>

@@ -1,13 +1,20 @@
-import { z } from "zod"
+import { z } from 'zod'
 
-// We're keeping a simple non-relational schema here.
-// IRL, you will have a schema for your data models.
-export const taskSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  status: z.string(),
-  category: z.string(),
-  priority: z.string(),
+// academicTermSchema - validate section academic term values
+export const academicTermSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  semester: z.string(),
+  label: z.string(),
 })
 
-export type Task = z.infer<typeof taskSchema>
+// sectionSchema - validate section table values
+export const sectionSchema = z.object({
+  id: z.number(),
+  sectionName: z.string(),
+  status: z.enum(['active', 'inactive']),
+  academicTerms: z.array(academicTermSchema),
+})
+
+export type Section = z.infer<typeof sectionSchema>
+export type SectionAcademicTerm = z.infer<typeof academicTermSchema>

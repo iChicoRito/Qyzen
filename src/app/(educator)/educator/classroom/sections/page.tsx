@@ -1,100 +1,160 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
-import { z } from "zod"
-import { ArrowUp, BarChart3, CheckCircle2, Clock, ListTodo } from "lucide-react"
+import { useEffect, useState } from 'react'
+import {
+  IconArrowUp,
+  IconBooks,
+  IconChecklist,
+  IconSchool,
+  IconUsersGroup,
+} from '@tabler/icons-react'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { columns } from "./components/columns"
-import { DataTable } from "./components/data-table"
-import { taskSchema, type Task } from "./data/schema"
-import tasksData from "./data/tasks.json"
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  createSection,
+  fetchSections,
+  type SectionCreateInput,
+  type SectionRecord,
+} from '@/lib/supabase/sections'
 
-// Use static import for tasks data (works in both Vite and Next.js)
-async function getTasks() {
-  return z.array(taskSchema).parse(tasksData)
-}
+import { getColumns } from './components/columns'
+import { DataTable } from './components/data-table'
+import { sectionSchema, type Section } from './data/schema'
 
-export default function TaskPage() {
-  const [tasks, setTasks] = useState<z.infer<typeof taskSchema>[]>([])
+// SectionsPage - manage educator sections
+export default function SectionsPage() {
+  // ==================== STATE ====================
+  const [sections, setSections] = useState<Section[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        const taskList = await getTasks()
-        setTasks(taskList)
-      } catch (error) {
-        console.error("Failed to load tasks:", error)
-      } finally {
-        setLoading(false)
-      }
+  // ==================== LOAD DATA ====================
+  const loadSections = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const sectionList = await fetchSections()
+      setSections(sectionSchema.array().parse(sectionList))
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Failed to load sections.')
+    } finally {
+      setLoading(false)
     }
-
-    loadTasks()
-  }, [])
-
-  const handleAddTask = (newTask: Task) => {
-    setTasks(prev => [newTask, ...prev])
   }
 
-  // Calculate statistics
+  useEffect(() => {
+    loadSections()
+  }, [])
+
+  // handleAddSection - create a new section
+  const handleAddSection = async (newSection: SectionCreateInput) => {
+    const createdSection = await createSection(newSection)
+    setSections((prev) => [sectionSchema.parse(createdSection), ...prev])
+  }
+
+  // handleUpdateSection - update existing section
+  const handleUpdateSection = async (updatedSection: SectionRecord) => {
+    setSections((prev) =>
+      prev.map((section) => (section.id === updatedSection.id ? sectionSchema.parse(updatedSection) : section))
+    )
+  }
+
+  // handleDeleteSection - remove deleted section
+  const handleDeleteSection = (sectionId: number) => {
+    setSections((prev) => prev.filter((section) => section.id !== sectionId))
+  }
+
+  // ==================== STATS ====================
   const stats = {
-    total: tasks.length,
-    completed: tasks.filter(t => t.status === "completed").length,
-    inProgress: tasks.filter(t => t.status === "in progress").length,
-    pending: tasks.filter(t => t.status === "pending").length,
+    total: sections.length,
+    active: sections.filter((section) => section.status === 'active').length,
+    inactive: sections.filter((section) => section.status === 'inactive').length,
+    termLinks: sections.reduce((total, section) => total + section.academicTerms.length, 0),
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-muted-foreground">Loading tasks...</div>
+      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Card key={index}>
+              <CardContent>
+                <Skeleton className="h-20 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-72" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Section Management</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button type="button" variant="outline" className="cursor-pointer" onClick={loadSections}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
     <>
-      {/* Page Header */}
       <div className="flex flex-col gap-2 px-4 md:px-6">
-        <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Sections</h1>
         <p className="text-muted-foreground">
-          A powerful task and issue tracker built with Tanstack Table.
+          Create and manage your classroom sections across multiple academic terms.
         </p>
       </div>
 
-      {/* Mobile view placeholder - shows message instead of images */}
-      <div className="md:hidden px-4 md:px-6">
-        <div className="flex items-center justify-center h-96 border rounded-lg bg-muted/20">
-          <div className="text-center p-8">
-            <h3 className="text-lg font-semibold mb-2">Tasks Dashboard</h3>
+      <div className="px-4 md:hidden md:px-6">
+        <div className="flex h-96 items-center justify-center rounded-lg border bg-muted/20">
+          <div className="p-8 text-center">
+            <h3 className="mb-2 text-lg font-semibold">Section Management</h3>
             <p className="text-muted-foreground">
-              Please use a larger screen to view the full tasks interface.
+              Please use a larger screen to view the full section management interface.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Desktop view */}
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:px-6 md:flex">
-        {/* Stats Cards */}
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <Card>
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground text-sm font-medium">Total Tasks</p>
+                  <p className="text-sm font-medium text-muted-foreground">Total Sections</p>
                   <div className="mt-1 flex items-baseline gap-2">
                     <span className="text-2xl font-bold">{stats.total}</span>
                     <span className="flex items-center gap-0.5 text-sm text-green-500">
-                      <ArrowUp className="size-3.5" />
-                      {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
+                      <IconArrowUp size={14} />
+                      {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}%
                     </span>
                   </div>
                 </div>
-                <div className="bg-secondary rounded-lg p-3">
-                  <ListTodo className="size-6" />
+                <div className="rounded-lg bg-secondary p-3">
+                  <IconSchool size={24} />
                 </div>
               </div>
             </CardContent>
@@ -104,17 +164,17 @@ export default function TaskPage() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground text-sm font-medium">Completed</p>
+                  <p className="text-sm font-medium text-muted-foreground">Active Sections</p>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">{stats.completed}</span>
+                    <span className="text-2xl font-bold">{stats.active}</span>
                     <span className="flex items-center gap-0.5 text-sm text-green-500">
-                      <ArrowUp className="size-3.5" />
-                      {Math.round((stats.completed / stats.total) * 100)}%
+                      <IconArrowUp size={14} />
+                      {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}%
                     </span>
                   </div>
                 </div>
-                <div className="bg-secondary rounded-lg p-3">
-                  <CheckCircle2 className="size-6" />
+                <div className="rounded-lg bg-secondary p-3">
+                  <IconUsersGroup size={24} />
                 </div>
               </div>
             </CardContent>
@@ -124,17 +184,17 @@ export default function TaskPage() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground text-sm font-medium">In Progress</p>
+                  <p className="text-sm font-medium text-muted-foreground">Inactive Sections</p>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">{stats.inProgress}</span>
-                    <span className="flex items-center gap-0.5 text-sm text-green-500">
-                      <ArrowUp className="size-3.5" />
-                      {Math.round((stats.inProgress / stats.total) * 100)}%
+                    <span className="text-2xl font-bold">{stats.inactive}</span>
+                    <span className="flex items-center gap-0.5 text-sm text-yellow-500">
+                      <IconChecklist size={14} />
+                      {stats.total > 0 ? Math.round((stats.inactive / stats.total) * 100) : 0}%
                     </span>
                   </div>
                 </div>
-                <div className="bg-secondary rounded-lg p-3">
-                  <Clock className="size-6" />
+                <div className="rounded-lg bg-secondary p-3">
+                  <IconChecklist size={24} />
                 </div>
               </div>
             </CardContent>
@@ -144,33 +204,36 @@ export default function TaskPage() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground text-sm font-medium">Pending</p>
+                  <p className="text-sm font-medium text-muted-foreground">Term Links</p>
                   <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">{stats.pending}</span>
-                    <span className="flex items-center gap-0.5 text-sm text-orange-500">
-                      <ArrowUp className="size-3.5" />
-                      {Math.round((stats.pending / stats.total) * 100)}%
+                    <span className="text-2xl font-bold">{stats.termLinks}</span>
+                    <span className="flex items-center gap-0.5 text-sm text-blue-500">
+                      <IconBooks size={14} />
+                      Assigned
                     </span>
                   </div>
                 </div>
-                <div className="bg-secondary rounded-lg p-3">
-                  <BarChart3 className="size-6" />
+                <div className="rounded-lg bg-secondary p-3">
+                  <IconBooks size={24} />
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Data Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Task Management</CardTitle>
+            <CardTitle>Section Management</CardTitle>
             <CardDescription>
-              View, filter, and manage all your project tasks in one place
+              View, filter, and manage your educator-owned section records in one place.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <DataTable data={tasks} columns={columns} onAddTask={handleAddTask} />
+            <DataTable
+              data={sections}
+              columns={getColumns({ onUpdateSection: handleUpdateSection, onDeleteSection: handleDeleteSection })}
+              onAddSection={handleAddSection}
+            />
           </CardContent>
         </Card>
       </div>

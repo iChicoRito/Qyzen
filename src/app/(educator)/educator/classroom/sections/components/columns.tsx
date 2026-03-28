@@ -1,160 +1,90 @@
-"use client"
+'use client'
 
-import type { ColumnDef } from "@tanstack/react-table"
+import type { ColumnDef } from '@tanstack/react-table'
 
-import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
-import { cn } from "@/lib/utils"
+import { Badge } from '@/components/ui/badge'
+import { type SectionRecord } from '@/lib/supabase/sections'
 
-import { categories, priorities, statuses } from "../data/data"
-import type { Task } from "../data/schema"
-import { DataTableColumnHeader } from "./data-table-column-header"
-import { DataTableRowActions } from "./data-table-row-actions"
+import type { Section } from '../data/schema'
+import { DataTableColumnHeader } from './data-table-column-header'
+import { DataTableRowActions } from './data-table-row-actions'
 
-export const columns: ColumnDef<Task>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-        className="translate-y-[2px] cursor-pointer"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-        className="translate-y-[2px] cursor-pointer"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "id",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Task" />
-    ),
-    cell: ({ row }) => (
-      <div className="w-[90px] font-medium">{row.getValue("id")}</div>
-    ),
-    enableHiding: false,
-  },
-  {
-    accessorKey: "title",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Title" />
-    ),
-    cell: ({ row }) => {
-      return (
-        <div className="flex space-x-2">
-          <span className="max-w-[500px] truncate font-medium">
-            {row.getValue("title")}
-          </span>
-        </div>
-      )
+interface ColumnsProps {
+  onUpdateSection?: (section: SectionRecord) => void
+  onDeleteSection?: (sectionId: number) => void
+}
+
+// getStatusClassName - build badge color by status
+function getStatusClassName(status: 'active' | 'inactive') {
+  if (status === 'active') {
+    return 'rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500'
+  }
+
+  return 'rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500'
+}
+
+// getColumns - build section table columns
+export function getColumns({ onUpdateSection, onDeleteSection }: ColumnsProps): ColumnDef<Section>[] {
+  return [
+    {
+      accessorKey: 'id',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
+      cell: ({ row }) => <div className="w-[70px] font-medium">{row.getValue('id')}</div>,
     },
-  },
-  {
-    accessorKey: "category",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Category" />
-    ),
-    cell: ({ row }) => {
-      const category = categories.find(
-        (cat) => cat.value === row.getValue("category")
-      )
+    {
+      accessorKey: 'sectionName',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Section Name" />,
+      cell: ({ row }) => (
+        <div className="max-w-[220px] truncate font-medium">{row.getValue('sectionName')}</div>
+      ),
+    },
+    {
+      id: 'academicTerms',
+      accessorFn: (row) => row.academicTerms.map((academicTerm) => academicTerm.label).join(', '),
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Academic Terms" />,
+      cell: ({ row }) => (
+        <div className="flex max-w-[320px] flex-wrap gap-2">
+          {row.original.academicTerms.map((academicTerm) => (
+            <Badge
+              key={academicTerm.id}
+              variant="outline"
+              className="rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500"
+            >
+              {academicTerm.label}
+            </Badge>
+          ))}
+        </div>
+      ),
+      filterFn: (row, id, value) => {
+        const rowValue = String(row.getValue(id)).toLowerCase()
+        return rowValue.includes(String(value).toLowerCase())
+      },
+    },
+    {
+      accessorKey: 'status',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+      cell: ({ row }) => {
+        const status = row.getValue('status') as 'active' | 'inactive'
 
-      if (!category) {
-        return null
-      }
-
-      return (
-        <div className="flex w-[120px] items-center">
-          <Badge variant="outline">
-            {category.label}
+        return (
+          <Badge variant="outline" className={getStatusClassName(status)}>
+            {status === 'active' ? 'Active' : 'Inactive'}
           </Badge>
-        </div>
-      )
+        )
+      },
+      filterFn: (row, id, value) => {
+        return value.includes(row.getValue(id))
+      },
     },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
+    {
+      id: 'actions',
+      cell: ({ row }) => (
+        <DataTableRowActions
+          row={row}
+          onSectionUpdated={onUpdateSection}
+          onSectionDeleted={onDeleteSection}
+        />
+      ),
     },
-  },
-  {
-    accessorKey: "status",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Status" />
-    ),
-    cell: ({ row }) => {
-      const status = statuses.find(
-        (status) => status.value === row.getValue("status")
-      )
-
-      if (!status) {
-        return null
-      }
-
-      return (
-        <div className="flex w-[130px] items-center">
-          {status.icon && (
-            <status.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-          )}
-          <span className="text-sm">{status.label}</span>
-        </div>
-      )
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
-    },
-  },
-  {
-    accessorKey: "priority",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Priority" />
-    ),
-    cell: ({ row }) => {
-      const priority = priorities.find(
-        (priority) => priority.value === row.getValue("priority")
-      )
-
-      if (!priority) {
-        return null
-      }
-
-      const priorityColors = {
-        critical: "border-red-700 text-red-700 dark:text-red-400",
-        important: "border-orange-500 text-orange-700 dark:text-orange-400",
-        normal: "border-blue-500 text-blue-700 dark:text-blue-400",
-        minor: "border-gray-500 text-gray-700 dark:text-gray-400",
-      }
-
-      return (
-        <div className="flex items-center">
-          <Badge
-            variant="outline"
-            className={cn(
-              "pl-2",
-              priorityColors[priority.value as keyof typeof priorityColors]
-            )}
-          >
-            <span className="text-sm">{priority.label}</span>
-          </Badge>
-        </div>
-      )
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id))
-    },
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => <DataTableRowActions row={row} />,
-  },
-]
+  ]
+}
