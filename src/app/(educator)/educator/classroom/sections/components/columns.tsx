@@ -3,6 +3,7 @@
 import type { ColumnDef } from '@tanstack/react-table'
 
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { type SectionRecord } from '@/lib/supabase/sections'
 
 import type { Section } from '../data/schema'
@@ -27,9 +28,27 @@ function getStatusClassName(status: 'active' | 'inactive') {
 export function getColumns({ onUpdateSection, onDeleteSection }: ColumnsProps): ColumnDef<Section>[] {
   return [
     {
-      accessorKey: 'id',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
-      cell: ({ row }) => <div className="w-[70px] font-medium">{row.getValue('id')}</div>,
+      id: 'select',
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+          className="translate-y-[2px] cursor-pointer"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+          className="translate-y-[2px] cursor-pointer"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
     },
     {
       accessorKey: 'sectionName',

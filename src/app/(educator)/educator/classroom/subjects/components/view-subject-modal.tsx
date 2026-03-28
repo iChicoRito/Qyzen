@@ -56,7 +56,7 @@ export function ViewSubjectModal({
           )}
         </DialogTrigger>
       ) : null}
-      <DialogContent className="border-0 bg-transparent p-0 shadow-none sm:max-w-[336px]">
+      <DialogContent className="border-0 bg-transparent p-0 shadow-none sm:max-w-[500px]">
         <DialogHeader className="sr-only">
           <DialogTitle>{subject.subjectName}</DialogTitle>
           <DialogDescription>Subject information and assigned sections.</DialogDescription>

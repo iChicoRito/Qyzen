@@ -46,7 +46,7 @@ export function ViewPermissionsModal({ permission, trigger }: ViewPermissionsMod
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="border-0 bg-transparent p-0 shadow-none sm:max-w-[336px]">
+      <DialogContent className="border-0 bg-transparent p-0 shadow-none sm:max-w-[500px]">
         <DialogHeader className="sr-only">
           <DialogTitle>{permission.permissionName}</DialogTitle>
           <DialogDescription>
