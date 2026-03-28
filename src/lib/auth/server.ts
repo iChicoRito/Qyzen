@@ -37,7 +37,7 @@ export async function requireServerAuthContext(expectedRole?: AppRole) {
     redirect('/auth/sign-in')
   }
 
-  if (expectedRole && context.role !== expectedRole) {
+  if (expectedRole && !context.roles.includes(expectedRole)) {
     redirect(context.dashboardPath)
   }
 

@@ -9,6 +9,7 @@ import {
   IconSchool,
   IconShieldCheck,
   IconUser,
+  IconChalkboardTeacher
 } from '@tabler/icons-react'
 import Link from 'next/link'
 
@@ -27,14 +28,34 @@ import { type AppRole } from '@/lib/auth/auth-context'
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   role?: AppRole
+  roles?: AppRole[]
   user?: {
     name: string
     email: string
   }
 }
 
-// getNavigationGroups - build sidebar items by role
-function getNavigationGroups(role: AppRole) {
+interface SidebarNavItem {
+  title: string
+  url: string
+  icon?: React.ComponentType<{
+    className?: string
+    size?: number | string
+    stroke?: number | string
+  }>
+  items?: Array<{
+    title: string
+    url: string
+  }>
+}
+
+interface SidebarNavGroup {
+  label: string
+  items: SidebarNavItem[]
+}
+
+// getNavigationGroupsByRole - build sidebar items by role
+function getNavigationGroupsByRole(role: AppRole): SidebarNavGroup[] {
   if (role === 'admin') {
     return [
       {
@@ -123,6 +144,26 @@ function getNavigationGroups(role: AppRole) {
           },
         ],
       },
+      {
+        label: 'Management',
+        items: [
+          {
+            title: 'Classroom',
+            url: '#',
+            icon: IconChalkboardTeacher,
+            items: [
+              {
+                title: 'Subjects',
+                url: '/educator/',
+              },
+              {
+                title: 'Sections',
+                url: '/educator/',
+              },
+            ],
+          },
+        ],
+      },
     ]
   }
 
@@ -150,13 +191,65 @@ function getNavigationGroups(role: AppRole) {
   ]
 }
 
+// mergeNavigationGroups - combine nav groups from multiple roles
+function mergeNavigationGroups(roles: AppRole[]) {
+  const groupMap = new Map<string, SidebarNavGroup>()
+
+  roles.forEach((role) => {
+    getNavigationGroupsByRole(role).forEach((group) => {
+      const existingGroup = groupMap.get(group.label)
+
+      if (!existingGroup) {
+        groupMap.set(group.label, {
+          label: group.label,
+          items: group.items.map((item) => ({
+            ...item,
+            items: item.items ? [...item.items] : undefined,
+          })),
+        })
+        return
+      }
+
+      group.items.forEach((item) => {
+        const existingItem = existingGroup.items.find(
+          (existingNavItem) => existingNavItem.title === item.title
+        )
+
+        if (!existingItem) {
+          existingGroup.items.push({
+            ...item,
+            items: item.items ? [...item.items] : undefined,
+          })
+          return
+        }
+
+        if (item.items?.length) {
+          const existingSubItems = existingItem.items || []
+          item.items.forEach((subItem) => {
+            if (!existingSubItems.some((existingSubItem) => existingSubItem.url === subItem.url)) {
+              existingSubItems.push(subItem)
+            }
+          })
+          existingItem.items = existingSubItems
+        }
+      })
+    })
+  })
+
+  return Array.from(groupMap.values())
+}
+
 // getSidebarSubtitle - build sidebar subtitle by role
-function getSidebarSubtitle(role: AppRole) {
-  if (role === 'admin') {
+function getSidebarSubtitle(roles: AppRole[]) {
+  if (roles.length > 1) {
+    return 'Multi-Role Access'
+  }
+
+  if (roles[0] === 'admin') {
     return 'Admin Dashboard'
   }
 
-  if (role === 'educator') {
+  if (roles[0] === 'educator') {
     return 'Educator Portal'
   }
 
@@ -164,9 +257,10 @@ function getSidebarSubtitle(role: AppRole) {
 }
 
 // AppSidebar - render role-aware sidebar
-export function AppSidebar({ role = 'admin', user, ...props }: AppSidebarProps) {
+export function AppSidebar({ role = 'admin', roles, user, ...props }: AppSidebarProps) {
   // ==================== NAV DATA ====================
-  const navGroups = getNavigationGroups(role)
+  const assignedRoles = roles?.length ? roles : [role]
+  const navGroups = mergeNavigationGroups(assignedRoles)
   const sidebarUser = user || {
     name: 'Template User',
     email: 'template@example.com',
@@ -185,7 +279,7 @@ export function AppSidebar({ role = 'admin', user, ...props }: AppSidebarProps) 
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">Shadcn Dashboard</span>
-                  <span className="truncate text-xs">{getSidebarSubtitle(role)}</span>
+                  <span className="truncate text-xs">{getSidebarSubtitle(assignedRoles)}</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -200,6 +294,7 @@ export function AppSidebar({ role = 'admin', user, ...props }: AppSidebarProps) 
       <SidebarFooter>
         <NavUser
           role={role}
+          roles={assignedRoles}
           user={{
             name: sidebarUser.name,
             email: sidebarUser.email,

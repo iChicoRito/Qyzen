@@ -35,15 +35,17 @@ interface NavUserProps {
     avatar: string
   }
   role: AppRole
+  roles?: AppRole[]
 }
 
 // NavUser - render current user menu
-export function NavUser({ user, role }: NavUserProps) {
+export function NavUser({ user, role, roles }: NavUserProps) {
   // ==================== HOOKS ====================
   const { isMobile } = useSidebar()
   const router = useRouter()
   const supabase = createClient()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const assignedRoles = roles?.length ? roles : [role]
 
   // handleLogout - sign out current user
   const handleLogout = async () => {
@@ -82,7 +84,9 @@ export function NavUser({ user, role }: NavUserProps) {
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
                 <span className="text-muted-foreground truncate text-xs">{user.email}</span>
-                <span className="text-muted-foreground truncate text-xs">{getRoleLabel(role)}</span>
+                <span className="text-muted-foreground truncate text-xs">
+                  {assignedRoles.map(getRoleLabel).join(', ')}
+                </span>
               </div>
               <IconDotsVertical size={18} />
             </SidebarMenuButton>
@@ -102,7 +106,7 @@ export function NavUser({ user, role }: NavUserProps) {
                   <span className="truncate font-medium">{user.name}</span>
                   <span className="text-muted-foreground truncate text-xs">{user.email}</span>
                   <span className="text-muted-foreground truncate text-xs">
-                    {getRoleLabel(role)}
+                    {assignedRoles.map(getRoleLabel).join(', ')}
                   </span>
                 </div>
               </div>
@@ -110,7 +114,7 @@ export function NavUser({ user, role }: NavUserProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem className="cursor-default">
               <IconShieldCheck size={18} />
-              Signed in as {getRoleLabel(role)}
+              Signed in as {assignedRoles.map(getRoleLabel).join(', ')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

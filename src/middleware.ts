@@ -54,7 +54,7 @@ export async function middleware(request: NextRequest) {
       return redirectWithSession(request, context.dashboardPath, response)
     }
 
-    if (protectedRole && context.role !== protectedRole) {
+    if (protectedRole && !context.roles.includes(protectedRole)) {
       return redirectWithSession(request, context.dashboardPath, response)
     }
   } catch {

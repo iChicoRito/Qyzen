@@ -12,6 +12,7 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 interface DashboardShellProps {
   children: React.ReactNode
   role: AppRole
+  roles: AppRole[]
   user: {
     name: string
     email: string
@@ -19,7 +20,7 @@ interface DashboardShellProps {
 }
 
 // DashboardShell - shared protected dashboard layout
-export function DashboardShell({ children, role, user }: DashboardShellProps) {
+export function DashboardShell({ children, role, roles, user }: DashboardShellProps) {
   // ==================== SHELL STATE ====================
   const [themeCustomizerOpen, setThemeCustomizerOpen] = React.useState(false)
   const { config } = useSidebarConfig()
@@ -40,6 +41,7 @@ export function DashboardShell({ children, role, user }: DashboardShellProps) {
         <>
           <AppSidebar
             role={role}
+            roles={roles}
             user={user}
             variant={config.variant}
             collapsible={config.collapsible}
@@ -66,6 +68,7 @@ export function DashboardShell({ children, role, user }: DashboardShellProps) {
           </SidebarInset>
           <AppSidebar
             role={role}
+            roles={roles}
             user={user}
             variant={config.variant}
             collapsible={config.collapsible}

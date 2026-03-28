@@ -91,6 +91,17 @@ export function getDashboardPathForRole(role: AppRole) {
   return '/student/dashboard'
 }
 
+// getDashboardPathForRoles - resolve dashboard path from assigned roles
+export function getDashboardPathForRoles(roles: AppRole[], fallbackRole?: AppRole | null) {
+  const primaryRole = getPrimaryRole(roles, fallbackRole)
+
+  if (!primaryRole) {
+    return null
+  }
+
+  return getDashboardPathForRole(primaryRole)
+}
+
 // getRoleFromPathname - resolve protected role route
 export function getRoleFromPathname(pathname: string): AppRole | null {
   if (pathname.startsWith('/admin')) {
@@ -114,7 +125,10 @@ export function isEmailVerified(user: AuthUser) {
 }
 
 // getPrimaryRole - resolve main role for navigation
-export function getPrimaryRole(roleNames: string[], fallbackRole?: string | null): AppRole | null {
+export function getPrimaryRole(
+  roleNames: Array<string | AppRole>,
+  fallbackRole?: string | AppRole | null
+): AppRole | null {
   const normalizedRoles = roleNames
     .map((roleName) => normalizeRole(roleName))
     .filter((role): role is AppRole => Boolean(role))
@@ -183,7 +197,10 @@ export async function fetchAuthContext(
     .filter((role): role is RoleRow => role !== null && role !== undefined && role.is_active)
     .map((role: RoleRow) => role.name)
 
-  const role = getPrimaryRole(roleNames, profile.user_type)
+  const normalizedRoles = roleNames
+    .map((roleName: string) => normalizeRole(roleName))
+    .filter((roleName): roleName is AppRole => Boolean(roleName))
+  const role = getPrimaryRole(normalizedRoles, profile.user_type)
 
   return {
     authUser,
@@ -196,8 +213,8 @@ export async function fetchAuthContext(
       userType: profile.user_type,
     },
     role,
-    roles: roleNames.map((roleName: string) => normalizeRole(roleName)).filter((roleName): roleName is AppRole => Boolean(roleName)),
-    dashboardPath: role ? getDashboardPathForRole(role) : null,
+    roles: normalizedRoles,
+    dashboardPath: getDashboardPathForRoles(normalizedRoles, role),
     isActive: profile.is_active,
     isEmailVerified: isEmailVerified(authUser),
   }

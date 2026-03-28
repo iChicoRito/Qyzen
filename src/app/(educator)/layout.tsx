@@ -10,6 +10,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <DashboardShell
       role={context.role ?? 'educator'}
+      roles={context.roles}
       user={{
         name: `${context.profile.givenName} ${context.profile.surname}`.trim(),
         email: context.profile.email,
