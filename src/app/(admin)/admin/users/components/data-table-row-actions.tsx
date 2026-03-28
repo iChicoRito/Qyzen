@@ -15,6 +15,8 @@ import {
 
 import { userSchema } from "../data/schema"
 import { DeleteConfirmationModal } from "./delete-confirmation-modal"
+import { EditUserModal } from "./edit-user-modal"
+import { ViewUserModal } from "./view-user-modal"
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
@@ -38,8 +40,28 @@ export function DataTableRowActions<TData>({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[160px]">
-        <DropdownMenuItem className="cursor-pointer">View User</DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer">Edit User</DropdownMenuItem>
+        <ViewUserModal
+          user={user}
+          trigger={
+            <DropdownMenuItem
+              onSelect={(event) => event.preventDefault()}
+              className="cursor-pointer"
+            >
+              View User
+            </DropdownMenuItem>
+          }
+        />
+        <EditUserModal
+          user={user}
+          trigger={
+            <DropdownMenuItem
+              onSelect={(event) => event.preventDefault()}
+              className="cursor-pointer"
+            >
+              Edit User
+            </DropdownMenuItem>
+          }
+        />
         <DropdownMenuSeparator />
         <DeleteConfirmationModal
           user={user}

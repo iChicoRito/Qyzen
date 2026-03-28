@@ -9,6 +9,14 @@ import { z } from 'zod'
 
 import { Button } from '@/components/ui/button'
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -164,8 +172,8 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[720px]">
-        <DialogHeader>
+      <DialogContent className="border-0 bg-transparent p-0 shadow-none sm:max-w-[720px]">
+        <DialogHeader className="sr-only">
           <DialogTitle>Add Permissions</DialogTitle>
           <DialogDescription>
             Create one or more permission records in a single process.
@@ -173,195 +181,213 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            {/* permission repeater */}
-            <div className="space-y-4">
-              {fields.map((field, index) => (
-                <div key={field.id} className="space-y-4 rounded-md border p-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">Permission {index + 1}</h3>
+          <form onSubmit={form.handleSubmit(handleSubmit)}>
+            <Card className="gap-0 overflow-hidden py-0 shadow-xl">
+              <CardHeader className="border-b px-5 py-4">
+                <CardTitle>Add Permissions</CardTitle>
+                <CardDescription>
+                  Create one or more permission records in a single process.
+                </CardDescription>
+              </CardHeader>
+
+              <div className="max-h-[55vh] overflow-y-auto">
+                <CardContent className="space-y-6 px-5 py-5">
+                  {/* permission repeater */}
+                  <div className="space-y-4">
+                    {fields.map((field, index) => (
+                      <div key={field.id} className="space-y-4 rounded-md border p-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium">Permission {index + 1}</h3>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => remove(index)}
+                            disabled={fields.length === 1 || isSubmitting}
+                            className="cursor-pointer"
+                          >
+                            <IconTrash className="h-4 w-4" stroke={2} />
+                            Remove
+                          </Button>
+                        </div>
+
+                        {/* permission name field */}
+                        <FormField
+                          control={form.control}
+                          name={`permissions.${index}.permissionName`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Permission Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="View Users" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* description field */}
+                        <FormField
+                          control={form.control}
+                          name={`permissions.${index}.description`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Description</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Allows the role to view user records."
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          {/* resource field */}
+                          <FormField
+                            control={form.control}
+                            name={`permissions.${index}.resource`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Resource</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="users" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          {/* action field */}
+                          <FormField
+                            control={form.control}
+                            name={`permissions.${index}.action`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Action</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="view" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          {/* module field */}
+                          <FormField
+                            control={form.control}
+                            name={`permissions.${index}.module`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Module</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Users" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          {/* status field */}
+                          <FormField
+                            control={form.control}
+                            name={`permissions.${index}.status`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Status</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="w-full cursor-pointer">
+                                      <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {statuses.map((status) => (
+                                      <SelectItem
+                                        key={status.value}
+                                        value={status.value}
+                                        className="cursor-pointer"
+                                      >
+                                        <div className="flex items-center">
+                                          {status.icon && (
+                                            <status.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                                          )}
+                                          {status.label}
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        {/* permission string field */}
+                        <FormField
+                          control={form.control}
+                          name={`permissions.${index}.permissionString`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Permission String</FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  readOnly
+                                  placeholder="users:view"
+                                  className="bg-muted"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </div>
+
+              <CardFooter className="border-t px-5 py-4">
+                <div className="flex w-full items-center justify-between gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddItem}
+                    className="cursor-pointer"
+                    disabled={isSubmitting}
+                  >
+                    <IconPlus className="mr-2 h-4 w-4" stroke={2} />
+                    Add Another Permission
+                  </Button>
+
+                  <div className="flex space-x-2">
                     <Button
                       type="button"
                       variant="outline"
-                      size="sm"
-                      onClick={() => remove(index)}
-                      disabled={fields.length === 1 || isSubmitting}
+                      onClick={() => handleOpenChange(false)}
                       className="cursor-pointer"
+                      disabled={isSubmitting}
                     >
-                      <IconTrash className="h-4 w-4" stroke={2} />
-                      Remove
+                      Cancel
+                    </Button>
+                    <Button type="submit" className="cursor-pointer" disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <Spinner className="mr-2 h-4 w-4" />
+                      ) : (
+                        <IconPlus className="mr-2 h-4 w-4" stroke={2} />
+                      )}
+                      Create Permissions
                     </Button>
                   </div>
-
-                  {/* permission name field */}
-                  <FormField
-                    control={form.control}
-                    name={`permissions.${index}.permissionName`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Permission Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="View Users" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* description field */}
-                  <FormField
-                    control={form.control}
-                    name={`permissions.${index}.description`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="Allows the role to view user records." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {/* resource field */}
-                    <FormField
-                      control={form.control}
-                      name={`permissions.${index}.resource`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Resource</FormLabel>
-                          <FormControl>
-                            <Input placeholder="users" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* action field */}
-                    <FormField
-                      control={form.control}
-                      name={`permissions.${index}.action`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Action</FormLabel>
-                          <FormControl>
-                            <Input placeholder="view" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {/* module field */}
-                    <FormField
-                      control={form.control}
-                      name={`permissions.${index}.module`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Module</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Users" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* status field */}
-                    <FormField
-                      control={form.control}
-                      name={`permissions.${index}.status`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Status</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="w-full cursor-pointer">
-                                <SelectValue placeholder="Select status" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {statuses.map((status) => (
-                                <SelectItem
-                                  key={status.value}
-                                  value={status.value}
-                                  className="cursor-pointer"
-                                >
-                                  <div className="flex items-center">
-                                    {status.icon && (
-                                      <status.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                                    )}
-                                    {status.label}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {/* permission string field */}
-                  <FormField
-                    control={form.control}
-                    name={`permissions.${index}.permissionString`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Permission String</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            readOnly
-                            placeholder="users:view"
-                            className="bg-muted"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </div>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleAddItem}
-                className="cursor-pointer"
-                disabled={isSubmitting}
-              >
-                <IconPlus className="mr-2 h-4 w-4" stroke={2} />
-                Add Another Permission
-              </Button>
-
-              <div className="flex space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleOpenChange(false)}
-                  className="cursor-pointer"
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" className="cursor-pointer" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <Spinner className="mr-2 h-4 w-4" />
-                  ) : (
-                    <IconPlus className="mr-2 h-4 w-4" stroke={2} />
-                  )}
-                  Create Permissions
-                </Button>
-              </div>
-            </div>
+              </CardFooter>
+            </Card>
           </form>
         </Form>
       </DialogContent>

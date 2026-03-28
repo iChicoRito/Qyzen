@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { IconPlus } from '@tabler/icons-react'
+import { IconEdit } from '@tabler/icons-react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -43,11 +43,11 @@ import {
 } from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
 import { fetchRoles, type RoleRecord } from '@/lib/supabase/access-control'
-import type { CreateUserInput } from '@/lib/supabase/users'
 
 import { statuses, userTypes } from '../data/data'
+import type { User } from '../data/schema'
 
-const addUserFormSchema = z
+const editUserFormSchema = z
   .object({
     userId: z.string().min(1, 'User ID is required'),
     givenName: z.string().min(1, 'Given name is required'),
@@ -78,15 +78,15 @@ const addUserFormSchema = z
     }
   })
 
-type AddUserFormData = z.infer<typeof addUserFormSchema>
+type EditUserFormData = z.infer<typeof editUserFormSchema>
 
-interface AddUserModalProps {
-  onAddUser?: (user: CreateUserInput) => Promise<void>
+interface EditUserModalProps {
+  user: User
   trigger?: React.ReactNode
 }
 
-// AddUserModal - add a new user and assign roles
-export function AddUserModal({ onAddUser, trigger }: AddUserModalProps) {
+// EditUserModal - edit user details
+export function EditUserModal({ user, trigger }: EditUserModalProps) {
   // ==================== STATE ====================
   const [open, setOpen] = useState(false)
   const [isLoadingRoles, setIsLoadingRoles] = useState(false)
@@ -94,16 +94,16 @@ export function AddUserModal({ onAddUser, trigger }: AddUserModalProps) {
   const [roles, setRoles] = useState<RoleRecord[]>([])
 
   // ==================== FORM SETUP ====================
-  const form = useForm<AddUserFormData>({
-    resolver: zodResolver(addUserFormSchema),
+  const form = useForm<EditUserFormData>({
+    resolver: zodResolver(editUserFormSchema),
     defaultValues: {
-      userId: '',
-      givenName: '',
-      surname: '',
-      email: '',
-      status: 'active',
-      userType: 'student',
-      roleNames: [],
+      userId: user.userId,
+      givenName: user.givenName,
+      surname: user.surname,
+      email: user.email,
+      status: user.status,
+      userType: user.userType === 'admin' ? 'educator' : user.userType,
+      roleNames: user.roleNames,
     },
   })
 
@@ -123,8 +123,17 @@ export function AddUserModal({ onAddUser, trigger }: AddUserModalProps) {
   useEffect(() => {
     if (open) {
       loadRoles()
+      form.reset({
+        userId: user.userId,
+        givenName: user.givenName,
+        surname: user.surname,
+        email: user.email,
+        status: user.status,
+        userType: user.userType === 'admin' ? 'educator' : user.userType,
+        roleNames: user.roleNames,
+      })
     }
-  }, [open])
+  }, [form, open, user])
 
   // handleRoleCheckedChange - toggle selected role name
   const handleRoleCheckedChange = (roleName: string, checked: boolean) => {
@@ -148,28 +157,17 @@ export function AddUserModal({ onAddUser, trigger }: AddUserModalProps) {
     )
   }
 
-  // handleSubmit - create a new user row
-  const handleSubmit = async (values: AddUserFormData) => {
-    const newUser: CreateUserInput = {
-      userId: values.userId,
-      givenName: values.givenName,
-      surname: values.surname,
-      email: values.email,
-      status: values.status,
-      userType: values.userType,
-      roleNames: values.roleNames,
-    }
-
+  // handleSubmit - save static user updates
+  const handleSubmit = async () => {
     try {
       setIsSubmitting(true)
-      await onAddUser?.(newUser)
-      toast.success('User added successfully', {
-        description: `${newUser.givenName} ${newUser.surname} has been created and emailed.`,
+      await new Promise((resolve) => setTimeout(resolve, 400))
+      toast.success('User updated successfully', {
+        description: `${user.givenName} ${user.surname} has been updated.`,
       })
-      form.reset()
       setOpen(false)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to add user.')
+      toast.error(error instanceof Error ? error.message : 'Failed to update user.')
     } finally {
       setIsSubmitting(false)
     }
@@ -180,7 +178,15 @@ export function AddUserModal({ onAddUser, trigger }: AddUserModalProps) {
     setOpen(nextOpen)
 
     if (!nextOpen) {
-      form.reset()
+      form.reset({
+        userId: user.userId,
+        givenName: user.givenName,
+        surname: user.surname,
+        email: user.email,
+        status: user.status,
+        userType: user.userType === 'admin' ? 'educator' : user.userType,
+        roleNames: user.roleNames,
+      })
     }
   }
 
@@ -188,17 +194,17 @@ export function AddUserModal({ onAddUser, trigger }: AddUserModalProps) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button variant="default" size="sm" className="cursor-pointer">
-            <IconPlus className="h-4 w-4" stroke={2} />
-            Add User
+          <Button variant="outline" size="sm" className="cursor-pointer">
+            <IconEdit className="h-4 w-4" stroke={2} />
+            Edit User
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="border-0 bg-transparent p-0 shadow-none sm:max-w-[520px]">
         <DialogHeader className="sr-only">
-          <DialogTitle>Add New User</DialogTitle>
+          <DialogTitle>Edit User</DialogTitle>
           <DialogDescription>
-            Create a new student or educator and assign one or more roles.
+            Update a user record and adjust the assigned roles.
           </DialogDescription>
         </DialogHeader>
 
@@ -206,9 +212,9 @@ export function AddUserModal({ onAddUser, trigger }: AddUserModalProps) {
           <form onSubmit={form.handleSubmit(handleSubmit)}>
             <Card className="gap-0 overflow-hidden py-0 shadow-xl">
               <CardHeader className="border-b px-5 pt-6">
-                <CardTitle>Add New User</CardTitle>
+                <CardTitle>Edit User</CardTitle>
                 <CardDescription>
-                  Create a new student or educator and assign one or more roles.
+                  Update a user record and adjust the assigned roles.
                 </CardDescription>
               </CardHeader>
 
@@ -412,9 +418,9 @@ export function AddUserModal({ onAddUser, trigger }: AddUserModalProps) {
                     {isSubmitting ? (
                       <Spinner className="mr-2 h-4 w-4" />
                     ) : (
-                      <IconPlus className="mr-2 h-4 w-4" stroke={2} />
+                      <IconEdit className="mr-2 h-4 w-4" stroke={2} />
                     )}
-                    Create User
+                    Save Changes
                   </Button>
                 </div>
               </CardFooter>
