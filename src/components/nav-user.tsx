@@ -1,18 +1,19 @@
 'use client'
 
+import { useState } from 'react'
 import {
   IconBrandNextjs,
-  IconUser,
-  IconCreditCard,
-  IconNotification,
-  IconLogout,
   IconDotsVertical,
+  IconLoader2 as Loader2,
+  IconLogout,
+  IconShieldCheck,
 } from '@tabler/icons-react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -24,18 +25,48 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
+import { getRoleLabel, type AppRole } from '@/lib/auth/auth-context'
+import { createClient } from '@/lib/supabase/client'
 
-export function NavUser({
-  user,
-}: {
+interface NavUserProps {
   user: {
     name: string
     email: string
     avatar: string
   }
-}) {
-  const { isMobile } = useSidebar()
+  role: AppRole
+}
 
+// NavUser - render current user menu
+export function NavUser({ user, role }: NavUserProps) {
+  // ==================== HOOKS ====================
+  const { isMobile } = useSidebar()
+  const router = useRouter()
+  const supabase = createClient()
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  // handleLogout - sign out current user
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true)
+
+      const { error } = await supabase.auth.signOut()
+
+      if (error) {
+        throw error
+      }
+
+      router.replace('/auth/sign-in')
+      router.refresh()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to log out.'
+      toast.error(message)
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }
+
+  // ==================== RENDER ====================
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -46,13 +77,14 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
             >
               <div className="flex h-8 w-8 items-center justify-center rounded-lg">
-                <IconBrandNextjs stroke={2} />
+                <IconBrandNextjs size={20} />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
                 <span className="text-muted-foreground truncate text-xs">{user.email}</span>
+                <span className="text-muted-foreground truncate text-xs">{getRoleLabel(role)}</span>
               </div>
-              <IconDotsVertical stroke={2} />
+              <IconDotsVertical size={18} />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -64,41 +96,39 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <div className="h-8 w-8 rounded-lg">
-                  <IconBrandNextjs stroke={2} />
+                  <IconBrandNextjs size={20} />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
                   <span className="text-muted-foreground truncate text-xs">{user.email}</span>
+                  <span className="text-muted-foreground truncate text-xs">
+                    {getRoleLabel(role)}
+                  </span>
                 </div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem asChild className="cursor-pointer">
-                <Link href="/settings/account">
-                  <IconUser stroke={2} />
-                  Account
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="cursor-pointer">
-                <Link href="/settings/billing">
-                  <IconCreditCard stroke={2} />
-                  Billing
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="cursor-pointer">
-                <Link href="/settings/notifications">
-                  <IconNotification stroke={2} />
-                  Notifications
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
+            <DropdownMenuItem className="cursor-default">
+              <IconShieldCheck size={18} />
+              Signed in as {getRoleLabel(role)}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild className="cursor-pointer">
-              <Link href="/sign-in">
-                <IconLogout stroke={2} />
-                Log out
-              </Link>
+            <DropdownMenuItem
+              className="cursor-pointer"
+              disabled={isLoggingOut}
+              onClick={handleLogout}
+            >
+              {isLoggingOut ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <IconLogout size={18} />
+                  Log out
+                </>
+              )}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

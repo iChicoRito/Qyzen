@@ -1,0 +1,151 @@
+Objective #1: User Authentication for Admin, Educator and Student
+
+    1). In the "src\app\(auth)\auth\sign-in" this where the sign in page where the user will sign in.
+
+    2). First of all, the auth will check the user status if active and if they're email is verified.
+
+    3). You can check the database references located at the path (sql\DatabaseSchema.sql) and (sql\DatabaseAuthSchema.sql).
+
+    4). Now the redirection would be based on their roles. The roles will be the basis if the user is student, admin or educator.
+
+        The database tables for that are related to the process I want:
+        - tbl_role_permissions
+        - tbl_roles
+        - tbl_user_roles
+        - tbl_users
+
+    5). In the sidebars, it will be dynamic. For now this sidebar is for admin, now I want it dynamic based on their roles and the sign-in
+        redirections.
+
+        Sidebar Components:
+        - src\components\app-sidebar.tsx
+        - src\components\nav-user.tsx
+        - src\components\nav-main.tsx
+
+        For testing, create a dashboard page only for student and educator to test the redirection later.
+
+    6). Make the logout works. For security, make sure the user cannot bypass the routes on the URL.
+
+    7). Before you proceed to the execution, give a summary of the process, what codes will be modified or
+        added and deleted (risky) and wait for the "Go!" command.
+
+Instructions and Objective in JSON format for better readability:
+
+    {
+        "objectives": [
+            {
+            "objective_number": 1,
+            "objective_title": "User Authentication for Admin, Educator and Student",
+            "tasks": [
+                {
+                "task_number": 1,
+                "task_title": "Sign-In Page Location",
+                "file_path": "src/app/(auth)/auth/sign-in",
+                "description": "This is the existing sign-in page where users will authenticate"
+                },
+                {
+                "task_number": 2,
+                "task_title": "Authentication Validation Checks",
+                "description": "Before granting access, the auth process must verify the following conditions",
+                "checks": [
+                    {
+                    "check": "user_status",
+                    "condition": "User must be active",
+                    "field_reference": "is_active"
+                    },
+                    {
+                    "check": "email_verification",
+                    "condition": "User's email must be verified"
+                    }
+                ]
+                },
+                {
+                "task_number": 3,
+                "task_title": "Database Schema References",
+                "description": "Refer to the following SQL files for database structure context before implementation",
+                "reference_files": [
+                    "sql/DatabaseSchema.sql",
+                    "sql/DatabaseAuthSchema.sql"
+                ]
+                },
+                {
+                "task_number": 4,
+                "task_title": "Role-Based Redirection After Sign-In",
+                "description": "After successful authentication, the user is redirected based on their role",
+                "roles": [
+                    "student",
+                    "admin",
+                    "educator"
+                ],
+                "relevant_tables": [
+                    {
+                    "table_name": "tbl_role_permissions"
+                    },
+                    {
+                    "table_name": "tbl_roles"
+                    },
+                    {
+                    "table_name": "tbl_user_roles"
+                    },
+                    {
+                    "table_name": "tbl_users"
+                    }
+                ]
+                },
+                {
+                "task_number": 5,
+                "task_title": "Dynamic Sidebar Based on Role",
+                "description": "The sidebar is currently static and built for admin. It must be made dynamic based on the authenticated user's role and sign-in redirection",
+                "sidebar_component_files": [
+                    "src/components/app-sidebar.tsx",
+                    "src/components/nav-user.tsx",
+                    "src/components/nav-main.tsx"
+                ],
+                "testing_requirement": {
+                    "instruction": "For testing purposes, create a dashboard page for each of the following roles to validate redirection",
+                    "pages_to_create": [
+                    {
+                        "role": "student",
+                        "purpose": "Test redirection and sidebar for student role"
+                    },
+                    {
+                        "role": "educator",
+                        "purpose": "Test redirection and sidebar for educator role"
+                    }
+                    ]
+                }
+                },
+                {
+                "task_number": 6,
+                "task_title": "Logout and Route Protection",
+                "requirements": [
+                    {
+                    "requirement": "logout",
+                    "instruction": "Make the logout functionality work correctly"
+                    },
+                    {
+                    "requirement": "route_protection",
+                    "instruction": "For security, ensure that users cannot bypass protected routes by manually entering URLs",
+                    "description": "All role-specific routes must be protected and inaccessible without proper authentication and authorization"
+                    }
+                ]
+                }
+            ],
+            "pre_execution_requirement": {
+                "required": true,
+                "action": "give_summary",
+                "summary_must_include": [
+                "Overview of the process to be performed",
+                "List of codes or scripts that will be added",
+                "List of codes or scripts that will be modified",
+                "List of codes or scripts that will be deleted, flagged as risky"
+                ],
+                "await_confirmation": {
+                "required": true,
+                "confirmation_command": "Go!",
+                "instruction": "Do not proceed to execution until the 'Go!' command is received"
+                }
+            }
+            }
+        ]
+    }

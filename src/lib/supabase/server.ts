@@ -1,6 +1,15 @@
+import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
+
 interface SupabaseServerConfig {
   url: string
   anonKey: string
+}
+
+interface ServerCookie {
+  name: string
+  value: string
+  options?: Parameters<Awaited<ReturnType<typeof cookies>>['set']>[2]
 }
 
 // getSupabaseServerConfig - read server env values
@@ -27,4 +36,33 @@ export function getSupabaseServerHeaders() {
     Authorization: `Bearer ${anonKey}`,
     'Content-Type': 'application/json',
   }
+}
+
+// createClient - build server supabase client
+export async function createClient() {
+  const cookieStore = await cookies()
+  const { url, anonKey } = getSupabaseServerConfig()
+
+  return createServerClient(url, anonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll()
+      },
+      setAll(cookiesToSet: ServerCookie[]) {
+        try {
+          cookiesToSet.forEach(
+            ({
+              name,
+              value,
+              options,
+            }: ServerCookie) => {
+            cookieStore.set(name, value, options)
+            }
+          )
+        } catch {
+          // ignore server component cookie writes
+        }
+      },
+    },
+  })
 }

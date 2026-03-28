@@ -2,6 +2,7 @@ import { LoginForm1 } from "./components/sign-in-form"
 import { Logo } from "@/components/logo"
 import Link from "next/link"
 
+// Page - sign in page
 export default function Page() {
   return (
     <div className="bg-dark flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">

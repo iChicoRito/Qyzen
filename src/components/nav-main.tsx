@@ -1,6 +1,7 @@
 'use client'
 
-import { ChevronRight, type LucideIcon } from 'lucide-react'
+import * as React from 'react'
+import { IconChevronRight } from '@tabler/icons-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -16,31 +17,42 @@ import {
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar'
 
-export function NavMain({
-  label,
-  items,
-}: {
-  label: string
-  items: {
+interface NavMainItem {
+  title: string
+  url: string
+  icon?: React.ComponentType<{
+    className?: string
+    size?: number | string
+    stroke?: number | string
+  }>
+  isActive?: boolean
+  items?: {
     title: string
     url: string
-    icon?: LucideIcon
     isActive?: boolean
-    items?: {
-      title: string
-      url: string
-      isActive?: boolean
-    }[]
   }[]
-}) {
+}
+
+interface NavMainProps {
+  label: string
+  items: NavMainItem[]
+}
+
+// NavMain - render role navigation groups
+export function NavMain({ label, items }: NavMainProps) {
+  // ==================== PATH STATE ====================
   const pathname = usePathname()
 
-  // Check if any subitem is active to determine if parent should be open
-  const shouldBeOpen = (item: (typeof items)[0]) => {
-    if (item.isActive) return true
+  // shouldBeOpen - keep parent open for active child routes
+  const shouldBeOpen = (item: NavMainItem) => {
+    if (item.isActive) {
+      return true
+    }
+
     return item.items?.some((subItem) => pathname === subItem.url) || false
   }
 
+  // ==================== RENDER ====================
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{label}</SidebarGroupLabel>
@@ -57,33 +69,24 @@ export function NavMain({
                 <>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton tooltip={item.title} className="cursor-pointer">
-                      {item.icon && <item.icon />}
+                      {item.icon && <item.icon size={18} />}
                       <span>{item.title}</span>
-                      <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      <IconChevronRight
+                        size={18}
+                        className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                      />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {item.items?.map((subItem) => (
+                      {item.items.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton
                             asChild
                             className="cursor-pointer"
                             isActive={pathname === subItem.url}
                           >
-                            <Link
-                              href={subItem.url}
-                              target={
-                                item.title === 'Auth Pages' || item.title === 'Errors'
-                                  ? '_blank'
-                                  : undefined
-                              }
-                              rel={
-                                item.title === 'Auth Pages' || item.title === 'Errors'
-                                  ? 'noopener noreferrer'
-                                  : undefined
-                              }
-                            >
+                            <Link href={subItem.url}>
                               <span>{subItem.title}</span>
                             </Link>
                           </SidebarMenuSubButton>
@@ -100,7 +103,7 @@ export function NavMain({
                   isActive={pathname === item.url}
                 >
                   <Link href={item.url}>
-                    {item.icon && <item.icon />}
+                    {item.icon && <item.icon size={18} />}
                     <span>{item.title}</span>
                   </Link>
                 </SidebarMenuButton>

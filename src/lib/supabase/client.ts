@@ -1,9 +1,13 @@
 'use client'
 
+import { createBrowserClient } from '@supabase/ssr'
+
 interface SupabaseClientConfig {
   url: string
   anonKey: string
 }
+
+let browserClient: ReturnType<typeof createBrowserClient> | null = null
 
 // getSupabaseClientConfig - read client env values
 export function getSupabaseClientConfig(): SupabaseClientConfig {
@@ -29,4 +33,16 @@ export function getSupabaseClientHeaders() {
     Authorization: `Bearer ${anonKey}`,
     'Content-Type': 'application/json',
   }
+}
+
+// createClient - build browser supabase client
+export function createClient() {
+  if (browserClient) {
+    return browserClient
+  }
+
+  const { url, anonKey } = getSupabaseClientConfig()
+  browserClient = createBrowserClient(url, anonKey)
+
+  return browserClient
 }

@@ -1,12 +1,18 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
+import {
+  IconBrandGithubFilled,
+  IconBrandGoogleFilled,
+  IconLoader2 as Loader2,
+} from '@tabler/icons-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import {
   Form,
   FormControl,
@@ -15,20 +21,63 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { IconBrandGithubFilled, IconBrandGoogleFilled } from '@tabler/icons-react'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
+import { type SignInSchema, signInSchema } from '@/lib/validations/sign-in.schema'
 
-const loginFormSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-})
+interface SessionResponse {
+  message?: string
+  dashboardPath?: string
+}
 
-type LoginFormValues = z.infer<typeof loginFormSchema>
-
+// LoginForm1 - handle user sign in
 export function LoginForm1({ className, ...props }: React.ComponentProps<'div'>) {
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginFormSchema),
+  // ==================== HOOKS ====================
+  const router = useRouter()
+  const supabase = createClient()
+  const form = useForm<SignInSchema>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
   })
 
+  // handleSubmit - sign in and redirect by role
+  const handleSubmit = async (values: SignInSchema) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      })
+
+      if (error) {
+        throw error
+      }
+
+      const response = await fetch('/api/auth/session', {
+        method: 'GET',
+        cache: 'no-store',
+      })
+
+      const sessionData = (await response.json()) as SessionResponse
+
+      if (!response.ok || !sessionData.dashboardPath) {
+        await supabase.auth.signOut()
+        throw new Error(sessionData.message || 'Failed to load your account.')
+      }
+
+      toast.success('Login successful.')
+      router.replace(sessionData.dashboardPath)
+      router.refresh()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to sign in.'
+      toast.error(message)
+    }
+  }
+
+  // ==================== RENDER ====================
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
@@ -38,7 +87,7 @@ export function LoginForm1({ className, ...props }: React.ComponentProps<'div'>)
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form action="/">
+            <form onSubmit={form.handleSubmit(handleSubmit)}>
               <div className="grid gap-6">
                 <div className="grid gap-4">
                   <FormField
@@ -61,38 +110,45 @@ export function LoginForm1({ className, ...props }: React.ComponentProps<'div'>)
                       <FormItem>
                         <div className="flex items-center">
                           <FormLabel>Password</FormLabel>
-                          <a
+                          <Link
                             href="/auth/forgot-password"
                             className="ml-auto text-sm underline-offset-4 hover:underline"
                           >
                             Forgot your password?
-                          </a>
+                          </Link>
                         </div>
                         <FormControl>
-                          <Input type="password" {...field} placeholder="···················" />
+                          <Input type="password" {...field} placeholder="Enter your password" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full cursor-pointer">
-                    Login
+                  <Button type="submit" className="w-full cursor-pointer" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? (
+                      <>
+                        <Loader2 size={18} className="mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      'Login'
+                    )}
                   </Button>
 
                   <Button variant="outline" className="w-full cursor-pointer" type="button">
-                    <IconBrandGoogleFilled stroke={2} />
+                    <IconBrandGoogleFilled size={18} />
                     Sign in with Google
                   </Button>
                   <Button variant="outline" className="w-full cursor-pointer" type="button">
-                    <IconBrandGithubFilled stroke={2} />
+                    <IconBrandGithubFilled size={18} />
                     Sign in with GitHub
                   </Button>
                 </div>
                 <div className="text-center text-sm">
                   Don&apos;t have an account?{' '}
-                  <a href="/auth/sign-up" className="underline underline-offset-4">
+                  <Link href="/auth/sign-up" className="underline underline-offset-4">
                     Sign up
-                  </a>
+                  </Link>
                 </div>
               </div>
             </form>
