@@ -154,11 +154,11 @@ function getNavigationGroupsByRole(role: AppRole): SidebarNavGroup[] {
             items: [
               {
                 title: 'Subjects',
-                url: '/educator/',
+                url: '/educator/classroom/subjects',
               },
               {
                 title: 'Sections',
-                url: '/educator/',
+                url: '/educator/classroom/sections',
               },
             ],
           },
