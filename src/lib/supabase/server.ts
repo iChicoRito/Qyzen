@@ -1,4 +1,3 @@
-import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 
 interface SupabaseServerConfig {
@@ -40,6 +39,7 @@ export function getSupabaseServerHeaders() {
 
 // createClient - build server supabase client
 export async function createClient() {
+  const { cookies } = await import('next/headers')
   const cookieStore = await cookies()
   const { url, anonKey } = getSupabaseServerConfig()
 

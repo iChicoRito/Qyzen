@@ -17,9 +17,9 @@ import {
 } from '@tanstack/react-table'
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { type SectionCreateInput, type SectionRecord } from '@/lib/supabase/sections'
+import { type SectionPermissions } from '@/lib/auth/section-permissions'
+import { type SectionCreateInput } from '@/lib/supabase/sections'
 
-import { type Section } from '../data/schema'
 import { DataTablePagination } from './data-table-pagination'
 import { DataTableToolbar } from './data-table-toolbar'
 
@@ -27,6 +27,7 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   onAddSection?: (section: SectionCreateInput) => Promise<void>
+  permissions: SectionPermissions
 }
 
 // DataTable - render the sections table
@@ -34,6 +35,7 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   onAddSection,
+  permissions,
 }: DataTableProps<TData, TValue>) {
   // ==================== TABLE STATE ====================
   const [rowSelection, setRowSelection] = React.useState({})
@@ -66,10 +68,7 @@ export function DataTable<TData, TValue>({
   // ==================== RENDER ====================
   return (
     <div className="space-y-4">
-      <DataTableToolbar
-        table={table}
-        onAddSection={onAddSection}
-      />
+      <DataTableToolbar table={table} onAddSection={onAddSection} permissions={permissions} />
       <div className="rounded-md border">
         <Table>
           <TableHeader>

@@ -17,6 +17,7 @@ import {
 } from '@tanstack/react-table'
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { type SubjectPermissions } from '@/lib/auth/subject-permissions'
 import { type SubjectCreateInput } from '@/lib/supabase/subjects'
 
 import { DataTablePagination } from './data-table-pagination'
@@ -26,6 +27,7 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   onAddSubject?: (subject: SubjectCreateInput) => Promise<void>
+  permissions: SubjectPermissions
 }
 
 // DataTable - render the subjects table
@@ -33,6 +35,7 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   onAddSubject,
+  permissions,
 }: DataTableProps<TData, TValue>) {
   // ==================== TABLE STATE ====================
   const [rowSelection, setRowSelection] = React.useState({})
@@ -65,7 +68,7 @@ export function DataTable<TData, TValue>({
   // ==================== RENDER ====================
   return (
     <div className="space-y-4">
-      <DataTableToolbar table={table} onAddSubject={onAddSubject} />
+      <DataTableToolbar table={table} onAddSubject={onAddSubject} permissions={permissions} />
       <div className="rounded-md border">
         <Table>
           <TableHeader>

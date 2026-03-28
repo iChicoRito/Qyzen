@@ -4,6 +4,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { type SubjectPermissions } from '@/lib/auth/subject-permissions'
 import { type SubjectRecord } from '@/lib/supabase/subjects'
 
 import type { Subject } from '../data/schema'
@@ -11,6 +12,7 @@ import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
 
 interface ColumnsProps {
+  permissions: SubjectPermissions
   onUpdateSubject?: (previousRowIds: number[], subject: SubjectRecord) => void
   onDeleteSubject?: (rowIds: number[]) => void
 }
@@ -25,8 +27,8 @@ function getStatusClassName(status: 'active' | 'inactive') {
 }
 
 // getColumns - build subject table columns
-export function getColumns({ onUpdateSubject, onDeleteSubject }: ColumnsProps): ColumnDef<Subject>[] {
-  return [
+export function getColumns({ permissions, onUpdateSubject, onDeleteSubject }: ColumnsProps): ColumnDef<Subject>[] {
+  const columns: ColumnDef<Subject>[] = [
     {
       id: 'select',
       header: ({ table }) => (
@@ -107,10 +109,17 @@ export function getColumns({ onUpdateSubject, onDeleteSubject }: ColumnsProps): 
       cell: ({ row }) => (
         <DataTableRowActions
           row={row}
+          permissions={permissions}
           onSubjectUpdated={onUpdateSubject}
           onSubjectDeleted={onDeleteSubject}
         />
       ),
     },
   ]
+
+  if (!permissions.canUpdate && !permissions.canDelete) {
+    return columns.filter((column) => column.id !== 'select')
+  }
+
+  return columns
 }

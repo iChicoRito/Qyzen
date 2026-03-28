@@ -1,5 +1,3 @@
-import 'server-only'
-
 import { redirect } from 'next/navigation'
 
 import { fetchAuthContext, type AppRole } from '@/lib/auth/auth-context'

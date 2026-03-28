@@ -66,6 +66,7 @@ CREATE TABLE public.tbl_subjects (
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+CREATE SEQUENCE IF NOT EXISTS tbl_user_roles_id_seq;
 CREATE TABLE public.tbl_user_roles (
   id bigint DEFAULT nextval('tbl_user_roles_id_seq'::regclass) NOT NULL,
   user_id bigint NOT NULL,
@@ -75,6 +76,7 @@ CREATE TABLE public.tbl_user_roles (
   deleted_at timestamp with time zone
 );
 
+CREATE SEQUENCE IF NOT EXISTS tbl_users_id_seq;
 CREATE TABLE public.tbl_users (
   id bigint DEFAULT nextval('tbl_users_id_seq'::regclass) NOT NULL,
   user_type text NOT NULL,
@@ -211,26 +213,59 @@ CREATE POLICY "Admin full access on tbl_sections" ON public.tbl_sections AS PERM
   USING (has_role('admin'::text))
   WITH CHECK (has_role('admin'::text));
 
-CREATE POLICY "Educator own access on tbl_sections" ON public.tbl_sections AS PERMISSIVE FOR ALL TO authenticated
-  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())))
-  WITH CHECK ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
-
 CREATE POLICY "Admin full access on tbl_sections_term" ON public.tbl_sections_term AS PERMISSIVE FOR ALL TO authenticated
   USING (has_role('admin'::text))
   WITH CHECK (has_role('admin'::text));
-
-CREATE POLICY "Educator own access on tbl_sections_term" ON public.tbl_sections_term AS PERMISSIVE FOR ALL TO authenticated
-  USING ((has_role('educator'::text) AND (EXISTS ( SELECT 1
-   FROM tbl_sections
-  WHERE ((tbl_sections.id = tbl_sections_term.section_id) AND (tbl_sections.educator_id = get_current_tbl_user_id()))))))
-  WITH CHECK ((has_role('educator'::text) AND (EXISTS ( SELECT 1
-   FROM tbl_sections
-  WHERE ((tbl_sections.id = tbl_sections_term.section_id) AND (tbl_sections.educator_id = get_current_tbl_user_id()))))));
 
 CREATE POLICY "Admin full access on tbl_subjects" ON public.tbl_subjects AS PERMISSIVE FOR ALL TO authenticated
   USING (has_role('admin'::text))
   WITH CHECK (has_role('admin'::text));
 
-CREATE POLICY "Educator own access on tbl_subjects" ON public.tbl_subjects AS PERMISSIVE FOR ALL TO authenticated
-  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())))
-  WITH CHECK ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
+CREATE POLICY "Educator section view access" ON public.tbl_sections AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id()) AND user_has_permission('sections:view'::text)));
+
+CREATE POLICY "Educator section create access" ON public.tbl_sections AS PERMISSIVE FOR INSERT TO authenticated
+  WITH CHECK ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id()) AND user_has_permission('sections:create'::text)));
+
+CREATE POLICY "Educator section update access" ON public.tbl_sections AS PERMISSIVE FOR UPDATE TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id()) AND user_has_permission('sections:update'::text)))
+  WITH CHECK ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id()) AND user_has_permission('sections:update'::text)));
+
+CREATE POLICY "Educator section delete access" ON public.tbl_sections AS PERMISSIVE FOR DELETE TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id()) AND user_has_permission('sections:delete'::text)));
+
+CREATE POLICY "Educator section term view access" ON public.tbl_sections_term AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((has_role('educator'::text) AND user_has_permission('sections:view'::text) AND (EXISTS ( SELECT 1
+   FROM tbl_sections
+  WHERE ((tbl_sections.id = tbl_sections_term.section_id) AND (tbl_sections.educator_id = get_current_tbl_user_id()))))));
+
+CREATE POLICY "Educator section term create access" ON public.tbl_sections_term AS PERMISSIVE FOR INSERT TO authenticated
+  WITH CHECK ((has_role('educator'::text) AND user_has_permission('sections:create'::text) AND (EXISTS ( SELECT 1
+   FROM tbl_sections
+  WHERE ((tbl_sections.id = tbl_sections_term.section_id) AND (tbl_sections.educator_id = get_current_tbl_user_id()))))));
+
+CREATE POLICY "Educator section term update access" ON public.tbl_sections_term AS PERMISSIVE FOR UPDATE TO authenticated
+  USING ((has_role('educator'::text) AND user_has_permission('sections:update'::text) AND (EXISTS ( SELECT 1
+   FROM tbl_sections
+  WHERE ((tbl_sections.id = tbl_sections_term.section_id) AND (tbl_sections.educator_id = get_current_tbl_user_id()))))))
+  WITH CHECK ((has_role('educator'::text) AND user_has_permission('sections:update'::text) AND (EXISTS ( SELECT 1
+   FROM tbl_sections
+  WHERE ((tbl_sections.id = tbl_sections_term.section_id) AND (tbl_sections.educator_id = get_current_tbl_user_id()))))));
+
+CREATE POLICY "Educator section term delete access" ON public.tbl_sections_term AS PERMISSIVE FOR DELETE TO authenticated
+  USING ((has_role('educator'::text) AND user_has_permission('sections:delete'::text) AND (EXISTS ( SELECT 1
+   FROM tbl_sections
+  WHERE ((tbl_sections.id = tbl_sections_term.section_id) AND (tbl_sections.educator_id = get_current_tbl_user_id()))))));
+
+CREATE POLICY "Educator subject view access" ON public.tbl_subjects AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id()) AND user_has_permission('subjects:view'::text)));
+
+CREATE POLICY "Educator subject create access" ON public.tbl_subjects AS PERMISSIVE FOR INSERT TO authenticated
+  WITH CHECK ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id()) AND user_has_permission('subjects:create'::text)));
+
+CREATE POLICY "Educator subject update access" ON public.tbl_subjects AS PERMISSIVE FOR UPDATE TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id()) AND user_has_permission('subjects:update'::text)))
+  WITH CHECK ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id()) AND user_has_permission('subjects:update'::text)));
+
+CREATE POLICY "Educator subject delete access" ON public.tbl_subjects AS PERMISSIVE FOR DELETE TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id()) AND user_has_permission('subjects:delete'::text)));

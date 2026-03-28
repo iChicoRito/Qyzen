@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { type SubjectPermissions } from '@/lib/auth/subject-permissions'
 import { type SubjectCreateInput } from '@/lib/supabase/subjects'
 
 import { AddSubjectModal } from './add-subject-modal'
@@ -20,12 +21,14 @@ import { DataTableViewOptions } from './data-table-view-options'
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
   onAddSubject?: (subject: SubjectCreateInput) => Promise<void>
+  permissions: SubjectPermissions
 }
 
 // DataTableToolbar - filter and create subject rows
 export function DataTableToolbar<TData>({
   table,
   onAddSubject,
+  permissions,
 }: DataTableToolbarProps<TData>) {
   // ==================== FILTER STATE ====================
   const isFiltered = table.getState().columnFilters.length > 0
@@ -82,7 +85,7 @@ export function DataTableToolbar<TData>({
         </div>
         <div className="flex items-center space-x-2">
           <DataTableViewOptions table={table} />
-          <AddSubjectModal onAddSubject={onAddSubject} />
+          {permissions.canCreate ? <AddSubjectModal onAddSubject={onAddSubject} /> : null}
         </div>
       </div>
     </div>

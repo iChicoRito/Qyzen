@@ -14,6 +14,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { type SubjectPermissions } from '@/lib/auth/subject-permissions'
 import { deleteSubject, updateSubject, type SubjectRecord } from '@/lib/supabase/subjects'
 
 import { subjectSchema } from '../data/schema'
@@ -22,6 +23,7 @@ import { ViewSubjectModal } from './view-subject-modal'
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
+  permissions: SubjectPermissions
   onSubjectUpdated?: (previousRowIds: number[], subject: SubjectRecord) => void
   onSubjectDeleted?: (rowIds: number[]) => void
 }
@@ -29,6 +31,7 @@ interface DataTableRowActionsProps<TData> {
 // DataTableRowActions - render row action menu
 export function DataTableRowActions<TData>({
   row,
+  permissions,
   onSubjectUpdated,
   onSubjectDeleted,
 }: DataTableRowActionsProps<TData>) {
@@ -71,14 +74,20 @@ export function DataTableRowActions<TData>({
           <DropdownMenuItem className="cursor-pointer" onSelect={() => setIsViewOpen(true)}>
             View Subject
           </DropdownMenuItem>
-          <DropdownMenuItem className="cursor-pointer" onSelect={() => setIsEditOpen(true)}>
-            Edit Subject
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="cursor-pointer" variant="destructive" onSelect={handleDelete}>
-            Delete
-            <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
-          </DropdownMenuItem>
+          {permissions.canUpdate ? (
+            <DropdownMenuItem className="cursor-pointer" onSelect={() => setIsEditOpen(true)}>
+              Edit Subject
+            </DropdownMenuItem>
+          ) : null}
+          {permissions.canDelete ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer" variant="destructive" onSelect={handleDelete}>
+                Delete
+                <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -93,7 +102,7 @@ export function DataTableRowActions<TData>({
         onUpdateSubject={updateSubject}
         onSubjectUpdated={onSubjectUpdated}
         trigger={null}
-        open={isEditOpen}
+        open={permissions.canUpdate ? isEditOpen : false}
         onOpenChange={setIsEditOpen}
       />
     </>

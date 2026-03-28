@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { type SectionPermissions } from '@/lib/auth/section-permissions'
 import { type SectionCreateInput } from '@/lib/supabase/sections'
 
 import { DataTableViewOptions } from './data-table-view-options'
@@ -20,12 +21,14 @@ import { AddSectionModal } from './add-section-modal'
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
   onAddSection?: (section: SectionCreateInput) => Promise<void>
+  permissions: SectionPermissions
 }
 
 // DataTableToolbar - filter and create section rows
 export function DataTableToolbar<TData>({
   table,
   onAddSection,
+  permissions,
 }: DataTableToolbarProps<TData>) {
   // ==================== FILTER STATE ====================
   const isFiltered = table.getState().columnFilters.length > 0
@@ -82,7 +85,7 @@ export function DataTableToolbar<TData>({
         </div>
         <div className="flex items-center space-x-2">
           <DataTableViewOptions table={table} />
-          <AddSectionModal onAddSection={onAddSection} />
+          {permissions.canCreate ? <AddSectionModal onAddSection={onAddSection} /> : null}
         </div>
       </div>
     </div>

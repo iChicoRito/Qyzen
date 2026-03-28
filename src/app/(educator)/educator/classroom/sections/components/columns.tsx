@@ -4,6 +4,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { type SectionPermissions } from '@/lib/auth/section-permissions'
 import { type SectionRecord } from '@/lib/supabase/sections'
 
 import type { Section } from '../data/schema'
@@ -11,6 +12,7 @@ import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
 
 interface ColumnsProps {
+  permissions: SectionPermissions
   onUpdateSection?: (section: SectionRecord) => void
   onDeleteSection?: (sectionId: number) => void
 }
@@ -25,8 +27,8 @@ function getStatusClassName(status: 'active' | 'inactive') {
 }
 
 // getColumns - build section table columns
-export function getColumns({ onUpdateSection, onDeleteSection }: ColumnsProps): ColumnDef<Section>[] {
-  return [
+export function getColumns({ permissions, onUpdateSection, onDeleteSection }: ColumnsProps): ColumnDef<Section>[] {
+  const columns: ColumnDef<Section>[] = [
     {
       id: 'select',
       header: ({ table }) => (
@@ -100,10 +102,17 @@ export function getColumns({ onUpdateSection, onDeleteSection }: ColumnsProps): 
       cell: ({ row }) => (
         <DataTableRowActions
           row={row}
+          permissions={permissions}
           onSectionUpdated={onUpdateSection}
           onSectionDeleted={onDeleteSection}
         />
       ),
     },
   ]
+
+  if (!permissions.canUpdate && !permissions.canDelete) {
+    return columns.filter((column) => column.id !== 'select')
+  }
+
+  return columns
 }
