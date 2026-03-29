@@ -1,0 +1,226 @@
+Objective #1: Module Creation
+
+    1). Create a new database table first name "tbl_modules" and must have these columns:
+
+        - id
+        - educator_id           (fk -> tbl_users.id)
+        - subject_id            (fk -> tbl_subjects.id)
+        - section_id            (fk -> tbl_sections.id)
+        - module_id             (auto generated with this format e.g "MDL-123456789" with prefix of MDL and 1-9 random digiti)
+        - module_code
+        - time_limit
+        - cheating_attempts
+        - is_shuffle
+        - is_active
+        - start_date
+        - end_date
+        - start_time
+        - end_time
+
+    2). Now in this page (src\app\(educator)\educator\assessment\modules) is supposed for module Creation
+        and replace all the tasks related for module creation. Since it's a static page and uses JSON,
+        disregard that later once we need a real data from database.
+
+    3). replace the "add-task-modal.tsx" into "add-modules-modal.tsx". The design of the modal should
+        same with the other "add-****-modal.tsx" of this whole project.
+
+    4). The add-modules-modal should have this fields:
+
+        a). Module Code (dropdown and text field (meaning I can choose is it dropdown or I can type manually))
+            - In the dropdown there's a pre-existing options
+                - Quiz #1
+                - Quiz #2
+                - Quiz #3
+                - Long Quiz
+                - Written Exam
+            
+            - If manual, I can type those manually.
+
+    5). Select Subject designated in the Section (Dropdown and can be multiple select in checkboxes)
+        a). It shows all of the created subject on that section by that educator or
+            who made that subject
+
+        b). The tables related are:
+            - tbl_academic_term
+            - tbl_sections
+            - tbl_sections_term
+            - tbl_subjects
+
+        c). So it shows the options like this
+
+            PROGRAMMING FUNDAMENTALS    <- subject name
+            BSIT1234 | PRELIM           <- this is a section and the term on that section
+
+    6). Time Limit (text field)
+        - this is where I can set a time limit of the modules
+
+    7). Shuffle
+        - This must be a switch or dropdown but I preferred switch
+
+    8). Status (dropdown)
+        - active or insactive, that's it
+
+    9). Start and End Date (calendar)
+        - I will choose the start and end date
+
+    10). Start and End Time (time)
+        - I will choose the start and end time
+
+    11). For the validation, only 1 Module Code can be created in 1 subject/section.
+
+Instructions and Objective in JSON format for better readability:
+
+    {
+    "objective": "Module Creation",
+    "tasks": {
+        "task_1": {
+        "description": "Create a new database table",
+        "table_name": "tbl_modules",
+        "columns": {
+            "id": {
+            "type": "primary_key"
+            },
+            "educator_id": {
+            "type": "foreign_key",
+            "references": "tbl_users.id"
+            },
+            "subject_id": {
+            "type": "foreign_key",
+            "references": "tbl_subjects.id"
+            },
+            "section_id": {
+            "type": "foreign_key",
+            "references": "tbl_sections.id"
+            },
+            "module_id": {
+            "type": "auto_generated",
+            "format": "MDL-XXXXXXXXX",
+            "prefix": "MDL",
+            "suffix": {
+                "description": "random digits",
+                "length": "1 to 9 digits",
+                "example": "MDL-123456789"
+            }
+            },
+            "module_code": {
+            "type": "string"
+            },
+            "time_limit": {
+            "type": "string_or_numeric"
+            },
+            "cheating_attempts": {
+            "type": "integer"
+            },
+            "is_shuffle": {
+            "type": "boolean"
+            },
+            "is_active": {
+            "type": "boolean"
+            },
+            "start_date": {
+            "type": "date"
+            },
+            "end_date": {
+            "type": "date"
+            },
+            "start_time": {
+            "type": "time"
+            },
+            "end_time": {
+            "type": "time"
+            }
+        }
+        },
+        "task_2": {
+        "description": "Update the module creation page",
+        "target_page_path": "src/app/(educator)/educator/assessment/modules",
+        "action": "Replace all tasks related to module creation on this page",
+        "note": "The page is currently static and uses JSON data. Disregard real database integration until explicitly requested later."
+        },
+        "task_3": {
+        "description": "Rename and replace the modal file",
+        "old_file": "add-task-modal.tsx",
+        "new_file": "add-modules-modal.tsx",
+        "design_requirement": "The design of the new modal must match the same design pattern as all other add-****-modal.tsx files in the project"
+        },
+        "task_4": {
+        "description": "Define fields for the add-modules-modal",
+        "fields": {
+            "field_1": {
+            "label": "Module Code",
+            "input_type": "hybrid",
+            "hybrid_description": "User can either select from a dropdown OR type manually",
+            "dropdown_options": [
+                "Quiz #1",
+                "Quiz #2",
+                "Quiz #3",
+                "Long Quiz",
+                "Written Exam"
+            ],
+            "manual_input": {
+                "allowed": true,
+                "description": "User can type the module code manually instead of selecting from dropdown"
+            }
+            },
+            "field_2": {
+            "label": "Select Subject designated in the Section",
+            "input_type": "dropdown with multiple select using checkboxes",
+            "display_options": {
+                "format": {
+                "line_1": "SUBJECT NAME (e.g. PROGRAMMING FUNDAMENTALS)",
+                "line_2": "SECTION_CODE | TERM (e.g. BSIT1234 | PRELIM)"
+                },
+                "source_description": "Shows all subjects created on that section by that educator or whoever made that subject"
+            },
+            "related_tables": [
+                "tbl_academic_term",
+                "tbl_sections",
+                "tbl_sections_term",
+                "tbl_subjects"
+            ]
+            },
+            "field_3": {
+            "label": "Time Limit",
+            "input_type": "text field",
+            "description": "User sets the time limit for the module"
+            },
+            "field_4": {
+            "label": "Shuffle",
+            "input_type": "switch",
+            "preferred": "switch",
+            "alternative": "dropdown",
+            "note": "Switch is the preferred input type"
+            },
+            "field_5": {
+            "label": "Status",
+            "input_type": "dropdown",
+            "options": [
+                "active",
+                "inactive"
+            ]
+            },
+            "field_6": {
+            "label": "Start and End Date",
+            "input_type": "calendar",
+            "fields": [
+                "start_date",
+                "end_date"
+            ]
+            },
+            "field_7": {
+            "label": "Start and End Time",
+            "input_type": "time picker",
+            "fields": [
+                "start_time",
+                "end_time"
+            ]
+            }
+        }
+        },
+        "task_5": {
+        "description": "Validation rule",
+        "rule": "Only 1 Module Code can be created per subject per section",
+        "constraint": "unique combination of module_code and subject_id and section_id"
+        }
+    }
+    }

@@ -2,7 +2,7 @@
 
 import { DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu'
 import type { Table } from '@tanstack/react-table'
-import { IconAdjustmentsHorizontal } from '@tabler/icons-react'
+import { IconFilterCog } from '@tabler/icons-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -26,7 +26,7 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
           size="sm"
           className="ml-auto hidden h-8 lg:flex cursor-pointer mr-2"
         >
-          <IconAdjustmentsHorizontal stroke={2} />
+          <IconFilterCog size={18} />
           View
         </Button>
       </DropdownMenuTrigger>

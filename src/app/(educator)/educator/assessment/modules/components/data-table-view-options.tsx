@@ -17,6 +17,7 @@ interface DataTableViewOptionsProps<TData> {
   table: Table<TData>
 }
 
+// DataTableViewOptions - toggle visible table columns
 export function DataTableViewOptions<TData>({
   table,
 }: DataTableViewOptionsProps<TData>) {

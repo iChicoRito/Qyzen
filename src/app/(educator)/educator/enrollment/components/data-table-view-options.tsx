@@ -1,7 +1,7 @@
 'use client'
 
 import type { Table } from '@tanstack/react-table'
-import { IconSettings2 } from '@tabler/icons-react'
+import { IconFilterCog } from '@tabler/icons-react'
 
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -19,7 +19,7 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
           size="sm"
           className="mr-2 ml-auto hidden h-8 cursor-pointer lg:flex"
         >
-          <IconSettings2 size={18} />
+          <IconFilterCog size={18} />
           View
         </Button>
       </DropdownMenuTrigger>

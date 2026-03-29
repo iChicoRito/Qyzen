@@ -10,7 +10,8 @@ import {
   IconShieldCheck,
   IconUser,
   IconChalkboardTeacher,
-  IconId
+  IconId,
+  IconSubtitlesEdit 
 } from '@tabler/icons-react'
 import Link from 'next/link'
 
@@ -138,6 +139,21 @@ function getNavigationGroupsByRole(role: AppRole): SidebarNavGroup[] {
       {
         label: 'Management',
         items: [
+          {
+            title: 'Assessment',
+            url: '#',
+            icon: IconSubtitlesEdit,
+            items: [
+              {
+                title: 'Modules',
+                url: '/educator/assessment/modules',
+              },
+              {
+                title: 'Quizzes',
+                url: '/educator/assessment/quizzes',
+              },
+            ],
+          },
           {
             title: 'Classroom',
             url: '#',

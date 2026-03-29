@@ -66,6 +66,27 @@ CREATE TABLE public.tbl_subjects (
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+CREATE SEQUENCE IF NOT EXISTS tbl_modules_id_seq;
+CREATE TABLE public.tbl_modules (
+  id bigint DEFAULT nextval('tbl_modules_id_seq'::regclass) NOT NULL,
+  educator_id bigint NOT NULL,
+  subject_id bigint NOT NULL,
+  section_id bigint NOT NULL,
+  module_id text NOT NULL DEFAULT concat('MDL-', lpad((floor((random() * (1000000000)::double precision)))::bigint::text, 9, '0'::text)),
+  module_code text NOT NULL,
+  term bigint NOT NULL,
+  time_limit text NOT NULL,
+  cheating_attempts integer DEFAULT 0 NOT NULL,
+  is_shuffle boolean DEFAULT false NOT NULL,
+  is_active boolean DEFAULT true NOT NULL,
+  start_date date NOT NULL,
+  end_date date NOT NULL,
+  start_time time without time zone NOT NULL,
+  end_time time without time zone NOT NULL,
+  created_at timestamp with time zone DEFAULT now() NOT NULL,
+  updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
 CREATE SEQUENCE IF NOT EXISTS tbl_enrolled_id_seq;
 CREATE TABLE public.tbl_enrolled (
   id bigint DEFAULT nextval('tbl_enrolled_id_seq'::regclass) NOT NULL,
@@ -111,6 +132,7 @@ ALTER TABLE public.tbl_roles ADD CONSTRAINT roles_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_sections ADD CONSTRAINT tbl_sections_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_sections_term ADD CONSTRAINT tbl_sections_term_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_subjects ADD CONSTRAINT tbl_subjects_pkey PRIMARY KEY (id);
+ALTER TABLE public.tbl_modules ADD CONSTRAINT tbl_modules_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_user_roles ADD CONSTRAINT user_roles_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_users ADD CONSTRAINT users_pkey PRIMARY KEY (id);
@@ -126,6 +148,10 @@ ALTER TABLE public.tbl_sections_term ADD CONSTRAINT tbl_sections_term_academic_t
 ALTER TABLE public.tbl_sections_term ADD CONSTRAINT tbl_sections_term_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.tbl_sections(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_subjects ADD CONSTRAINT tbl_subjects_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_subjects ADD CONSTRAINT tbl_subjects_sections_id_fkey FOREIGN KEY (sections_id) REFERENCES public.tbl_sections(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_modules ADD CONSTRAINT tbl_modules_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_modules ADD CONSTRAINT tbl_modules_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.tbl_subjects(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_modules ADD CONSTRAINT tbl_modules_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.tbl_sections(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_modules ADD CONSTRAINT tbl_modules_term_fkey FOREIGN KEY (term) REFERENCES public.tbl_academic_term(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.tbl_subjects(id) ON DELETE CASCADE;
@@ -159,6 +185,14 @@ CREATE INDEX idx_tbl_subjects_educator_id ON public.tbl_subjects USING btree (ed
 CREATE INDEX idx_tbl_subjects_sections_id ON public.tbl_subjects USING btree (sections_id);
 CREATE INDEX idx_tbl_subjects_subject_code ON public.tbl_subjects USING btree (subject_code);
 CREATE INDEX idx_tbl_subjects_subject_name ON public.tbl_subjects USING btree (subject_name);
+CREATE UNIQUE INDEX tbl_modules_unique_module_id ON public.tbl_modules USING btree (module_id);
+CREATE UNIQUE INDEX tbl_modules_unique_code_per_subject_section_term ON public.tbl_modules USING btree (module_code, subject_id, section_id, term);
+CREATE INDEX idx_tbl_modules_educator_id ON public.tbl_modules USING btree (educator_id);
+CREATE INDEX idx_tbl_modules_subject_id ON public.tbl_modules USING btree (subject_id);
+CREATE INDEX idx_tbl_modules_section_id ON public.tbl_modules USING btree (section_id);
+CREATE INDEX idx_tbl_modules_term ON public.tbl_modules USING btree (term);
+CREATE INDEX idx_tbl_modules_module_code ON public.tbl_modules USING btree (module_code);
+CREATE INDEX idx_tbl_modules_start_date ON public.tbl_modules USING btree (start_date);
 CREATE UNIQUE INDEX tbl_enrolled_unique_student_subject_per_educator ON public.tbl_enrolled USING btree (educator_id, student_id, subject_id);
 CREATE INDEX idx_tbl_enrolled_educator_id ON public.tbl_enrolled USING btree (educator_id);
 CREATE INDEX idx_tbl_enrolled_student_id ON public.tbl_enrolled USING btree (student_id);
@@ -176,6 +210,7 @@ ALTER TABLE public.tbl_user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_sections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_sections_term ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_subjects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tbl_modules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_enrolled ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
@@ -244,6 +279,10 @@ CREATE POLICY "Admin full access on tbl_subjects" ON public.tbl_subjects AS PERM
   USING (has_role('admin'::text))
   WITH CHECK (has_role('admin'::text));
 
+CREATE POLICY "Admin full access on tbl_modules" ON public.tbl_modules AS PERMISSIVE FOR ALL TO authenticated
+  USING (has_role('admin'::text))
+  WITH CHECK (has_role('admin'::text));
+
 CREATE POLICY "Admin full access on tbl_enrolled" ON public.tbl_enrolled AS PERMISSIVE FOR ALL TO authenticated
   USING (has_role('admin'::text))
   WITH CHECK (has_role('admin'::text));
@@ -296,6 +335,19 @@ CREATE POLICY "Educator subject update access" ON public.tbl_subjects AS PERMISS
 
 CREATE POLICY "Educator subject delete access" ON public.tbl_subjects AS PERMISSIVE FOR DELETE TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id()) AND user_has_permission('subjects:delete'::text)));
+
+CREATE POLICY "Educator module view access" ON public.tbl_modules AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
+
+CREATE POLICY "Educator module create access" ON public.tbl_modules AS PERMISSIVE FOR INSERT TO authenticated
+  WITH CHECK ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
+
+CREATE POLICY "Educator module update access" ON public.tbl_modules AS PERMISSIVE FOR UPDATE TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())))
+  WITH CHECK ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
+
+CREATE POLICY "Educator module delete access" ON public.tbl_modules AS PERMISSIVE FOR DELETE TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
 
 CREATE POLICY "Educator enrollment view access" ON public.tbl_enrolled AS PERMISSIVE FOR SELECT TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
