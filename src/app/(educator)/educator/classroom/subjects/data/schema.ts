@@ -19,3 +19,14 @@ export const subjectSchema = z.object({
 
 export type Subject = z.infer<typeof subjectSchema>
 export type SubjectSection = z.infer<typeof subjectSectionSchema>
+
+// taskSchema - legacy compatibility for unused task modal files
+export const taskSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  status: z.string(),
+  category: z.string(),
+  priority: z.string(),
+})
+
+export type Task = z.infer<typeof taskSchema>

@@ -66,6 +66,17 @@ CREATE TABLE public.tbl_subjects (
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+CREATE SEQUENCE IF NOT EXISTS tbl_enrolled_id_seq;
+CREATE TABLE public.tbl_enrolled (
+  id bigint DEFAULT nextval('tbl_enrolled_id_seq'::regclass) NOT NULL,
+  student_id bigint NOT NULL,
+  educator_id bigint NOT NULL,
+  subject_id bigint NOT NULL,
+  is_active boolean DEFAULT true NOT NULL,
+  created_at timestamp with time zone DEFAULT now() NOT NULL,
+  updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
 CREATE SEQUENCE IF NOT EXISTS tbl_user_roles_id_seq;
 CREATE TABLE public.tbl_user_roles (
   id bigint DEFAULT nextval('tbl_user_roles_id_seq'::regclass) NOT NULL,
@@ -100,6 +111,7 @@ ALTER TABLE public.tbl_roles ADD CONSTRAINT roles_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_sections ADD CONSTRAINT tbl_sections_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_sections_term ADD CONSTRAINT tbl_sections_term_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_subjects ADD CONSTRAINT tbl_subjects_pkey PRIMARY KEY (id);
+ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_user_roles ADD CONSTRAINT user_roles_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_users ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 
@@ -114,6 +126,9 @@ ALTER TABLE public.tbl_sections_term ADD CONSTRAINT tbl_sections_term_academic_t
 ALTER TABLE public.tbl_sections_term ADD CONSTRAINT tbl_sections_term_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.tbl_sections(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_subjects ADD CONSTRAINT tbl_subjects_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_subjects ADD CONSTRAINT tbl_subjects_sections_id_fkey FOREIGN KEY (sections_id) REFERENCES public.tbl_sections(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.tbl_subjects(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_user_roles ADD CONSTRAINT user_roles_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.tbl_roles(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_user_roles ADD CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 
@@ -144,6 +159,10 @@ CREATE INDEX idx_tbl_subjects_educator_id ON public.tbl_subjects USING btree (ed
 CREATE INDEX idx_tbl_subjects_sections_id ON public.tbl_subjects USING btree (sections_id);
 CREATE INDEX idx_tbl_subjects_subject_code ON public.tbl_subjects USING btree (subject_code);
 CREATE INDEX idx_tbl_subjects_subject_name ON public.tbl_subjects USING btree (subject_name);
+CREATE UNIQUE INDEX tbl_enrolled_unique_student_subject_per_educator ON public.tbl_enrolled USING btree (educator_id, student_id, subject_id);
+CREATE INDEX idx_tbl_enrolled_educator_id ON public.tbl_enrolled USING btree (educator_id);
+CREATE INDEX idx_tbl_enrolled_student_id ON public.tbl_enrolled USING btree (student_id);
+CREATE INDEX idx_tbl_enrolled_subject_id ON public.tbl_enrolled USING btree (subject_id);
 
 -- Enable RLS
 
@@ -157,6 +176,7 @@ ALTER TABLE public.tbl_user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_sections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_sections_term ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_subjects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tbl_enrolled ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 
@@ -191,6 +211,9 @@ CREATE POLICY "Admin full access on tbl_academic_term" ON public.tbl_academic_te
 CREATE POLICY "Users can read own profile" ON public.tbl_users AS PERMISSIVE FOR SELECT TO authenticated
   USING ((email = auth.email()));
 
+CREATE POLICY "Educators can read students for enrollment" ON public.tbl_users AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((has_role('educator'::text) AND (user_type = 'student'::text) AND (deleted_at IS NULL)));
+
 CREATE POLICY "Users can read own role links" ON public.tbl_user_roles AS PERMISSIVE FOR SELECT TO authenticated
   USING ((user_id = get_current_tbl_user_id()));
 
@@ -218,6 +241,10 @@ CREATE POLICY "Admin full access on tbl_sections_term" ON public.tbl_sections_te
   WITH CHECK (has_role('admin'::text));
 
 CREATE POLICY "Admin full access on tbl_subjects" ON public.tbl_subjects AS PERMISSIVE FOR ALL TO authenticated
+  USING (has_role('admin'::text))
+  WITH CHECK (has_role('admin'::text));
+
+CREATE POLICY "Admin full access on tbl_enrolled" ON public.tbl_enrolled AS PERMISSIVE FOR ALL TO authenticated
   USING (has_role('admin'::text))
   WITH CHECK (has_role('admin'::text));
 
@@ -269,3 +296,16 @@ CREATE POLICY "Educator subject update access" ON public.tbl_subjects AS PERMISS
 
 CREATE POLICY "Educator subject delete access" ON public.tbl_subjects AS PERMISSIVE FOR DELETE TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id()) AND user_has_permission('subjects:delete'::text)));
+
+CREATE POLICY "Educator enrollment view access" ON public.tbl_enrolled AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
+
+CREATE POLICY "Educator enrollment create access" ON public.tbl_enrolled AS PERMISSIVE FOR INSERT TO authenticated
+  WITH CHECK ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
+
+CREATE POLICY "Educator enrollment update access" ON public.tbl_enrolled AS PERMISSIVE FOR UPDATE TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())))
+  WITH CHECK ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
+
+CREATE POLICY "Educator enrollment delete access" ON public.tbl_enrolled AS PERMISSIVE FOR DELETE TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));

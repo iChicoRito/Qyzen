@@ -9,7 +9,8 @@ import {
   IconSchool,
   IconShieldCheck,
   IconUser,
-  IconChalkboardTeacher
+  IconChalkboardTeacher,
+  IconId
 } from '@tabler/icons-react'
 import Link from 'next/link'
 
@@ -149,6 +150,17 @@ function getNavigationGroupsByRole(role: AppRole): SidebarNavGroup[] {
               {
                 title: 'Sections',
                 url: '/educator/classroom/sections',
+              },
+            ],
+          },
+          {
+            title: 'Enrollment',
+            url: '#',
+            icon: IconId,
+            items: [
+              {
+                title: 'Enroll Student',
+                url: '/educator/enrollment',
               },
             ],
           },
