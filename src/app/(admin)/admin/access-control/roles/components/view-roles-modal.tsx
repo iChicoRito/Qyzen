@@ -1,19 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { IconEye, IconShield } from '@tabler/icons-react'
+import { IconEye } from '@tabler/icons-react'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import {
   Dialog,
   DialogClose,
@@ -30,11 +22,13 @@ import type { Role } from '../data/schema'
 interface ViewRolesModalProps {
   role: Role
   trigger?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 // ViewRolesModal - view role details
-export function ViewRolesModal({ role, trigger }: ViewRolesModalProps) {
-  const [open, setOpen] = useState(false)
+export function ViewRolesModal({ role, trigger, open, onOpenChange }: ViewRolesModalProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
   const [permissions, setPermissions] = useState<PermissionRecord[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
@@ -43,8 +37,11 @@ export function ViewRolesModal({ role, trigger }: ViewRolesModalProps) {
       ? 'rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500'
       : 'rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500'
 
+  const dialogOpen = open ?? internalOpen
+  const setDialogOpen = onOpenChange ?? setInternalOpen
+
   useEffect(() => {
-    if (!open) {
+    if (!dialogOpen) {
       return
     }
 
@@ -61,60 +58,63 @@ export function ViewRolesModal({ role, trigger }: ViewRolesModalProps) {
     }
 
     loadPermissions()
-  }, [open, role.roleName])
+  }, [dialogOpen, role.roleName])
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {trigger ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : open === undefined ? (
+        <DialogTrigger asChild>
           <Button variant="outline" size="sm" className="cursor-pointer">
             <IconEye className="h-4 w-4" stroke={2} />
             View Role
           </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="border-0 bg-transparent p-0 shadow-none sm:max-w-[500px]">
+        </DialogTrigger>
+      ) : null}
+      <DialogContent
+        showCloseButton={false}
+        className="overflow-hidden border-1 p-0 shadow-none sm:max-w-[560px]"
+      >
         <DialogHeader className="sr-only">
           <DialogTitle>{role.roleName}</DialogTitle>
           <DialogDescription>Role information and assigned permission details.</DialogDescription>
         </DialogHeader>
 
-        <Card className="gap-0 overflow-hidden py-0 shadow-xl">
-          <div className="flex h-28 items-center justify-center border-b bg-muted">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-background">
-              <IconShield className="h-8 w-8 text-muted-foreground" stroke={2} />
-            </div>
-          </div>
-
-          <CardHeader className="border-b px-4 py-3">
-            <div className="flex items-start justify-between gap-3">
+        <div className="overflow-hidden rounded-[28px]">
+          <div className="px-6 pb-6">
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b py-6">
               <div className="space-y-1">
-                <CardTitle className="text-lg">{role.roleName}</CardTitle>
-                <CardDescription>
+                <h2 className="font-semibold tracking-tight">{role.roleName}</h2>
+                <p className="text-muted-foreground">
                   Role information and assigned permission details.
-                </CardDescription>
+                </p>
               </div>
-              <Badge variant="outline" className={`${statusClassName} shrink-0`}>
+              <Badge variant="outline" className={`${statusClassName} mt-1 shrink-0`}>
                 {role.status === 'active' ? 'Active' : 'Inactive'}
               </Badge>
             </div>
-          </CardHeader>
 
-          <div className="max-h-[32vh] overflow-y-auto">
-            <CardContent className="space-y-5 px-4 pt-4 pb-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Description</p>
+            <div className="max-h-[40vh] space-y-6 overflow-y-auto py-6">
+              <div className="space-y-2">
+                <p className="font-semibold">Description</p>
                 <p className="text-muted-foreground">{role.description}</p>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium">Assigned Permissions</p>
+              <div className="space-y-3">
+                <p className="font-semibold">Role Type</p>
+                <Badge variant="outline" className="rounded-md px-2.5 py-0.5">
+                  {role.isSystem ? 'System Role' : 'Custom Role'}
+                </Badge>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <p className="font-semibold">Assigned Permissions</p>
                   <Badge variant="secondary" className="rounded-md px-2.5 py-0.5">
                     {permissions.length}
                   </Badge>
                 </div>
-
                 {isLoading ? (
                   <p className="text-muted-foreground">Loading assigned permissions...</p>
                 ) : permissions.length === 0 ? (
@@ -133,17 +133,15 @@ export function ViewRolesModal({ role, trigger }: ViewRolesModalProps) {
                   </div>
                 )}
               </div>
-            </CardContent>
-          </div>
+            </div>
 
-          <CardFooter className="border-t py-5">
             <DialogClose asChild>
-              <Button variant="outline" className="w-full cursor-pointer">
+              <Button variant="outline" className="h-10 w-full cursor-pointer rounded-xl">
                 Close
               </Button>
             </DialogClose>
-          </CardFooter>
-        </Card>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )

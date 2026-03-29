@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import type { Row } from '@tanstack/react-table'
 import { IconDotsVertical } from '@tabler/icons-react'
-import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -15,9 +14,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { type SectionPermissions } from '@/lib/auth/section-permissions'
-import { deleteSection, updateSection, type SectionRecord } from '@/lib/supabase/sections'
+import { updateSection, type SectionRecord } from '@/lib/supabase/sections'
 
 import { sectionSchema } from '../data/schema'
+import { DeleteConfirmationModal } from './delete-confirmation-modal'
 import { EditSectionModal } from './edit-section-modal'
 import { ViewSectionModal } from './view-section-modal'
 
@@ -39,23 +39,7 @@ export function DataTableRowActions<TData>({
   const section = sectionSchema.parse(row.original)
   const [isViewOpen, setIsViewOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
-
-  // handleDelete - delete current section
-  const handleDelete = async () => {
-    const isConfirmed = window.confirm(`Delete section "${section.sectionName}"?`)
-
-    if (!isConfirmed) {
-      return
-    }
-
-    try {
-      await deleteSection(section.id)
-      onSectionDeleted?.(section.id)
-      toast.success('Section deleted successfully.')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete section.')
-    }
-  }
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
 
   // ==================== RENDER ====================
   return (
@@ -71,18 +55,22 @@ export function DataTableRowActions<TData>({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[160px]">
-          <DropdownMenuItem className="cursor-pointer" onSelect={() => setIsViewOpen(true)}>
+          <DropdownMenuItem className="cursor-pointer" onClick={() => setIsViewOpen(true)}>
             View Section
           </DropdownMenuItem>
           {permissions.canUpdate ? (
-            <DropdownMenuItem className="cursor-pointer" onSelect={() => setIsEditOpen(true)}>
+            <DropdownMenuItem className="cursor-pointer" onClick={() => setIsEditOpen(true)}>
               Edit Section
             </DropdownMenuItem>
           ) : null}
           {permissions.canDelete ? (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer" variant="destructive" onSelect={handleDelete}>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                variant="destructive"
+                onClick={() => setIsDeleteOpen(true)}
+              >
                 Delete
                 <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
               </DropdownMenuItem>
@@ -104,6 +92,13 @@ export function DataTableRowActions<TData>({
         trigger={null}
         open={permissions.canUpdate ? isEditOpen : false}
         onOpenChange={setIsEditOpen}
+      />
+      <DeleteConfirmationModal
+        section={section}
+        trigger={null}
+        open={permissions.canDelete ? isDeleteOpen : false}
+        onOpenChange={setIsDeleteOpen}
+        onSectionDeleted={onSectionDeleted}
       />
     </>
   )

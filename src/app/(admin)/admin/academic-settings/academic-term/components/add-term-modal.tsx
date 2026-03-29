@@ -9,6 +9,14 @@ import { z } from 'zod'
 
 import { Button } from '@/components/ui/button'
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -141,8 +149,8 @@ export function AddAcademicTermModal({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
+      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[425px]">
+        <DialogHeader className="sr-only">
           <DialogTitle>Add Academic Term</DialogTitle>
           <DialogDescription>
             Create a new academic term record with a term name, semester, academic year, and
@@ -151,7 +159,17 @@ export function AddAcademicTermModal({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(handleSubmit)}>
+            <Card className="flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden gap-0 py-0 shadow-xl">
+              <CardHeader className="sticky top-0 z-10 border-b bg-card px-5 py-4">
+                <CardTitle>Add Academic Term</CardTitle>
+                <CardDescription>
+                  Create a new academic term record with a term name, semester, academic year, and
+                  status.
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="flex-1 space-y-6 overflow-y-auto px-5 py-5">
             {/* academic term name field */}
             <FormField
               control={form.control}
@@ -259,10 +277,13 @@ export function AddAcademicTermModal({
                   </Select>
                   <FormMessage />
                 </FormItem>
-              )}
-            />
+                )}
+              />
 
-            <div className="flex justify-end space-x-2 pt-4">
+              </CardContent>
+
+              <CardFooter className="sticky bottom-0 z-10 border-t bg-card px-5 py-4">
+            <div className="flex w-full justify-end space-x-2">
               <Button
                 type="button"
                 variant="outline"
@@ -277,14 +298,12 @@ export function AddAcademicTermModal({
                 className="cursor-pointer"
                 disabled={isSubmitting || academicYearOptions.length === 0}
               >
-                {isSubmitting ? (
-                  <Spinner className="mr-2 h-4 w-4" />
-                ) : (
-                  <IconPlus className="mr-2 h-4 w-4" stroke={2} />
-                )}
+                {isSubmitting ? <Spinner className="mr-2 h-4 w-4" /> : null}
                 Create Academic Term
               </Button>
             </div>
+              </CardFooter>
+            </Card>
           </form>
         </Form>
       </DialogContent>

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import type { Row } from '@tanstack/react-table'
 import { IconDots } from '@tabler/icons-react'
 
@@ -36,9 +37,23 @@ export function DataTableRowActions<TData>({
   onDeletePermission,
 }: DataTableRowActionsProps<TData>) {
   const permission = permissionSchema.parse(row.original)
+  const [isViewOpen, setIsViewOpen] = useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
 
   return (
-    <DropdownMenu>
+    <>
+      <ViewPermissionsModal
+        permission={permission}
+        open={isViewOpen}
+        onOpenChange={setIsViewOpen}
+      />
+      <DeleteConfirmationModal
+        permission={permission}
+        onDeletePermission={onDeletePermission}
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+      />
+      <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
@@ -49,31 +64,21 @@ export function DataTableRowActions<TData>({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[210px]">
-        <ViewPermissionsModal
-          permission={permission}
-          trigger={
-            <DropdownMenuItem onSelect={(event) => event.preventDefault()} className="cursor-pointer">
-              View Permission
-            </DropdownMenuItem>
-          }
-        />
+        <DropdownMenuItem className="cursor-pointer" onClick={() => setIsViewOpen(true)}>
+          View Permission
+        </DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer">Edit Permission</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DeleteConfirmationModal
-          permission={permission}
-          onDeletePermission={onDeletePermission}
-          trigger={
-            <DropdownMenuItem
-              onSelect={(event) => event.preventDefault()}
-              className="cursor-pointer"
-              variant="destructive"
-            >
-              Delete
-              <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
-            </DropdownMenuItem>
-          }
-        />
+        <DropdownMenuItem
+          className="cursor-pointer"
+          variant="destructive"
+          onClick={() => setIsDeleteOpen(true)}
+        >
+          Delete
+          <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    </>
   )
 }

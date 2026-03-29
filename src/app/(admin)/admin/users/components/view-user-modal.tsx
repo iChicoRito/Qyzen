@@ -1,17 +1,10 @@
 'use client'
 
-import { IconEye, IconUser } from '@tabler/icons-react'
+import { useState } from 'react'
+import { IconEye } from '@tabler/icons-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import {
   Dialog,
   DialogDescription,
@@ -27,10 +20,13 @@ import type { User } from '../data/schema'
 interface ViewUserModalProps {
   user: User
   trigger?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 // ViewUserModal - view user details
-export function ViewUserModal({ user, trigger }: ViewUserModalProps) {
+export function ViewUserModal({ user, trigger, open, onOpenChange }: ViewUserModalProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
   const statusClassName =
     user.status === 'active'
       ? 'rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500'
@@ -43,69 +39,71 @@ export function ViewUserModal({ user, trigger }: ViewUserModalProps) {
         ? 'Student'
         : 'Admin'
 
+  const fullName = `${user.givenName} ${user.surname}`
+  const initials = `${user.givenName.charAt(0)}${user.surname.charAt(0)}`.toUpperCase()
+  const isControlled = open !== undefined
+  const dialogOpen = open ?? internalOpen
+  const setDialogOpen = onOpenChange ?? setInternalOpen
+
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        {trigger || (
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {trigger ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : !isControlled ? (
+        <DialogTrigger asChild>
           <Button variant="outline" size="sm" className="cursor-pointer">
             <IconEye className="h-4 w-4" stroke={2} />
             View User
           </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="border-0 bg-transparent p-0 shadow-none sm:max-w-[500px]">
+        </DialogTrigger>
+      ) : null}
+      <DialogContent
+        showCloseButton={false}
+        className="overflow-hidden border-0 bg-background p-0 shadow-none sm:max-w-[560px]"
+      >
         <DialogHeader className="sr-only">
-          <DialogTitle>
-            {user.givenName} {user.surname}
-          </DialogTitle>
+          <DialogTitle>{fullName}</DialogTitle>
           <DialogDescription>User information and assigned role details.</DialogDescription>
         </DialogHeader>
-        <Card className="gap-0 overflow-hidden py-0 shadow-xl">
-          <div className="flex h-28 items-center justify-center border-b bg-muted">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-background">
-              <IconUser className="h-8 w-8 text-muted-foreground" stroke={2} />
-            </div>
+
+        <div className="overflow-hidden rounded-[28px] bg-background">
+          <div className="px-2 pt-2">
+            <div className="h-[160px] rounded-[28px] bg-muted" />
           </div>
 
-          <CardHeader className="border-b px-4 py-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <CardTitle className="text-lg">{user.givenName} {user.surname}</CardTitle>
-                <CardDescription>User information and assigned role details.</CardDescription>
+          <div className="px-6 pb-6">
+            <div className="-mt-12 flex h-24 w-24 items-center justify-center rounded-full border-4 border-background bg-background shadow-lg">
+              <span className="sr-only">{fullName}</span>
+              <div className="flex h-[5.25rem] w-[5.25rem] items-center justify-center rounded-full bg-muted">
+                <span className="text-xl font-semibold tracking-tight">{initials}</span>
               </div>
-              <Badge variant="outline" className={`${statusClassName} shrink-0`}>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-start justify-between gap-4 border-b pb-6">
+              <div className="min-w-0 space-y-1">
+                <h2 className="font-semibold tracking-tight">{fullName}</h2>
+                <p className="break-words text-sm text-muted-foreground">{user.email}</p>
+              </div>
+              <Badge variant="outline" className={`${statusClassName} mt-1 shrink-0`}>
                 {user.status === 'active' ? 'Active' : 'Inactive'}
               </Badge>
             </div>
-          </CardHeader>
 
-          <div className="max-h-[32vh] overflow-y-auto">
-            <CardContent className="space-y-5 px-4 pt-4 pb-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium">User ID</p>
-                <p className="text-muted-foreground">{user.userId}</p>
+            <div className="max-h-[40vh] space-y-6 overflow-y-auto py-6">
+              <div className="space-y-2">
+                <p className="font-semibold">User ID</p>
+                <p className="text-base text-muted-foreground">{user.userId}</p>
               </div>
 
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Email Address</p>
-                <p className="break-words text-muted-foreground">{user.email}</p>
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-sm font-medium">User Type</p>
+              <div className="space-y-3">
+                <p className="font-semibold">User Type</p>
                 <Badge variant="outline" className="rounded-md px-2.5 py-0.5">
                   {userTypeLabel}
                 </Badge>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium">Assigned Roles</p>
-                  <Badge variant="secondary" className="rounded-md px-2.5 py-0.5">
-                    {user.roleNames.length}
-                  </Badge>
-                </div>
-
+              <div className="space-y-3">
+                <p className="font-semibold">Assigned Roles ID</p>
                 {user.roleNames.length === 0 ? (
                   <p className="text-muted-foreground">No roles assigned.</p>
                 ) : (
@@ -122,17 +120,15 @@ export function ViewUserModal({ user, trigger }: ViewUserModalProps) {
                   </div>
                 )}
               </div>
-            </CardContent>
-          </div>
+            </div>
 
-          <CardFooter className="border-t py-5">
             <DialogClose asChild>
-              <Button variant="outline" className="w-full cursor-pointer">
+              <Button variant="outline" className="h-10 w-full cursor-pointer rounded-xl">
                 Close
               </Button>
             </DialogClose>
-          </CardFooter>
-        </Card>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )

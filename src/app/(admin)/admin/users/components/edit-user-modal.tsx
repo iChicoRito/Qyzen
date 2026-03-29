@@ -83,15 +83,19 @@ type EditUserFormData = z.infer<typeof editUserFormSchema>
 interface EditUserModalProps {
   user: User
   trigger?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 // EditUserModal - edit user details
-export function EditUserModal({ user, trigger }: EditUserModalProps) {
+export function EditUserModal({ user, trigger, open, onOpenChange }: EditUserModalProps) {
   // ==================== STATE ====================
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
   const [isLoadingRoles, setIsLoadingRoles] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [roles, setRoles] = useState<RoleRecord[]>([])
+  const dialogOpen = open ?? internalOpen
+  const setDialogOpen = onOpenChange ?? setInternalOpen
 
   // ==================== FORM SETUP ====================
   const form = useForm<EditUserFormData>({
@@ -121,7 +125,7 @@ export function EditUserModal({ user, trigger }: EditUserModalProps) {
   }
 
   useEffect(() => {
-    if (open) {
+    if (dialogOpen) {
       loadRoles()
       form.reset({
         userId: user.userId,
@@ -133,7 +137,7 @@ export function EditUserModal({ user, trigger }: EditUserModalProps) {
         roleNames: user.roleNames,
       })
     }
-  }, [form, open, user])
+  }, [dialogOpen, form, user])
 
   // handleRoleCheckedChange - toggle selected role name
   const handleRoleCheckedChange = (roleName: string, checked: boolean) => {
@@ -165,7 +169,7 @@ export function EditUserModal({ user, trigger }: EditUserModalProps) {
       toast.success('User updated successfully', {
         description: `${user.givenName} ${user.surname} has been updated.`,
       })
-      setOpen(false)
+      setDialogOpen(false)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update user.')
     } finally {
@@ -175,7 +179,7 @@ export function EditUserModal({ user, trigger }: EditUserModalProps) {
 
   // handleOpenChange - reset form when dialog closes
   const handleOpenChange = (nextOpen: boolean) => {
-    setOpen(nextOpen)
+    setDialogOpen(nextOpen)
 
     if (!nextOpen) {
       form.reset({
@@ -191,16 +195,18 @@ export function EditUserModal({ user, trigger }: EditUserModalProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        {trigger || (
+    <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
+      {trigger ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : open === undefined ? (
+        <DialogTrigger asChild>
           <Button variant="outline" size="sm" className="cursor-pointer">
             <IconEdit className="h-4 w-4" stroke={2} />
             Edit User
           </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="border-0 bg-transparent p-0 shadow-none sm:max-w-[520px]">
+        </DialogTrigger>
+      ) : null}
+      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[520px]">
         <DialogHeader className="sr-only">
           <DialogTitle>Edit User</DialogTitle>
           <DialogDescription>
@@ -210,16 +216,15 @@ export function EditUserModal({ user, trigger }: EditUserModalProps) {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Card className="gap-0 overflow-hidden py-0 shadow-xl">
-              <CardHeader className="border-b px-5 pt-6">
+            <Card className="flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden gap-0 py-0 shadow-xl">
+              <CardHeader className="sticky top-0 z-10 border-b bg-card px-5 pt-6">
                 <CardTitle>Edit User</CardTitle>
                 <CardDescription>
                   Update a user record and adjust the assigned roles.
                 </CardDescription>
               </CardHeader>
 
-              <div className="max-h-[55vh] overflow-y-auto">
-                <CardContent className="space-y-6 px-5 py-5">
+              <CardContent className="flex-1 space-y-6 overflow-y-auto px-5 py-5">
                 {/* user id and given name */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
@@ -396,10 +401,9 @@ export function EditUserModal({ user, trigger }: EditUserModalProps) {
                     </FormItem>
                   )}
                 />
-                </CardContent>
-              </div>
+              </CardContent>
 
-              <CardFooter className="border-t px-5 pb-6">
+              <CardFooter className="sticky bottom-0 z-10 border-t bg-card px-5 pb-6">
                 <div className="flex w-full justify-end space-x-2">
                   <Button
                     type="button"

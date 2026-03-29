@@ -152,7 +152,7 @@ export function AddSubjectModal({ onAddSubject, trigger }: AddSubjectModalProps)
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="border-0 bg-transparent p-0 shadow-none sm:max-w-[520px]">
+      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[420px]">
         <DialogHeader className="sr-only">
           <DialogTitle>Add New Subject</DialogTitle>
           <DialogDescription>Create a subject and assign one or more sections.</DialogDescription>
@@ -160,14 +160,13 @@ export function AddSubjectModal({ onAddSubject, trigger }: AddSubjectModalProps)
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Card className="gap-0 overflow-hidden py-0 shadow-xl">
-              <CardHeader className="border-b px-5 pt-6">
+            <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-sm flex-col overflow-hidden">
+              <CardHeader className="sticky top-0 z-10 border-b bg-card">
                 <CardTitle>Add New Subject</CardTitle>
                 <CardDescription>Create a subject and assign one or more sections.</CardDescription>
               </CardHeader>
 
-              <div className="max-h-[55vh] overflow-y-auto">
-                <CardContent className="space-y-6 px-5 py-5">
+              <CardContent className="flex-1 space-y-6 overflow-y-auto">
                   {/* subject code */}
                   <FormField
                     control={form.control}
@@ -204,8 +203,8 @@ export function AddSubjectModal({ onAddSubject, trigger }: AddSubjectModalProps)
                     name="sectionIds"
                     render={() => (
                       <FormItem>
-                        <FormLabel>Section</FormLabel>
-                        <div className="space-y-3 rounded-md">
+                        <FormLabel>Sections</FormLabel>
+                        <div className="space-y-3">
                           {isLoadingSections ? (
                             <p className="text-sm text-muted-foreground">Loading sections...</p>
                           ) : sections.length === 0 ? (
@@ -268,38 +267,32 @@ export function AddSubjectModal({ onAddSubject, trigger }: AddSubjectModalProps)
                       </FormItem>
                     )}
                   />
-                </CardContent>
-              </div>
+              </CardContent>
 
-              <CardFooter className="border-t px-5 pb-6">
-                <div className="flex w-full justify-end space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => handleOpenChange(false)}
-                    className="cursor-pointer"
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="cursor-pointer"
-                    disabled={isSubmitting || isLoadingSections}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 size={18} className="mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <IconPlus size={18} className="mr-2" />
-                        Create Subject
-                      </>
-                    )}
-                  </Button>
-                </div>
+              <CardFooter className="sticky bottom-0 z-10 flex-col gap-2 border-t bg-card">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleOpenChange(false)}
+                  className="w-full cursor-pointer"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="w-full cursor-pointer"
+                  disabled={isSubmitting || isLoadingSections}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={18} className="mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>Create Subject</>
+                  )}
+                </Button>
               </CardFooter>
             </Card>
           </form>

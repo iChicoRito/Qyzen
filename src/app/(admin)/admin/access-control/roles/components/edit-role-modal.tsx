@@ -69,16 +69,26 @@ type EditRoleFormData = z.infer<typeof editRoleFormSchema>
 interface EditRoleModalProps {
   role: Role
   onRoleUpdated?: (currentRoleName: string, updatedRole: Role) => void
-  trigger: React.ReactNode
+  trigger?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 // EditRoleModal - edit role details and permissions
-export function EditRoleModal({ role, onRoleUpdated, trigger }: EditRoleModalProps) {
+export function EditRoleModal({
+  role,
+  onRoleUpdated,
+  trigger,
+  open,
+  onOpenChange,
+}: EditRoleModalProps) {
   // ==================== STATE ====================
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [permissions, setPermissions] = useState<PermissionRecord[]>([])
+  const dialogOpen = open ?? internalOpen
+  const setDialogOpen = onOpenChange ?? setInternalOpen
 
   // ==================== FORM SETUP ====================
   const form = useForm<EditRoleFormData>({
@@ -117,10 +127,10 @@ export function EditRoleModal({ role, onRoleUpdated, trigger }: EditRoleModalPro
   }
 
   useEffect(() => {
-    if (open) {
+    if (dialogOpen) {
       loadRoleDetails()
     }
-  }, [open])
+  }, [dialogOpen])
 
   // handlePermissionCheckedChange - toggle permission checkbox value
   const handlePermissionCheckedChange = (permissionString: string, checked: boolean) => {
@@ -159,7 +169,7 @@ export function EditRoleModal({ role, onRoleUpdated, trigger }: EditRoleModalPro
       toast.success('Role updated successfully', {
         description: `${updatedRole.roleName} has been updated.`,
       })
-      setOpen(false)
+      setDialogOpen(false)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update role.')
     } finally {
@@ -169,7 +179,7 @@ export function EditRoleModal({ role, onRoleUpdated, trigger }: EditRoleModalPro
 
   // handleOpenChange - load or reset dialog state
   const handleOpenChange = (nextOpen: boolean) => {
-    setOpen(nextOpen)
+    setDialogOpen(nextOpen)
 
     if (!nextOpen) {
       form.reset({
@@ -183,9 +193,9 @@ export function EditRoleModal({ role, onRoleUpdated, trigger }: EditRoleModalPro
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="border-0 bg-transparent p-0 shadow-none sm:max-w-[720px]">
+    <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
+      {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
+      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[720px]">
         <DialogHeader className="sr-only">
           <DialogTitle>Edit Role</DialogTitle>
           <DialogDescription>
@@ -195,16 +205,15 @@ export function EditRoleModal({ role, onRoleUpdated, trigger }: EditRoleModalPro
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Card className="gap-0 overflow-hidden py-0 shadow-xl">
-              <CardHeader className="border-b px-5 py-4">
+            <Card className="flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden gap-0 py-0 shadow-xl">
+              <CardHeader className="sticky top-0 z-10 border-b bg-card px-5 py-4">
                 <CardTitle>Edit Role</CardTitle>
                 <CardDescription>
                   Update the role details and assign permissions to this role.
                 </CardDescription>
               </CardHeader>
 
-              <div className="max-h-[55vh] overflow-y-auto">
-                <CardContent className="space-y-6 px-5 py-5">
+              <CardContent className="flex-1 space-y-6 overflow-y-auto px-5 py-5">
                   {/* role name field */}
                   <FormField
                     control={form.control}
@@ -354,10 +363,9 @@ export function EditRoleModal({ role, onRoleUpdated, trigger }: EditRoleModalPro
                       </FormItem>
                     )}
                   />
-                </CardContent>
-              </div>
+              </CardContent>
 
-              <CardFooter className="border-t px-5 py-4">
+              <CardFooter className="sticky bottom-0 z-10 border-t bg-card px-5 py-4">
                 <div className="flex w-full justify-end space-x-2">
                   <Button
                     type="button"

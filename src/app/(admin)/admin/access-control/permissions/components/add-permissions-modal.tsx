@@ -172,7 +172,7 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="border-0 bg-transparent p-0 shadow-none sm:max-w-[720px]">
+      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[720px]">
         <DialogHeader className="sr-only">
           <DialogTitle>Add Permissions</DialogTitle>
           <DialogDescription>
@@ -182,16 +182,15 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Card className="gap-0 overflow-hidden py-0 shadow-xl">
-              <CardHeader className="border-b px-5 py-4">
+            <Card className="flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden gap-0 py-0 shadow-xl">
+              <CardHeader className="sticky top-0 z-10 border-b bg-card px-5 py-4">
                 <CardTitle>Add Permissions</CardTitle>
                 <CardDescription>
                   Create one or more permission records in a single process.
                 </CardDescription>
               </CardHeader>
 
-              <div className="max-h-[55vh] overflow-y-auto">
-                <CardContent className="space-y-6 px-5 py-5">
+              <CardContent className="flex-1 space-y-6 overflow-y-auto px-5 py-5">
                   {/* permission repeater */}
                   <div className="space-y-4">
                     {fields.map((field, index) => (
@@ -350,10 +349,9 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </div>
+              </CardContent>
 
-              <CardFooter className="border-t px-5 py-4">
+              <CardFooter className="sticky bottom-0 z-10 border-t bg-card px-5 py-4">
                 <div className="flex w-full items-center justify-between gap-3">
                   <Button
                     type="button"
@@ -377,11 +375,7 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
                       Cancel
                     </Button>
                     <Button type="submit" className="cursor-pointer" disabled={isSubmitting}>
-                      {isSubmitting ? (
-                        <Spinner className="mr-2 h-4 w-4" />
-                      ) : (
-                        <IconPlus className="mr-2 h-4 w-4" stroke={2} />
-                      )}
+                      {isSubmitting ? <Spinner className="mr-2 h-4 w-4" /> : null}
                       Create Permissions
                     </Button>
                   </div>

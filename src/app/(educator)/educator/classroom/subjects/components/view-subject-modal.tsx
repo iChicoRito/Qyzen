@@ -1,17 +1,10 @@
 'use client'
 
-import { IconBook2, IconEye } from '@tabler/icons-react'
+import { useState } from 'react'
+import { IconEye } from '@tabler/icons-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import {
   Dialog,
   DialogClose,
@@ -37,64 +30,61 @@ export function ViewSubjectModal({
   open,
   onOpenChange,
 }: ViewSubjectModalProps) {
-  // ==================== UI STATE ====================
+  const [internalOpen, setInternalOpen] = useState(false)
   const statusClassName =
     subject.status === 'active'
       ? 'rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500'
       : 'rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500'
+  const dialogOpen = open ?? internalOpen
+  const setDialogOpen = onOpenChange ?? setInternalOpen
 
-  // ==================== RENDER ====================
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      {trigger !== null ? (
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {trigger ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : open === undefined ? (
         <DialogTrigger asChild>
-          {trigger || (
-            <Button variant="outline" size="sm" className="cursor-pointer">
-              <IconEye size={18} />
-              View Subject
-            </Button>
-          )}
+          <Button variant="outline" size="sm" className="cursor-pointer">
+            <IconEye size={18} />
+            View Subject
+          </Button>
         </DialogTrigger>
       ) : null}
-      <DialogContent className="border-0 bg-transparent p-0 shadow-none sm:max-w-[500px]">
+      <DialogContent
+        showCloseButton={false}
+        className="overflow-hidden border-0 bg-background p-0 shadow-none sm:max-w-[560px]"
+      >
         <DialogHeader className="sr-only">
           <DialogTitle>{subject.subjectName}</DialogTitle>
           <DialogDescription>Subject information and assigned sections.</DialogDescription>
         </DialogHeader>
-        <Card className="gap-0 overflow-hidden py-0 shadow-xl">
-          <div className="flex h-28 items-center justify-center border-b bg-muted">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-background">
-              <IconBook2 size={32} className="text-muted-foreground" />
-            </div>
-          </div>
 
-          <CardHeader className="border-b px-4 py-3">
-            <div className="flex items-start justify-between gap-3">
+        <div className="overflow-hidden rounded-[28px] bg-background">
+          <div className="px-6 pb-6">
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b py-6">
               <div className="space-y-1">
-                <CardTitle className="text-lg">{subject.subjectName}</CardTitle>
-                <CardDescription>{subject.subjectCode}</CardDescription>
+                <h2 className="text-xl font-semibold tracking-tight">{subject.subjectName}</h2>
+                <p className="text-sm text-muted-foreground">Subject information and assigned sections.</p>
               </div>
-              <Badge variant="outline" className={`${statusClassName} shrink-0`}>
+              <Badge variant="outline" className={`${statusClassName} mt-1 shrink-0`}>
                 {subject.status === 'active' ? 'Active' : 'Inactive'}
               </Badge>
             </div>
-          </CardHeader>
 
-          <div className="max-h-[32vh] overflow-y-auto">
-            <CardContent className="space-y-5 px-4 pt-4 pb-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Subject Code</p>
+            <div className="max-h-[40vh] space-y-6 overflow-y-auto py-6">
+              <div className="space-y-2">
+                <p className="font-semibold">Subject Code</p>
                 <p className="text-muted-foreground">{subject.subjectCode}</p>
               </div>
 
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Subject Name</p>
+              <div className="space-y-2">
+                <p className="font-semibold">Subject Name</p>
                 <p className="text-muted-foreground">{subject.subjectName}</p>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium">Assigned Sections</p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <p className="font-semibold">Assigned Sections</p>
                   <Badge variant="secondary" className="rounded-md px-2.5 py-0.5">
                     {subject.sections.length}
                   </Badge>
@@ -116,17 +106,15 @@ export function ViewSubjectModal({
                   </div>
                 )}
               </div>
-            </CardContent>
-          </div>
+            </div>
 
-          <CardFooter className="border-t py-5">
             <DialogClose asChild>
-              <Button variant="outline" className="w-full cursor-pointer">
+              <Button variant="outline" className="h-10 w-full cursor-pointer rounded-xl">
                 Close
               </Button>
             </DialogClose>
-          </CardFooter>
-        </Card>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )

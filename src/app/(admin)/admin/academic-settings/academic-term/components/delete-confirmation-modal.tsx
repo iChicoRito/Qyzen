@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { AlertTriangleIcon } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -8,7 +9,6 @@ import {
   DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -18,49 +18,63 @@ import type { AcademicTerm } from '../data/schema'
 
 interface DeleteConfirmationModalProps {
   academicTerm: AcademicTerm
-  trigger: React.ReactNode
+  trigger?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 // DeleteConfirmationModal - show delete confirmation
 export function DeleteConfirmationModal({
   academicTerm,
   trigger,
+  open,
+  onOpenChange,
 }: DeleteConfirmationModalProps) {
   // ==================== STATE ====================
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const dialogOpen = open ?? internalOpen
+  const setDialogOpen = onOpenChange ?? setInternalOpen
 
   // handleDeleteClick - close static modal
   const handleDeleteClick = () => {
-    setOpen(false)
+    setDialogOpen(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Delete Academic Term</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete {academicTerm.academicTermName}? This action is static
-            for now.
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
+      <DialogContent showCloseButton={false} className="rounded-[1rem] sm:max-w-[500px]">
+        <div className="flex flex-col items-center gap-6 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/12 text-destructive">
+            <AlertTriangleIcon className="h-8 w-8" />
+          </div>
 
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button type="button" variant="outline" className="cursor-pointer">
-              Cancel
+          <DialogHeader className="items-center text-center sm:text-center">
+            <DialogTitle className="text-center">
+              Are you absolutely sure you want to delete?
+            </DialogTitle>
+            <DialogDescription className="max-w-[34rem] text-center">
+              This will permanently delete academic term {academicTerm.academicTermName}. This
+              action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid w-full max-w-[26rem] grid-cols-2 gap-3">
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="h-11 w-full cursor-pointer">
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteClick}
+              className="h-11 w-full cursor-pointer"
+            >
+              Delete
             </Button>
-          </DialogClose>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={handleDeleteClick}
-            className="cursor-pointer"
-          >
-            Delete
-          </Button>
-        </DialogFooter>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )

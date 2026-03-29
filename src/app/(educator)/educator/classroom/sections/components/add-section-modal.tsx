@@ -146,7 +146,7 @@ export function AddSectionModal({ onAddSection, trigger }: AddSectionModalProps)
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="border-0 bg-transparent p-0 shadow-none sm:max-w-[520px]">
+      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[420px]">
         <DialogHeader className="sr-only">
           <DialogTitle>Add New Section</DialogTitle>
           <DialogDescription>Create a classroom section and assign academic terms.</DialogDescription>
@@ -154,14 +154,13 @@ export function AddSectionModal({ onAddSection, trigger }: AddSectionModalProps)
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Card className="gap-0 overflow-hidden py-0 shadow-xl">
-              <CardHeader className="border-b px-5 pt-6">
+            <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-sm flex-col overflow-hidden">
+              <CardHeader className="sticky top-0 z-10 border-b bg-card">
                 <CardTitle>Add New Section</CardTitle>
                 <CardDescription>Create a classroom section and assign academic terms.</CardDescription>
               </CardHeader>
 
-              <div className="max-h-[55vh] overflow-y-auto">
-                <CardContent className="space-y-6 px-5 py-5">
+              <CardContent className="flex-1 space-y-6 overflow-y-auto">
                   {/* section name */}
                   <FormField
                     control={form.control}
@@ -183,8 +182,8 @@ export function AddSectionModal({ onAddSection, trigger }: AddSectionModalProps)
                     name="academicTermIds"
                     render={() => (
                       <FormItem>
-                        <FormLabel>Academic Term</FormLabel>
-                        <div className="space-y-3 rounded-md">
+                        <FormLabel>Academic Terms</FormLabel>
+                        <div className="space-y-3">
                           {isLoadingTerms ? (
                             <p className="text-sm text-muted-foreground">Loading academic terms...</p>
                           ) : academicTerms.length === 0 ? (
@@ -247,38 +246,34 @@ export function AddSectionModal({ onAddSection, trigger }: AddSectionModalProps)
                       </FormItem>
                     )}
                   />
-                </CardContent>
-              </div>
+              </CardContent>
 
-              <CardFooter className="border-t px-5 pb-6">
-                <div className="flex w-full justify-end space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => handleOpenChange(false)}
-                    className="cursor-pointer"
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="cursor-pointer"
-                    disabled={isSubmitting || isLoadingTerms}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 size={18} className="mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <IconPlus size={18} className="mr-2" />
-                        Create Section
-                      </>
-                    )}
-                  </Button>
-                </div>
+              <CardFooter className="sticky bottom-0 z-10 flex-col gap-2 border-t bg-card">
+                <Button
+                  type="submit"
+                  className="w-full cursor-pointer"
+                  disabled={isSubmitting || isLoadingTerms}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={18} className="mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      Create Section
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleOpenChange(false)}
+                  className="w-full cursor-pointer"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
               </CardFooter>
             </Card>
           </form>

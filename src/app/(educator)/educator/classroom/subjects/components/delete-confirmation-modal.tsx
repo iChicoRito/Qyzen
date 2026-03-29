@@ -14,42 +14,37 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-
-import type { Role } from '../data/schema'
+import { deleteSubject, type SubjectRecord } from '@/lib/supabase/subjects'
 
 interface DeleteConfirmationModalProps {
-  role: Role
-  onDeleteRole?: (role: Role) => Promise<void>
+  subject: SubjectRecord
   trigger?: React.ReactNode
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  onSubjectDeleted?: (rowIds: number[]) => void
 }
 
-// DeleteConfirmationModal - show delete confirmation
 export function DeleteConfirmationModal({
-  role,
-  onDeleteRole,
+  subject,
   trigger,
   open,
   onOpenChange,
+  onSubjectDeleted,
 }: DeleteConfirmationModalProps) {
-  // ==================== STATE ====================
   const [internalOpen, setInternalOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const dialogOpen = open ?? internalOpen
   const setDialogOpen = onOpenChange ?? setInternalOpen
 
-  // handleDeleteClick - delete role row
   const handleDeleteClick = async () => {
     try {
       setIsDeleting(true)
-      await onDeleteRole?.(role)
-      toast.success('Role deleted', {
-        description: `${role.roleName} was removed successfully.`,
-      })
+      await deleteSubject(subject.rowIds)
+      onSubjectDeleted?.(subject.rowIds)
+      toast.success('Subject deleted successfully.')
       setDialogOpen(false)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete role.')
+      toast.error(error instanceof Error ? error.message : 'Failed to delete subject.')
     } finally {
       setIsDeleting(false)
     }
@@ -69,7 +64,8 @@ export function DeleteConfirmationModal({
               Are you absolutely sure you want to delete?
             </DialogTitle>
             <DialogDescription className="max-w-[34rem] text-center">
-              This will permanently delete the {role.roleName} role. This action cannot be undone.
+              This will permanently delete subject {subject.subjectName}. This action cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
 

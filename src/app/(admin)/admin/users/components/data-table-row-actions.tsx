@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import type { Row } from "@tanstack/react-table"
 import { IconDots } from "@tabler/icons-react"
 
@@ -27,9 +28,16 @@ export function DataTableRowActions<TData>({
   row,
 }: DataTableRowActionsProps<TData>) {
   const user = userSchema.parse(row.original)
+  const [isViewOpen, setIsViewOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
 
   return (
-    <DropdownMenu>
+    <>
+      <ViewUserModal user={user} open={isViewOpen} onOpenChange={setIsViewOpen} />
+      <EditUserModal user={user} open={isEditOpen} onOpenChange={setIsEditOpen} />
+      <DeleteConfirmationModal user={user} open={isDeleteOpen} onOpenChange={setIsDeleteOpen} />
+      <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
@@ -40,43 +48,23 @@ export function DataTableRowActions<TData>({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[160px]">
-        <ViewUserModal
-          user={user}
-          trigger={
-            <DropdownMenuItem
-              onSelect={(event) => event.preventDefault()}
-              className="cursor-pointer"
-            >
-              View User
-            </DropdownMenuItem>
-          }
-        />
-        <EditUserModal
-          user={user}
-          trigger={
-            <DropdownMenuItem
-              onSelect={(event) => event.preventDefault()}
-              className="cursor-pointer"
-            >
-              Edit User
-            </DropdownMenuItem>
-          }
-        />
+        <DropdownMenuItem className="cursor-pointer" onClick={() => setIsViewOpen(true)}>
+          View User
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer" onClick={() => setIsEditOpen(true)}>
+          Edit User
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DeleteConfirmationModal
-          user={user}
-          trigger={
-            <DropdownMenuItem
-              onSelect={(event) => event.preventDefault()}
-              className="cursor-pointer"
-              variant="destructive"
-            >
-              Delete
-              <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
-            </DropdownMenuItem>
-          }
-        />
+        <DropdownMenuItem
+          className="cursor-pointer"
+          variant="destructive"
+          onClick={() => setIsDeleteOpen(true)}
+        >
+          Delete
+          <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    </>
   )
 }

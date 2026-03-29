@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import type { Row } from '@tanstack/react-table'
 import { IconDots } from '@tabler/icons-react'
 
@@ -25,9 +26,16 @@ export function DataTableRowActions<TData>({
   row,
 }: DataTableRowActionsProps<TData>) {
   const academicYear = academicYearSchema.parse(row.original)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
 
   return (
-    <DropdownMenu>
+    <>
+      <DeleteConfirmationModal
+        academicYear={academicYear}
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+      />
+      <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
@@ -41,20 +49,16 @@ export function DataTableRowActions<TData>({
         <DropdownMenuItem className="cursor-pointer">View Academic Year</DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer">Edit Academic Year</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DeleteConfirmationModal
-          academicYear={academicYear}
-          trigger={
-            <DropdownMenuItem
-              onSelect={(event) => event.preventDefault()}
-              className="cursor-pointer"
-              variant="destructive"
-            >
-              Delete
-              <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
-            </DropdownMenuItem>
-          }
-        />
+        <DropdownMenuItem
+          className="cursor-pointer"
+          variant="destructive"
+          onClick={() => setIsDeleteOpen(true)}
+        >
+          Delete
+          <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    </>
   )
 }

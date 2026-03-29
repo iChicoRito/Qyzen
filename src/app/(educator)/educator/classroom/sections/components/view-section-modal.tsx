@@ -1,17 +1,10 @@
 'use client'
 
-import { IconEye, IconSchool } from '@tabler/icons-react'
+import { useState } from 'react'
+import { IconEye } from '@tabler/icons-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import {
   Dialog,
   DialogClose,
@@ -37,64 +30,63 @@ export function ViewSectionModal({
   open,
   onOpenChange,
 }: ViewSectionModalProps) {
-  // ==================== UI STATE ====================
+  const [internalOpen, setInternalOpen] = useState(false)
   const statusClassName =
     section.status === 'active'
       ? 'rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500'
       : 'rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500'
+  const dialogOpen = open ?? internalOpen
+  const setDialogOpen = onOpenChange ?? setInternalOpen
 
-  // ==================== RENDER ====================
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      {trigger !== null ? (
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {trigger ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : open === undefined ? (
         <DialogTrigger asChild>
-          {trigger || (
-            <Button variant="outline" size="sm" className="cursor-pointer">
-              <IconEye size={18} />
-              View Section
-            </Button>
-          )}
+          <Button variant="outline" size="sm" className="cursor-pointer">
+            <IconEye size={18} />
+            View Section
+          </Button>
         </DialogTrigger>
       ) : null}
-      <DialogContent className="border-0 bg-transparent p-0 shadow-none sm:max-w-[500px]">
+      <DialogContent
+        showCloseButton={false}
+        className="overflow-hidden border-0 bg-background p-0 shadow-none sm:max-w-[560px]"
+      >
         <DialogHeader className="sr-only">
           <DialogTitle>{section.sectionName}</DialogTitle>
           <DialogDescription>Section information and assigned academic terms.</DialogDescription>
         </DialogHeader>
-        <Card className="gap-0 overflow-hidden py-0 shadow-xl">
-          <div className="flex h-28 items-center justify-center border-b bg-muted">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-background">
-              <IconSchool size={32} className="text-muted-foreground" />
-            </div>
-          </div>
 
-          <CardHeader className="border-b px-4 py-3">
-            <div className="flex items-start justify-between gap-3">
+        <div className="overflow-hidden rounded-[28px] bg-background">
+          <div className="px-6 pb-6">
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b py-6">
               <div className="space-y-1">
-                <CardTitle className="text-lg">{section.sectionName}</CardTitle>
-                <CardDescription>Section information and assigned academic terms.</CardDescription>
+                <h2 className="text-xl font-semibold tracking-tight">{section.sectionName}</h2>
+                <p className="text-sm text-muted-foreground">
+                  Section information and assigned academic terms.
+                </p>
               </div>
-              <Badge variant="outline" className={`${statusClassName} shrink-0`}>
+              <Badge variant="outline" className={`${statusClassName} mt-1 shrink-0`}>
                 {section.status === 'active' ? 'Active' : 'Inactive'}
               </Badge>
             </div>
-          </CardHeader>
 
-          <div className="max-h-[32vh] overflow-y-auto">
-            <CardContent className="space-y-5 px-4 pt-4 pb-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Section ID</p>
+            <div className="max-h-[40vh] space-y-6 overflow-y-auto py-6">
+              <div className="space-y-2">
+                <p className="font-semibold">Section ID</p>
                 <p className="text-muted-foreground">{section.id}</p>
               </div>
 
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Section Name</p>
+              <div className="space-y-2">
+                <p className="font-semibold">Section Name</p>
                 <p className="text-muted-foreground">{section.sectionName}</p>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium">Academic Terms</p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <p className="font-semibold">Academic Terms</p>
                   <Badge variant="secondary" className="rounded-md px-2.5 py-0.5">
                     {section.academicTerms.length}
                   </Badge>
@@ -116,17 +108,15 @@ export function ViewSectionModal({
                   </div>
                 )}
               </div>
-            </CardContent>
-          </div>
+            </div>
 
-          <CardFooter className="border-t py-5">
             <DialogClose asChild>
-              <Button variant="outline" className="w-full cursor-pointer">
+              <Button variant="outline" className="h-10 w-full cursor-pointer rounded-xl">
                 Close
               </Button>
             </DialogClose>
-          </CardFooter>
-        </Card>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )
