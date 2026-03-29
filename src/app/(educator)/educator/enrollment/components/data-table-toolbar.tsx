@@ -20,6 +20,10 @@ interface DataTableToolbarProps<TData> {
 export function DataTableToolbar<TData>({ table, onAddEnrollment }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0
   const statusFilter = table.getColumn('status')?.getFilterValue() as string[] | undefined
+  const sectionFilter = table.getColumn('sectionName')?.getFilterValue() as string | undefined
+  const sectionOptions = Array.from(table.getColumn('sectionName')?.getFacetedUniqueValues().keys() || [])
+    .map((value) => String(value))
+    .sort((firstValue, secondValue) => firstValue.localeCompare(secondValue))
 
   const handleStatusChange = (value: string) => {
     const column = table.getColumn('status')
@@ -28,6 +32,15 @@ export function DataTableToolbar<TData>({ table, onAddEnrollment }: DataTableToo
       return
     }
     column?.setFilterValue([value])
+  }
+
+  const handleSectionChange = (value: string) => {
+    const column = table.getColumn('sectionName')
+    if (value === 'all') {
+      column?.setFilterValue(undefined)
+      return
+    }
+    column?.setFilterValue(value)
   }
 
   return (
@@ -40,12 +53,19 @@ export function DataTableToolbar<TData>({ table, onAddEnrollment }: DataTableToo
             onChange={(event) => table.getColumn('studentName')?.setFilterValue(event.target.value)}
             className="w-[200px] cursor-text lg:w-[300px]"
           />
-          <Input
-            placeholder="Search section"
-            value={(table.getColumn('sectionName')?.getFilterValue() as string) ?? ''}
-            onChange={(event) => table.getColumn('sectionName')?.setFilterValue(event.target.value)}
-            className="w-[180px] cursor-text"
-          />
+          <Select value={sectionFilter || 'all'} onValueChange={handleSectionChange}>
+            <SelectTrigger className="w-[180px] cursor-pointer">
+              <SelectValue placeholder="Section" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="cursor-pointer">All Sections</SelectItem>
+              {sectionOptions.map((sectionName) => (
+                <SelectItem key={sectionName} value={sectionName} className="cursor-pointer">
+                  {sectionName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={statusFilter?.[0] || 'all'} onValueChange={handleStatusChange}>
             <SelectTrigger className="w-[180px] cursor-pointer">
               <SelectValue placeholder="Status" />

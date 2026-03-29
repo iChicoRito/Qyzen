@@ -146,7 +146,7 @@ export function AddSectionModal({ onAddSection, trigger }: AddSectionModalProps)
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[420px]">
+      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[620px]">
         <DialogHeader className="sr-only">
           <DialogTitle>Add New Section</DialogTitle>
           <DialogDescription>Create a classroom section and assign academic terms.</DialogDescription>
@@ -154,7 +154,7 @@ export function AddSectionModal({ onAddSection, trigger }: AddSectionModalProps)
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-sm flex-col overflow-hidden">
+            <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-[620px] flex-col overflow-hidden">
               <CardHeader className="sticky top-0 z-10 border-b bg-card">
                 <CardTitle>Add New Section</CardTitle>
                 <CardDescription>Create a classroom section and assign academic terms.</CardDescription>
@@ -248,7 +248,16 @@ export function AddSectionModal({ onAddSection, trigger }: AddSectionModalProps)
                   />
               </CardContent>
 
-              <CardFooter className="sticky bottom-0 z-10 flex-col gap-2 border-t bg-card">
+              <CardFooter className="sticky bottom-0 z-10 grid grid-cols-2 gap-2 border-t bg-card">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleOpenChange(false)}
+                  className="w-full cursor-pointer"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
                 <Button
                   type="submit"
                   className="w-full cursor-pointer"
@@ -260,19 +269,8 @@ export function AddSectionModal({ onAddSection, trigger }: AddSectionModalProps)
                       Saving...
                     </>
                   ) : (
-                    <>
-                      Create Section
-                    </>
+                    <>Create Section</>
                   )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleOpenChange(false)}
-                  className="w-full cursor-pointer"
-                  disabled={isSubmitting}
-                >
-                  Cancel
                 </Button>
               </CardFooter>
             </Card>

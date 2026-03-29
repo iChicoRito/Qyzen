@@ -14,7 +14,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { fetchEnrollmentStudents, fetchEnrollmentSubjects, type CreateEnrollmentInput, type EnrollmentStudentOption, type EnrollmentSubjectOption } from '@/lib/supabase/enrollments'
 import { addEnrollmentFormSchema, type AddEnrollmentFormSchema } from '@/lib/validations/enrollment.schema'
@@ -156,7 +155,7 @@ export function AddStudentModal({ onAddEnrollment, trigger }: AddStudentModalPro
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-[520px] flex-col overflow-hidden">
+            <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-[620px] flex-col overflow-hidden">
               <CardHeader className="sticky top-0 z-10 border-b bg-card">
                 <CardTitle>Add Student Enrollment</CardTitle>
                 <CardDescription>Enroll one or more students into one or more subjects.</CardDescription>
@@ -300,7 +299,7 @@ export function AddStudentModal({ onAddEnrollment, trigger }: AddStudentModalPro
                 />
               </CardContent>
 
-              <CardFooter className="sticky bottom-0 z-10 flex-col gap-2 border-t bg-card">
+              <CardFooter className="sticky bottom-0 z-10 grid grid-cols-2 gap-2 border-t bg-card">
                 <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} className="w-full cursor-pointer" disabled={isSubmitting}>
                   Cancel
                 </Button>

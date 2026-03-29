@@ -184,7 +184,7 @@ export function EditSubjectModal({
           )}
         </DialogTrigger>
       ) : null}
-      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[420px]">
+      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[620px]">
         <DialogHeader className="sr-only">
           <DialogTitle>Edit Subject</DialogTitle>
           <DialogDescription>Update the subject details and section assignments.</DialogDescription>
@@ -192,7 +192,7 @@ export function EditSubjectModal({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-sm flex-col overflow-hidden">
+            <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-[620px] flex-col overflow-hidden">
               <CardHeader className="sticky top-0 z-10 border-b bg-card">
                 <CardTitle>Edit Subject</CardTitle>
                 <CardDescription>Update the subject details and section assignments.</CardDescription>
@@ -301,7 +301,7 @@ export function EditSubjectModal({
                   />
               </CardContent>
 
-              <CardFooter className="sticky bottom-0 z-10 flex-col gap-2 border-t bg-card">
+              <CardFooter className="sticky bottom-0 z-10 grid grid-cols-2 gap-2 border-t bg-card">
                 <Button
                   type="button"
                   variant="outline"

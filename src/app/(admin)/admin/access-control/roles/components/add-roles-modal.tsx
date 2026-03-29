@@ -126,7 +126,7 @@ export function AddRolesModal({ onAddRole, trigger }: AddRolesModalProps) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[520px]">
+      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[620px]">
         <DialogHeader className="sr-only">
           <DialogTitle>Add Role</DialogTitle>
           <DialogDescription>
@@ -136,7 +136,7 @@ export function AddRolesModal({ onAddRole, trigger }: AddRolesModalProps) {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Card className="flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden gap-0 py-0 shadow-xl">
+            <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-[620px] flex-col overflow-hidden gap-0 py-0 shadow-xl">
               <CardHeader className="sticky top-0 z-10 border-b bg-card px-5 py-4">
                 <CardTitle>Add Role</CardTitle>
                 <CardDescription>
@@ -238,22 +238,20 @@ export function AddRolesModal({ onAddRole, trigger }: AddRolesModalProps) {
                   />
               </CardContent>
 
-              <CardFooter className="sticky bottom-0 z-10 border-t bg-card px-5 py-4">
-                <div className="flex w-full justify-end space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => handleOpenChange(false)}
-                    className="cursor-pointer"
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" className="cursor-pointer" disabled={isSubmitting}>
-                    {isSubmitting ? <Spinner className="mr-2 h-4 w-4" /> : null}
-                    Create Role
-                  </Button>
-                </div>
+              <CardFooter className="sticky bottom-0 z-10 grid grid-cols-2 gap-2 border-t bg-card px-5 py-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleOpenChange(false)}
+                  className="w-full cursor-pointer"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" className="w-full cursor-pointer" disabled={isSubmitting}>
+                  {isSubmitting ? <Spinner className="mr-2 h-4 w-4" /> : null}
+                  Create Role
+                </Button>
               </CardFooter>
             </Card>
           </form>

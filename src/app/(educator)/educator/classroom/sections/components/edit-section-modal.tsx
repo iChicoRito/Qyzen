@@ -180,7 +180,7 @@ export function EditSectionModal({
           )}
         </DialogTrigger>
       ) : null}
-      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[420px]">
+      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[620px]">
         <DialogHeader className="sr-only">
           <DialogTitle>Edit Section</DialogTitle>
           <DialogDescription>Update section details and academic term assignments.</DialogDescription>
@@ -188,7 +188,7 @@ export function EditSectionModal({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-sm flex-col overflow-hidden">
+            <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-[620px] flex-col overflow-hidden">
               <CardHeader className="sticky top-0 z-10 border-b bg-card">
                 <CardTitle>Edit Section</CardTitle>
                 <CardDescription>Update section details and academic term assignments.</CardDescription>
@@ -282,7 +282,7 @@ export function EditSectionModal({
                   />
               </CardContent>
 
-              <CardFooter className="sticky bottom-0 z-10 flex-col gap-2 border-t bg-card">
+              <CardFooter className="sticky bottom-0 z-10 grid grid-cols-2 gap-2 border-t bg-card">
                 <Button
                   type="button"
                   variant="outline"
