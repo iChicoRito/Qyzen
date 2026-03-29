@@ -14,25 +14,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-import { roleSchema } from '../data/schema'
+import { roleSchema, type Role } from '../data/schema'
 import { DeleteConfirmationModal } from './delete-confirmation-modal'
 import { EditRoleModal } from './edit-role-modal'
 import { ViewRolesModal } from './view-roles-modal'
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
-  onRoleUpdated?: (currentRoleName: string, updatedRole: {
-    roleName: string
-    description: string
-    status: 'active' | 'inactive'
-    isSystem: boolean
-  }) => void
-  onDeleteRole?: (role: {
-    roleName: string
-    description: string
-    status: 'active' | 'inactive'
-    isSystem: boolean
-  }) => Promise<void>
+  onRoleUpdated?: (currentRoleName: string, updatedRole: Role) => void
+  onDeleteRole?: (role: Role) => Promise<void>
 }
 
 // DataTableRowActions - show row actions
