@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import type { ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies'
 
 interface SupabaseServerConfig {
   url: string
@@ -8,7 +9,7 @@ interface SupabaseServerConfig {
 interface ServerCookie {
   name: string
   value: string
-  options?: Parameters<Awaited<ReturnType<typeof cookies>>['set']>[2]
+  options?: Partial<ResponseCookie>
 }
 
 // getSupabaseServerConfig - read server env values
