@@ -1,3 +1,4 @@
+import type { ComponentType } from "react"
 import {
   CheckCircle2,
   Circle,
@@ -5,7 +6,13 @@ import {
   PlayCircle,
 } from "lucide-react"
 
-export const categories = [
+type TaskOption = {
+  value: string
+  label: string
+  icon?: ComponentType<{ className?: string }>
+}
+
+export const categories: TaskOption[] = [
   {
     value: "bug",
     label: "Bug",
@@ -28,7 +35,7 @@ export const categories = [
   },
 ]
 
-export const statuses = [
+export const statuses: TaskOption[] = [
   {
     value: "pending",
     label: "Pending",
@@ -51,7 +58,7 @@ export const statuses = [
   },
 ]
 
-export const priorities = [
+export const priorities: TaskOption[] = [
   {
     label: "Minor",
     value: "minor"
