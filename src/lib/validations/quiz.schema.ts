@@ -91,7 +91,7 @@ export function buildQuizPayload(values: QuizFormSchema) {
   }
 
   const normalizedAnswers = values.identificationAnswers
-    .map((answer) => answer.value.trim())
+    .map((answer) => answer.value?.trim() || '')
     .filter(Boolean)
 
   return {
