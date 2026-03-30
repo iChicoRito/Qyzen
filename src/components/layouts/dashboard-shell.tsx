@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { usePathname } from 'next/navigation'
 
 import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
@@ -24,6 +25,8 @@ export function DashboardShell({ children, role, roles, user }: DashboardShellPr
   // ==================== SHELL STATE ====================
   const [themeCustomizerOpen, setThemeCustomizerOpen] = React.useState(false)
   const { config } = useSidebarConfig()
+  const pathname = usePathname()
+  const hideSidebar = role === 'student' && pathname === '/student/assessment/take-quiz'
 
   // ==================== RENDER ====================
   return (
@@ -39,14 +42,16 @@ export function DashboardShell({ children, role, roles, user }: DashboardShellPr
     >
       {config.side === 'left' ? (
         <>
-          <AppSidebar
-            role={role}
-            roles={roles}
-            user={user}
-            variant={config.variant}
-            collapsible={config.collapsible}
-            side={config.side}
-          />
+          {!hideSidebar ? (
+            <AppSidebar
+              role={role}
+              roles={roles}
+              user={user}
+              variant={config.variant}
+              collapsible={config.collapsible}
+              side={config.side}
+            />
+          ) : null}
           <SidebarInset>
             <SiteHeader />
             <div className="flex flex-1 flex-col">
@@ -66,14 +71,16 @@ export function DashboardShell({ children, role, roles, user }: DashboardShellPr
               </div>
             </div>
           </SidebarInset>
-          <AppSidebar
-            role={role}
-            roles={roles}
-            user={user}
-            variant={config.variant}
-            collapsible={config.collapsible}
-            side={config.side}
-          />
+          {!hideSidebar ? (
+            <AppSidebar
+              role={role}
+              roles={roles}
+              user={user}
+              variant={config.variant}
+              collapsible={config.collapsible}
+              side={config.side}
+            />
+          ) : null}
         </>
       )}
 

@@ -52,8 +52,10 @@ export function QuizList({ items }: QuizListProps) {
                 {item.sectionName} - {item.termName}
               </div>
             </div>
-            <div className="text-muted-foreground line-clamp-2 text-xs">
-              {item.text.substring(0, 300)}
+            <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
+              <span>{item.questionCount} question{item.questionCount === 1 ? "" : "s"}</span>
+              <span>{item.quizTypeLabel}</span>
+              <span>{item.timeLimitMinutes} min</span>
             </div>
             {item.labels.length ? (
               <div className="flex items-center gap-2">
@@ -62,6 +64,11 @@ export function QuizList({ items }: QuizListProps) {
                     {label}
                   </Badge>
                 ))}
+                {!item.hasQuestions ? (
+                  <Badge className="rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500">
+                    no questions yet
+                  </Badge>
+                ) : null}
               </div>
             ) : null}
           </button>

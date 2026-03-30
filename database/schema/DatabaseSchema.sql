@@ -113,6 +113,27 @@ CREATE TABLE public.tbl_enrolled (
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+CREATE SEQUENCE IF NOT EXISTS tbl_scores_id_seq;
+CREATE TABLE public.tbl_scores (
+  id bigint DEFAULT nextval('tbl_scores_id_seq'::regclass) NOT NULL,
+  student_id bigint NOT NULL,
+  educator_id bigint NOT NULL,
+  module_id bigint NOT NULL,
+  subject_id bigint NOT NULL,
+  section_id bigint NOT NULL,
+  score integer,
+  total_questions integer DEFAULT 0 NOT NULL,
+  student_answer jsonb DEFAULT '{}'::jsonb NOT NULL,
+  warning_attempts integer DEFAULT 0 NOT NULL,
+  status text DEFAULT 'in_progress' NOT NULL,
+  is_passed boolean DEFAULT false NOT NULL,
+  taken_at timestamp with time zone DEFAULT now() NOT NULL,
+  submitted_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now() NOT NULL,
+  updated_at timestamp with time zone DEFAULT now() NOT NULL,
+  CONSTRAINT tbl_scores_status_check CHECK ((status = ANY (ARRAY['in_progress'::text, 'submitted'::text, 'passed'::text, 'failed'::text])))
+);
+
 CREATE SEQUENCE IF NOT EXISTS tbl_user_roles_id_seq;
 CREATE TABLE public.tbl_user_roles (
   id bigint DEFAULT nextval('tbl_user_roles_id_seq'::regclass) NOT NULL,
@@ -150,6 +171,7 @@ ALTER TABLE public.tbl_subjects ADD CONSTRAINT tbl_subjects_pkey PRIMARY KEY (id
 ALTER TABLE public.tbl_modules ADD CONSTRAINT tbl_modules_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_quizzes ADD CONSTRAINT tbl_quizzes_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_pkey PRIMARY KEY (id);
+ALTER TABLE public.tbl_scores ADD CONSTRAINT tbl_scores_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_user_roles ADD CONSTRAINT user_roles_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_users ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 
@@ -175,6 +197,11 @@ ALTER TABLE public.tbl_quizzes ADD CONSTRAINT tbl_quizzes_educator_id_fkey FOREI
 ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.tbl_subjects(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_scores ADD CONSTRAINT tbl_scores_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_scores ADD CONSTRAINT tbl_scores_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_scores ADD CONSTRAINT tbl_scores_module_id_fkey FOREIGN KEY (module_id) REFERENCES public.tbl_modules(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_scores ADD CONSTRAINT tbl_scores_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.tbl_subjects(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_scores ADD CONSTRAINT tbl_scores_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.tbl_sections(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_user_roles ADD CONSTRAINT user_roles_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.tbl_roles(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_user_roles ADD CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 
@@ -222,6 +249,12 @@ CREATE UNIQUE INDEX tbl_enrolled_unique_student_subject_per_educator ON public.t
 CREATE INDEX idx_tbl_enrolled_educator_id ON public.tbl_enrolled USING btree (educator_id);
 CREATE INDEX idx_tbl_enrolled_student_id ON public.tbl_enrolled USING btree (student_id);
 CREATE INDEX idx_tbl_enrolled_subject_id ON public.tbl_enrolled USING btree (subject_id);
+CREATE UNIQUE INDEX tbl_scores_unique_student_module ON public.tbl_scores USING btree (student_id, module_id);
+CREATE INDEX idx_tbl_scores_student_id ON public.tbl_scores USING btree (student_id);
+CREATE INDEX idx_tbl_scores_module_id ON public.tbl_scores USING btree (module_id);
+CREATE INDEX idx_tbl_scores_subject_id ON public.tbl_scores USING btree (subject_id);
+CREATE INDEX idx_tbl_scores_section_id ON public.tbl_scores USING btree (section_id);
+CREATE INDEX idx_tbl_scores_status ON public.tbl_scores USING btree (status);
 
 -- Enable RLS
 
@@ -238,6 +271,7 @@ ALTER TABLE public.tbl_subjects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_modules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_quizzes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_enrolled ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tbl_scores ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 
@@ -336,6 +370,10 @@ CREATE POLICY "Admin full access on tbl_enrolled" ON public.tbl_enrolled AS PERM
   USING (has_role('admin'::text))
   WITH CHECK (has_role('admin'::text));
 
+CREATE POLICY "Admin full access on tbl_scores" ON public.tbl_scores AS PERMISSIVE FOR ALL TO authenticated
+  USING (has_role('admin'::text))
+  WITH CHECK (has_role('admin'::text));
+
 CREATE POLICY "Educator section view access" ON public.tbl_sections AS PERMISSIVE FOR SELECT TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id()) AND user_has_permission('sections:view'::text)));
 
@@ -429,3 +467,20 @@ CREATE POLICY "Educator enrollment delete access" ON public.tbl_enrolled AS PERM
 
 CREATE POLICY "Student enrollment view access" ON public.tbl_enrolled AS PERMISSIVE FOR SELECT TO authenticated
   USING ((has_role('student'::text) AND (student_id = get_current_tbl_user_id())));
+
+CREATE POLICY "Educator score view access" ON public.tbl_scores AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
+
+CREATE POLICY "Student score view access" ON public.tbl_scores AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((has_role('student'::text) AND (student_id = get_current_tbl_user_id())));
+
+CREATE POLICY "Student score create access" ON public.tbl_scores AS PERMISSIVE FOR INSERT TO authenticated
+  WITH CHECK ((has_role('student'::text) AND (student_id = get_current_tbl_user_id()) AND (EXISTS ( SELECT 1
+   FROM tbl_enrolled enrolled
+  WHERE ((enrolled.student_id = tbl_scores.student_id) AND (enrolled.educator_id = tbl_scores.educator_id) AND (enrolled.subject_id = tbl_scores.subject_id) AND (enrolled.is_active = true))))));
+
+CREATE POLICY "Student score update access" ON public.tbl_scores AS PERMISSIVE FOR UPDATE TO authenticated
+  USING ((has_role('student'::text) AND (student_id = get_current_tbl_user_id())))
+  WITH CHECK ((has_role('student'::text) AND (student_id = get_current_tbl_user_id()) AND (EXISTS ( SELECT 1
+   FROM tbl_enrolled enrolled
+  WHERE ((enrolled.student_id = tbl_scores.student_id) AND (enrolled.educator_id = tbl_scores.educator_id) AND (enrolled.subject_id = tbl_scores.subject_id) AND (enrolled.is_active = true))))));

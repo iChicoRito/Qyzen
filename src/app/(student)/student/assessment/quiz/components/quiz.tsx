@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import {
-  IconSearch,
+  IconFilter,
 } from "@tabler/icons-react"
 
-import { Input } from "@/components/ui/input"
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -28,18 +28,27 @@ export function Quiz({
 }: QuizProps) {
   // selected assessment state
   const [quiz, setQuiz] = useQuiz();
+  const [moduleFilter, setModuleFilter] = useState("all");
+  const moduleOptions = useMemo(
+    () => [...new Set(quizzes.map((item) => item.moduleCode))],
+    [quizzes]
+  );
+  const filteredQuizzes = useMemo(
+    () => quizzes.filter((item) => moduleFilter === "all" || item.moduleCode === moduleFilter),
+    [moduleFilter, quizzes]
+  );
 
   // ==================== SYNC SELECTED QUIZ ====================
   useEffect(() => {
-    if (quizzes.length === 0) {
+    if (filteredQuizzes.length === 0) {
       setQuiz({ selected: null })
       return
     }
 
-    if (!quiz.selected || !quizzes.some((item) => item.id === quiz.selected)) {
-      setQuiz({ selected: quizzes[0].id })
+    if (!quiz.selected || !filteredQuizzes.some((item) => item.id === quiz.selected)) {
+      setQuiz({ selected: filteredQuizzes[0].id })
     }
-  }, [quiz.selected, quizzes, setQuiz])
+  }, [filteredQuizzes, quiz.selected, setQuiz])
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -49,37 +58,47 @@ export function Quiz({
         onLayout={(sizes: number[]) => {
           document.cookie = `react-resizable-panels:layout:quiz=${JSON.stringify(sizes)}`;
         }}
-        className="h-full items-stretch rounded-lg border overflow-hidden"
+        className="h-full min-h-0 items-stretch overflow-hidden rounded-lg border"
       >
-        <ResizablePanel defaultSize={defaultLayout[0]} minSize={30}>
-          <Tabs defaultValue="all" className="gap-1">
+        <ResizablePanel defaultSize={defaultLayout[0]} minSize={30} className="min-h-0">
+          <Tabs defaultValue="pending" className="gap-1">
             <div className="flex items-center px-4 py-1.5">
               <h1 className="text-foreground text-xl font-bold">Assessments</h1>
               <TabsList className="ml-auto">
-                <TabsTrigger value="all" className="cursor-pointer">Pending</TabsTrigger>
-                <TabsTrigger value="unread" className="cursor-pointer">Finished</TabsTrigger>
+                <TabsTrigger value="pending" className="cursor-pointer">Pending</TabsTrigger>
+                <TabsTrigger value="finished" className="cursor-pointer">Finished</TabsTrigger>
               </TabsList>
             </div>
             <Separator />
             <div className="bg-background/95 supports-[backdrop-filter]:bg-background/60 p-4 backdrop-blur">
-              <form>
-                <div className="relative">
-                  <IconSearch size={18} className="text-muted-foreground absolute top-2.5 left-2 cursor-pointer" />
-                  <Input placeholder="Search" className="pl-8 cursor-text" />
-                </div>
-              </form>
+              <div className="relative">
+                <IconFilter size={18} className="text-muted-foreground pointer-events-none absolute top-2.5 left-3" />
+                <Select value={moduleFilter} onValueChange={setModuleFilter}>
+                  <SelectTrigger className="pl-9">
+                    <SelectValue placeholder="Filter by module" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Modules</SelectItem>
+                    {moduleOptions.map((moduleCode) => (
+                      <SelectItem key={moduleCode} value={moduleCode}>
+                        {moduleCode}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <TabsContent value="all" className="m-0">
-              <QuizList items={quizzes.filter((item) => item.labels.includes("pending"))} />
+            <TabsContent value="pending" className="m-0">
+              <QuizList items={filteredQuizzes.filter((item) => item.labels.includes("pending"))} />
             </TabsContent>
-            <TabsContent value="unread" className="m-0">
-              <QuizList items={quizzes.filter((item) => item.labels.includes("finished"))} />
+            <TabsContent value="finished" className="m-0">
+              <QuizList items={filteredQuizzes.filter((item) => item.labels.includes("finished"))} />
             </TabsContent>
           </Tabs>
         </ResizablePanel>
         <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={defaultLayout[1]} minSize={30}>
-          <QuizDisplay quiz={quizzes.find((item) => item.id === quiz.selected) || null} />
+        <ResizablePanel defaultSize={defaultLayout[1]} minSize={30} className="min-h-0">
+          <QuizDisplay quiz={filteredQuizzes.find((item) => item.id === quiz.selected) || null} />
         </ResizablePanel>
       </ResizablePanelGroup>
     </TooltipProvider>

@@ -1,4 +1,4 @@
-Objective: Student Actual Assessment/Quiz taken on Module
+Objective #1: Student Actual Assessment/Quiz taken on Module
 
     1). Now since the student can now see their modules, once they click the "Take Assessment" button, the student will be
         redirected to the actual assessment where the student will answer that choosen module.
@@ -45,73 +45,181 @@ Objective: Student Actual Assessment/Quiz taken on Module
     5). Before you proceed to the execution, give a summary of the process, what is the plan and flow, what codes will be
         modified or added and delete (risky) and wait for the "Go!" command.
 
+Objective #2: UIUX Minor Revisions and Security
+
+    Path: (src\app\(student)\student\assessment\quiz)
+
+        1). In the page, when the student press the "Take Assessment" it shows an dialog
+            for confirmation if the student are ready to answer that.
+
+        2). In the page, as u can see it has status of Pending and Finished but it still static
+            and I wanted that now to make dynamic and based on the real data in database. 
+
+        3). The taken or finished modules/quiz cannot be re-take so there's no take assessment button anymore.
+
+        4). In the right sidebar where it displays the information, I wanted to add all the information. What is the
+            module code, how many questions on that module, quiz type, the time limit, is shuffled, status,
+            start/end date and start/end time.
+
+        5). If that module has no questions yet, make sure it has indicator and cannot be taken cause of course it's obvious lol.
+
+    Path: (src\app\(student)\student\assessment\take-quiz)
+
+        1). In the actual quiz, make sure the timer container must be draggrable to anywhere so the student can feel immersiveness
+            while taking the quiz.
+
+        2). When the student are now answer, make sure that the sidebar is hidden or not shown for extra security.
+
+        3). The radio button in the choices, hide the radio button cirle instead make the selected choices is highlited as green color.
+
+        4). When the student press the Save Progress, show a sonner/toast that their progress is saved.
+
+        5). After the student submit their quiz, dont direct that on (src\app\(student)\student\assessment\scores) instead stay at the
+            (src\app\(student)\student\assessment\take-quiz) and make a page dedicated for that assessment only. Improve the UIUX
+            add visuals, hierarchy, typography, proximity but make it simple.
+
+        6). And also after the actual quiz, then the sidebar will show again.
+
+        7). To make it improved, I want a 2 columns in that page, 1st Column right side, it shows all the questions, choices and the correct
+            answer so student can review it. It also shows the student incorrect answer. In the right column, it shows the summary
+            of the quiz, score, status and important information. Like a neolms layout.
+
 Instructions and Objective in JSON format for better readability:
 
     {
-    "objective": "Student Actual Assessment/Quiz taken on Module",
-    "requirements": [
-        {
-        "id": 1,
-        "description": "Once the student clicks the 'Take Assessment' button (from the modules view), they will be redirected to the actual assessment page to answer the chosen module."
-        },
-        {
-        "id": 2,
-        "description": "The actual quiz-taking page must be located at the path: src\\app\\(student)\\student\\assessment\\take-quiz. Currently this page does not exist; it must be created."
-        },
-        {
-        "id": 3,
-        "description": "The take-quiz page must include the following features:",
-        "subpoints": [
+        "objective": "Student Actual Assessment/Quiz taken on Module",
+        "requirements": [
             {
-            "subpoint": "a",
-            "description": "Display module information. Contents come from 'tbl_quizzes' and 'tbl_modules' tables. The full database schema is available in the 'database' path.",
-            "details": [
-                "If quiz type is multiple choice: show all questions and choices, using radio buttons arranged in a 2x2 grid.",
-                "If quiz type is identification: show each question with a text input field."
+            "id": 1,
+            "description": "Once the student clicks the 'Take Assessment' button (from the modules view), they will be redirected to the actual assessment page to answer the chosen module."
+            },
+            {
+            "id": 2,
+            "description": "The actual quiz-taking page must be located at the path: src\\app\\(student)\\student\\assessment\\take-quiz. Currently this page does not exist; it must be created."
+            },
+            {
+            "id": 3,
+            "description": "The take-quiz page must include the following features:",
+            "subpoints": [
+                {
+                "subpoint": "a",
+                "description": "Display module information. Contents come from 'tbl_quizzes' and 'tbl_modules' tables. The full database schema is available in the 'database' path.",
+                "details": [
+                    "If quiz type is multiple choice: show all questions and choices, using radio buttons arranged in a 2x2 grid.",
+                    "If quiz type is identification: show each question with a text input field."
+                ]
+                },
+                {
+                "subpoint": "b",
+                "description": "Display a timer based on the time limit. The timer must be floating. Color coding: green badge when much time remains, yellow for mid time, red when almost out of time."
+                },
+                {
+                "subpoint": "c",
+                "description": "Shuffle questions and choices based on the 'is_shuffle' flag."
+                },
+                {
+                "subpoint": "d",
+                "description": "Cheating attempts: show a warning dialog whenever the student changes tabs. The number of allowed cheating attempts is based on the 'cheating_attempts' field. The warning dialog style/design should match the existing 'delete-confirmation-modal.tsx'."
+                },
+                {
+                "subpoint": "e",
+                "description": "When the student finishes answering, there must be a 'Submit' button. Before submitting, show a confirmation dialog."
+                },
+                {
+                "subpoint": "f",
+                "description": "Create a dedicated fallback page that shows the student's score, status (passed/failed)."
+                }
             ]
             },
             {
-            "subpoint": "b",
-            "description": "Display a timer based on the time limit. The timer must be floating. Color coding: green badge when much time remains, yellow for mid time, red when almost out of time."
+            "id": 4,
+            "description": "Scores will be stored in a new database table named 'tbl_scores' with the following columns:",
+            "columns": [
+                "id",
+                "student_id (fk -> tbl_users.id) who answered the quiz",
+                "educator_id (fk -> tbl_users.id) who is the educator of that student",
+                "module_id (fk -> tbl_modules.id) which module the quiz belongs to",
+                "subject_id (fk -> tbl_subjects.id) which subject the module belongs to",
+                "section_id (fk -> tbl_sections.id)",
+                "score (actual score the student got)",
+                "student_answer (stores student's answers or choices in real time, as JSON)",
+                "taken_at (time when the student took this quiz)",
+                "submitted_at (time when the student submitted the quiz)",
+                "**** (add more timestamp for another information)"
+            ]
             },
             {
-            "subpoint": "c",
-            "description": "Shuffle questions and choices based on the 'is_shuffle' flag."
-            },
-            {
-            "subpoint": "d",
-            "description": "Cheating attempts: show a warning dialog whenever the student changes tabs. The number of allowed cheating attempts is based on the 'cheating_attempts' field. The warning dialog style/design should match the existing 'delete-confirmation-modal.tsx'."
-            },
-            {
-            "subpoint": "e",
-            "description": "When the student finishes answering, there must be a 'Submit' button. Before submitting, show a confirmation dialog."
-            },
-            {
-            "subpoint": "f",
-            "description": "Create a dedicated fallback page that shows the student's score, status (passed/failed)."
+            "id": 5,
+            "description": "Before proceeding to execution, provide a summary of the process, plan, flow, which codes will be modified, added, or deleted (risky), and wait for the 'Go!' command."
             }
         ]
-        },
-        {
-        "id": 4,
-        "description": "Scores will be stored in a new database table named 'tbl_scores' with the following columns:",
-        "columns": [
-            "id",
-            "student_id (fk -> tbl_users.id) who answered the quiz",
-            "educator_id (fk -> tbl_users.id) who is the educator of that student",
-            "module_id (fk -> tbl_modules.id) which module the quiz belongs to",
-            "subject_id (fk -> tbl_subjects.id) which subject the module belongs to",
-            "section_id (fk -> tbl_sections.id)",
-            "score (actual score the student got)",
-            "student_answer (stores student's answers or choices in real time, as JSON)",
-            "taken_at (time when the student took this quiz)",
-            "submitted_at (time when the student submitted the quiz)",
-            "**** (add more timestamp for another information)"
-        ]
-        },
-        {
-        "id": 5,
-        "description": "Before proceeding to execution, provide a summary of the process, plan, flow, which codes will be modified, added, or deleted (risky), and wait for the 'Go!' command."
-        }
-    ]
+    }
+
+    {
+        "objective_2": "UIUX Minor Revisions and Security",
+        "requirements": [
+            {
+            "path": "src\\app\\(student)\\student\\assessment\\quiz",
+            "changes": [
+                {
+                "id": 1,
+                "description": "When the student presses the 'Take Assessment' button, show a confirmation dialog asking if the student is ready to answer."
+                },
+                {
+                "id": 2,
+                "description": "The 'Pending' and 'Finished' status currently shown are static. Make them dynamic based on real data from the database."
+                },
+                {
+                "id": 3,
+                "description": "Taken or finished modules/quizzes cannot be retaken. Therefore, remove the 'Take Assessment' button for those modules."
+                },
+                {
+                "id": 4,
+                "description": "In the right sidebar (which displays information), add the following details: module code, number of questions in that module, quiz type, time limit, whether shuffled, status, start date, end date, start time, end time."
+                },
+                {
+                "id": 5,
+                "description": "If a module has no questions yet, display an indicator and prevent the student from taking it (since there are no questions)."
+                }
+            ]
+            },
+            {
+            "path": "src\\app\\(student)\\student\\assessment\\take-quiz",
+            "changes": [
+                {
+                "id": 1,
+                "description": "The timer container must be draggable anywhere on the screen to enhance immersion while taking the quiz."
+                },
+                {
+                "id": 2,
+                "description": "While the student is answering, the sidebar must be hidden or not shown for extra security."
+                },
+                {
+                "id": 3,
+                "description": "For radio button choices: hide the actual radio button circle. Instead, highlight the selected choice with a green color."
+                },
+                {
+                "id": 4,
+                "description": "When the student presses 'Save Progress', show a sonner/toast notification that their progress has been saved."
+                },
+                {
+                "id": 5,
+                "description": "After the student submits the quiz, do NOT redirect to src\\app\\(student)\\student\\assessment\\scores. Instead, stay at src\\app\\(student)\\student\\assessment\\take-quiz and create a dedicated results page for that specific assessment only. Improve the UI/UX with visuals, hierarchy, typography, proximity, but keep it simple."
+                },
+                {
+                "id": 6,
+                "description": "After the actual quiz ends (i.e., after submission and viewing results), the sidebar should be shown again."
+                },
+                {
+                "id": 7,
+                "description": "Improve the layout to use 2 columns:",
+                "subpoints": [
+                    "First column (right side): shows all questions, choices, and the correct answer so the student can review. Also shows which answers the student got incorrect.",
+                    "Second column (left side): shows a summary of the quiz — score, status, and important information. (Described as 'like a NeoLMS layout')"
+                ]
+                }
+            ]
+            }
+        ],
+        "note": "All requirements above are explicitly derived from the user's instructions. No external knowledge, assumptions, or database schema details beyond what is stated are included."
     }

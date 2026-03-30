@@ -1,22 +1,29 @@
 "use client"
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
-  IconArrowForward,
-  IconArchive,
-  IconArchiveOff,
-  IconClock,
-  IconCornerUpLeft,
-  IconCornerUpRight,
+  IconAlertCircle,
+  IconCheck,
   IconDotsVertical,
   IconFileTypePpt,
-  IconTrash,
+  IconLock,
+  IconLoader2 as Loader2,
+  IconPencilCheck,
 } from "@tabler/icons-react";
 
-import { DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import type { StudentAssessmentRecord } from "@/lib/supabase/student-assessments";
 
@@ -53,46 +60,114 @@ function AttachmentCard({ quiz }: { quiz: StudentAssessmentRecord }) {
   );
 }
 
+// DetailInfoCard - renders one assessment detail card
+function DetailInfoCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border px-4 py-3">
+      <div className="text-sm font-semibold">{label}</div>
+      <div className="text-muted-foreground mt-1 text-sm whitespace-normal">{value}</div>
+    </div>
+  );
+}
+
+// StatusBadge - renders the assessment status
+function StatusBadge({ quiz }: { quiz: StudentAssessmentRecord }) {
+  return (
+    <Badge className={quiz.statusLabel === "finished"
+      ? "rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500"
+      : "rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500"}>
+      {quiz.statusLabel}
+    </Badge>
+  );
+}
+
+// TakeAssessmentDialog - renders the entry confirmation dialog
+function TakeAssessmentDialog({
+  open,
+  onOpenChange,
+  quiz,
+  isTaking,
+  onTakeAssessment,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  quiz: StudentAssessmentRecord;
+  isTaking: boolean;
+  onTakeAssessment: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent showCloseButton={false} className="rounded-[1rem] sm:max-w-[500px]">
+        <div className="flex flex-col items-center gap-6 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-500/10 text-blue-500">
+            <IconPencilCheck size={32} />
+          </div>
+
+          <DialogHeader className="items-center text-center sm:text-center">
+            <DialogTitle className="text-center">Ready to start this assessment?</DialogTitle>
+            <DialogDescription className="max-w-[34rem] text-center">
+              Once you enter <span className="font-medium text-foreground">{quiz.subjectName}</span>, the timer will start and tab switching will count toward your warning attempts.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="grid w-full max-w-[26rem] grid-cols-2 gap-3">
+            <Button type="button" variant="outline" className="h-10 w-full cursor-pointer" onClick={() => onOpenChange(false)} disabled={isTaking}>
+              Not yet
+            </Button>
+            <Button type="button" className="h-10 w-full cursor-pointer" disabled={isTaking} onClick={onTakeAssessment}>
+              {isTaking ? (
+                <>
+                  <Loader2 size={18} className="mr-2 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                "I’m ready"
+              )}
+            </Button>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // QuizDisplay - renders the assessment details
 export function QuizDisplay({ quiz }: QuizDisplayProps) {
+  const router = useRouter();
+  const [takeDialogOpen, setTakeDialogOpen] = useState(false);
+  const [isTaking, setIsTaking] = useState(false);
+  const [isViewingResult, setIsViewingResult] = useState(false);
+
+  // handleTakeAssessment - enter assessment with loading state
+  const handleTakeAssessment = () => {
+    if (!quiz) {
+      return;
+    }
+
+    setIsTaking(true);
+    router.push(`/student/assessment/take-quiz?moduleId=${quiz.moduleRowId}`);
+  };
+
+  // handleViewResult - open submitted assessment result
+  const handleViewResult = () => {
+    if (!quiz?.scoreId) {
+      return;
+    }
+
+    setIsViewingResult(true);
+    router.push(`/student/assessment/take-quiz/result?scoreId=${quiz.scoreId}`);
+  };
+
   return (
-    <div className="flex h-full flex-col">
-      {/* top actions */}
-      <div className="flex items-center p-2">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" disabled={!quiz} title="Archive" className="cursor-pointer disabled:cursor-not-allowed">
-            <IconArchive size={18} />
-            <span className="sr-only">Archive</span>
-          </Button>
-          <Button variant="ghost" size="icon" disabled={!quiz} title="Move to junk" className="cursor-pointer disabled:cursor-not-allowed">
-            <IconArchiveOff size={18} />
-            <span className="sr-only">Move to junk</span>
-          </Button>
-          <Button variant="ghost" size="icon" disabled={!quiz} title="Move to trash" className="cursor-pointer disabled:cursor-not-allowed">
-            <IconTrash size={18} />
-            <span className="sr-only">Move to trash</span>
-          </Button>
-          <Separator orientation="vertical" className="mx-1 h-6" />
-          <Button variant="ghost" size="icon" disabled={!quiz} title="Schedule" className="cursor-pointer disabled:cursor-not-allowed">
-            <IconClock size={18} />
-            <span className="sr-only">Schedule</span>
-          </Button>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <Button variant="ghost" size="icon" disabled={!quiz} title="Reply" className="cursor-pointer disabled:cursor-not-allowed">
-            <IconCornerUpLeft size={18} />
-            <span className="sr-only">Reply</span>
-          </Button>
-          <Button variant="ghost" size="icon" disabled={!quiz} title="Reply all" className="cursor-pointer disabled:cursor-not-allowed">
-            <IconCornerUpRight size={18} />
-            <span className="sr-only">Reply all</span>
-          </Button>
-          <Button variant="ghost" size="icon" disabled={!quiz} title="Forward" className="cursor-pointer disabled:cursor-not-allowed">
-            <IconArrowForward size={18} />
-            <span className="sr-only">Forward</span>
-          </Button>
-        </div>
-        <Separator orientation="vertical" className="mx-2 h-6" />
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex items-center justify-end p-2">
+        <Separator orientation="vertical" className="mr-2 h-6" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" disabled={!quiz} className="cursor-pointer disabled:cursor-not-allowed">
@@ -110,7 +185,7 @@ export function QuizDisplay({ quiz }: QuizDisplayProps) {
       </div>
       <Separator />
       {quiz ? (
-        <div className="flex flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col">
           {/* assessment header */}
           <div className="flex items-start justify-between gap-4 p-4">
             <div className="flex items-center gap-4 text-sm">
@@ -132,23 +207,73 @@ export function QuizDisplay({ quiz }: QuizDisplayProps) {
           </div>
           <Separator />
           {/* assessment body */}
-          <div className="flex-1 p-4 text-sm whitespace-pre-wrap">
-            <div className="mb-2 space-y-2 whitespace-normal">
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-24 text-sm whitespace-pre-wrap">
+            <div className="mb-4 space-y-3 whitespace-normal">
               <div className="text-base font-semibold">{quiz.subjectName}</div>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <Badge variant="outline">{quiz.sectionName}</Badge>
-                <Badge className="rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500">
-                  {quiz.moduleCode}
-                </Badge>
-                <Badge variant="outline">{quiz.termName}</Badge>
-                <Badge className={quiz.statusLabel === "finished"
-                  ? "rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500"
-                  : "rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500"}>
-                  {quiz.statusLabel}
-                </Badge>
+              <div className="space-y-3">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.16em]">
+                      Section
+                    </div>
+                    <div className="mt-1 text-sm font-medium">{quiz.sectionName}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.16em]">
+                      Academic Term
+                    </div>
+                    <div className="mt-1 text-sm font-medium">{quiz.termName}</div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <Badge className="rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500">
+                    {quiz.moduleCode}
+                  </Badge>
+                  <StatusBadge quiz={quiz} />
+                  {!quiz.hasQuestions ? (
+                    <Badge className="rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500">
+                      no questions yet
+                    </Badge>
+                  ) : null}
+                </div>
               </div>
             </div>
-            {quiz.text}
+
+            <div className="grid gap-3 whitespace-normal md:grid-cols-2">
+              <DetailInfoCard label="Questions" value={`${quiz.questionCount}`} />
+              <DetailInfoCard label="Quiz Type" value={quiz.quizTypeLabel} />
+              <DetailInfoCard label="Time Limit" value={`${quiz.timeLimitMinutes} minutes`} />
+              <DetailInfoCard label="Shuffle" value={quiz.isShuffle ? "Enabled" : "Disabled"} />
+              <DetailInfoCard label="Schedule Start" value={`${quiz.startDate} ${quiz.startTime}`} />
+              <DetailInfoCard label="Schedule End" value={`${quiz.endDate} ${quiz.endTime}`} />
+            </div>
+
+            <div className="mt-6">{quiz.text}</div>
+
+            {!quiz.hasQuestions ? (
+              <div className="mt-6 rounded-lg border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-500">
+                <div className="flex items-center gap-2 font-medium">
+                  <IconAlertCircle size={18} />
+                  This module cannot be taken yet.
+                </div>
+                <div className="mt-2 text-sm">
+                  The educator has not added quiz questions for this module yet.
+                </div>
+              </div>
+            ) : null}
+
+            {quiz.isFinished ? (
+              <div className="mt-6 rounded-lg border border-green-500/20 bg-green-500/10 p-4 text-sm text-green-500">
+                <div className="flex items-center gap-2 font-medium">
+                  <IconCheck size={18} />
+                  This assessment is already finished.
+                </div>
+                <div className="mt-2 text-sm">
+                  Retakes are disabled. You can only review your submitted result.
+                </div>
+              </div>
+            ) : null}
+
             <div className="mt-6 space-y-2 whitespace-normal">
               <Separator />
               <div className="mt-6 text-sm font-semibold">Study Materials</div>
@@ -157,9 +282,46 @@ export function QuizDisplay({ quiz }: QuizDisplayProps) {
           </div>
           <Separator className="mt-auto" />
           {/* assessment action */}
-          <div className="flex justify-end p-4">
-            <Button className="cursor-pointer">Take Assessment</Button>
+          <div className="bg-background/95 sticky bottom-0 flex justify-end gap-3 border-t p-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+            {quiz.isFinished && quiz.scoreId ? (
+              <Button variant="outline" className="cursor-pointer" disabled={isViewingResult} onClick={handleViewResult}>
+                {isViewingResult ? (
+                  <>
+                    <Loader2 size={18} className="mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  "View Result"
+                )}
+              </Button>
+            ) : null}
+
+            {!quiz.isFinished ? (
+              <Button
+                type="button"
+                className="cursor-pointer"
+                disabled={!quiz.canTake || isTaking}
+                onClick={() => setTakeDialogOpen(true)}
+              >
+                {!quiz.hasQuestions ? (
+                  <>
+                    <IconLock size={18} className="mr-2" />
+                    No Questions Yet
+                  </>
+                ) : (
+                  "Take Assessment"
+                )}
+              </Button>
+            ) : null}
           </div>
+
+          <TakeAssessmentDialog
+            open={takeDialogOpen}
+            onOpenChange={setTakeDialogOpen}
+            quiz={quiz}
+            isTaking={isTaking}
+            onTakeAssessment={handleTakeAssessment}
+          />
         </div>
       ) : (
         <div className="text-muted-foreground p-8 text-center">No enrolled assessments found.</div>

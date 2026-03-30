@@ -14,6 +14,15 @@ export interface StudentAssessmentRecord {
   endDate: string
   startTime: string
   endTime: string
+  timeLimitMinutes: number
+  questionCount: number
+  quizTypeLabel: string
+  quizTypes: Array<'multiple_choice' | 'identification'>
+  isShuffle: boolean
+  hasQuestions: boolean
+  canTake: boolean
+  isFinished: boolean
+  scoreId: number | null
   text: string
   statusLabel: 'pending' | 'finished'
   read: boolean
@@ -59,6 +68,8 @@ interface ModuleRow {
   subject_id: number
   section_id: number
   educator_id: number
+  time_limit: string
+  is_shuffle: boolean
   start_date: string
   end_date: string
   start_time: string
@@ -69,12 +80,24 @@ interface ModuleRow {
   academic_term: ModuleTermRow | ModuleTermRow[] | null
 }
 
+interface QuizRow {
+  id: number
+  module_id: number
+  quiz_type: 'multiple_choice' | 'identification'
+}
+
+interface ScoreRow {
+  id: number
+  module_id: number
+  submitted_at: string | null
+}
+
 interface SupabaseErrorResponse {
   message?: string
 }
 
 const STATIC_ASSESSMENT_TEXT =
-  'This assessment page now shows your enrolled module details from the database.\n\nRead each question carefully before submitting your answers. Once you start the quiz, make sure you complete it within the allowed schedule.\n\nGood luck and do your best.'
+  'This assessment page now shows your enrolled module details.\n\nRead each question carefully before submitting your answers. Once you start the quiz, make sure you complete it within the allowed schedule.\n\nGood luck and do your best.'
 
 // getSupabaseErrorMessage - normalize api errors
 function getSupabaseErrorMessage(error: SupabaseErrorResponse | null, fallbackMessage: string) {
@@ -135,13 +158,35 @@ function isEducatorUser(user: ModuleUserRow | null) {
   return user?.user_type?.trim().toLowerCase() === 'educator'
 }
 
+// buildQuizTypeLabel - format assessment quiz type summary
+function buildQuizTypeLabel(quizTypes: Array<'multiple_choice' | 'identification'>) {
+  if (quizTypes.length === 0) {
+    return 'No questions yet'
+  }
+
+  if (quizTypes.length === 1) {
+    return quizTypes[0] === 'multiple_choice' ? 'Multiple Choice' : 'Identification'
+  }
+
+  return 'Mixed'
+}
+
 // mapModuleToStudentAssessment - convert module row into quiz ui data
-function mapModuleToStudentAssessment(module: ModuleRow, index: number): StudentAssessmentRecord {
+function mapModuleToStudentAssessment(
+  module: ModuleRow,
+  index: number,
+  quizRows: QuizRow[],
+  score: ScoreRow | null
+): StudentAssessmentRecord {
   const subject = getSingleRelation(module.subject)
   const section = getSingleRelation(module.section)
   const educator = getSingleRelation(module.educator)
   const term = getSingleRelation(module.academic_term)
-  const statusLabel: StudentAssessmentRecord['statusLabel'] = 'pending'
+  const quizTypes = [...new Set(quizRows.map((quiz) => quiz.quiz_type))]
+  const questionCount = quizRows.length
+  const hasQuestions = questionCount > 0
+  const isFinished = Boolean(score?.submitted_at)
+  const statusLabel: StudentAssessmentRecord['statusLabel'] = isFinished ? 'finished' : 'pending'
 
   return {
     id: module.module_id,
@@ -157,6 +202,15 @@ function mapModuleToStudentAssessment(module: ModuleRow, index: number): Student
     endDate: module.end_date,
     startTime: module.start_time,
     endTime: module.end_time,
+    timeLimitMinutes: Number(module.time_limit) || 0,
+    questionCount,
+    quizTypeLabel: buildQuizTypeLabel(quizTypes),
+    quizTypes,
+    isShuffle: module.is_shuffle,
+    hasQuestions,
+    canTake: hasQuestions && !isFinished,
+    isFinished,
+    scoreId: score?.id ?? null,
     text: STATIC_ASSESSMENT_TEXT,
     statusLabel,
     read: index === 0,
@@ -212,7 +266,7 @@ export async function fetchStudentAssessments(studentId: number) {
   const { data: moduleData, error: moduleError } = await supabase
     .from('tbl_modules')
     .select(
-      'id,module_id,module_code,subject_id,section_id,educator_id,start_date,end_date,start_time,end_time,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester)'
+      'id,module_id,module_code,subject_id,section_id,educator_id,time_limit,is_shuffle,start_date,end_date,start_time,end_time,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester)'
     )
     .in('subject_id', subjectIds)
     .in('section_id', sectionIds)
@@ -233,6 +287,61 @@ export async function fetchStudentAssessments(studentId: number) {
     return [] as StudentAssessmentRecord[]
   }
 
-  return enrolledModules
-    .map((module, index) => mapModuleToStudentAssessment(module, index))
+  const moduleIds = enrolledModules.map((module) => module.id)
+  const [{ data: quizData, error: quizError }, { data: scoreData, error: scoreError }] =
+    await Promise.all([
+      supabase
+        .from('tbl_quizzes')
+        .select('id,module_id,quiz_type')
+        .in('module_id', moduleIds),
+      supabase
+        .from('tbl_scores')
+        .select('id,module_id,submitted_at')
+        .eq('student_id', studentId)
+        .in('module_id', moduleIds)
+        .order('id', { ascending: false }),
+    ])
+
+  if (quizError) {
+    throw new Error(getSupabaseErrorMessage(quizError, 'Failed to load assessment questions.'))
+  }
+
+  if (scoreError) {
+    throw new Error(getSupabaseErrorMessage(scoreError, 'Failed to load assessment progress.'))
+  }
+
+  const quizMap = ((quizData || []) as QuizRow[]).reduce<Map<number, QuizRow[]>>((result, quiz) => {
+    const currentRows = result.get(quiz.module_id) || []
+    currentRows.push(quiz)
+    result.set(quiz.module_id, currentRows)
+    return result
+  }, new Map<number, QuizRow[]>())
+  const scoreMap = ((scoreData || []) as ScoreRow[]).reduce<Map<number, ScoreRow>>((result, score) => {
+    if (!result.has(score.module_id)) {
+      result.set(score.module_id, score)
+    }
+
+    return result
+  }, new Map<number, ScoreRow>())
+  const sortedModules = [...enrolledModules].sort((leftModule, rightModule) => {
+    const leftScore = scoreMap.get(leftModule.id)
+    const rightScore = scoreMap.get(rightModule.id)
+    const leftFinished = Boolean(leftScore?.submitted_at)
+    const rightFinished = Boolean(rightScore?.submitted_at)
+
+    if (leftFinished !== rightFinished) {
+      return leftFinished ? 1 : -1
+    }
+
+    return rightModule.id - leftModule.id
+  })
+
+  return sortedModules.map((module, index) =>
+    mapModuleToStudentAssessment(
+      module,
+      index,
+      quizMap.get(module.id) || [],
+      scoreMap.get(module.id) || null
+    )
+  )
 }
