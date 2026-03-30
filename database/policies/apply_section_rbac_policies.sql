@@ -9,6 +9,7 @@ DROP POLICY IF EXISTS "Educator section view access" ON public.tbl_sections;
 DROP POLICY IF EXISTS "Educator section create access" ON public.tbl_sections;
 DROP POLICY IF EXISTS "Educator section update access" ON public.tbl_sections;
 DROP POLICY IF EXISTS "Educator section delete access" ON public.tbl_sections;
+DROP POLICY IF EXISTS "Student section view access" ON public.tbl_sections;
 
 CREATE POLICY "Educator section view access" ON public.tbl_sections
 AS PERMISSIVE
@@ -53,6 +54,24 @@ USING (
   public.has_role('educator')
   AND educator_id = public.get_current_tbl_user_id()
   AND public.user_has_permission('sections:delete')
+);
+
+CREATE POLICY "Student section view access" ON public.tbl_sections
+AS PERMISSIVE
+FOR SELECT
+TO authenticated
+USING (
+  public.has_role('student')
+  AND EXISTS (
+    SELECT 1
+    FROM public.tbl_enrolled AS enrolled
+    INNER JOIN public.tbl_subjects AS subject
+      ON subject.id = enrolled.subject_id
+    WHERE enrolled.student_id = public.get_current_tbl_user_id()
+      AND enrolled.educator_id = public.tbl_sections.educator_id
+      AND subject.sections_id = public.tbl_sections.id
+      AND enrolled.is_active = true
+  )
 );
 
 -- ==================== TBL_SECTIONS_TERM POLICIES ====================

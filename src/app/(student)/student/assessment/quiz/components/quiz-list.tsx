@@ -5,11 +5,11 @@ import type { ComponentProps } from "react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import type { Quiz } from "../data"
+import type { StudentAssessmentRecord } from "@/lib/supabase/student-assessments"
 import { useQuiz } from "../use-quiz"
 
 interface QuizListProps {
-  items: Quiz[];
+  items: StudentAssessmentRecord[];
 }
 
 // QuizList - renders the assessment list
@@ -36,7 +36,7 @@ export function QuizList({ items }: QuizListProps) {
             <div className="flex w-full flex-col gap-1">
               <div className="flex items-center">
                 <div className="flex items-center gap-2">
-                  <div className="font-semibold">{item.name}</div>
+                  <div className="font-semibold">{item.subjectName}</div>
                   {!item.read && <span className="flex size-2 rounded-full bg-blue-600 cursor-pointer" />}
                 </div>
                 <div
@@ -45,10 +45,12 @@ export function QuizList({ items }: QuizListProps) {
                     quiz.selected === item.id ? "text-foreground" : "text-muted-foreground"
                   )}
                 >
-                  {item.assessmentType}
+                  {item.moduleCode}
                 </div>
               </div>
-              <div className="text-xs font-medium">{item.subject}</div>
+              <div className="text-xs font-medium">
+                {item.sectionName} - {item.termName}
+              </div>
             </div>
             <div className="text-muted-foreground line-clamp-2 text-xs">
               {item.text.substring(0, 300)}

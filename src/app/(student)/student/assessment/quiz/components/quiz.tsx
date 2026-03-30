@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect } from "react"
+
 import {
   IconSearch,
 } from "@tabler/icons-react"
@@ -9,13 +11,13 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import type { StudentAssessmentRecord } from "@/lib/supabase/student-assessments"
 import { QuizDisplay } from "./quiz-display"
 import { QuizList } from "./quiz-list"
-import { type Quiz } from "../data"
 import { useQuiz } from "../use-quiz"
 
 interface QuizProps {
-  quizzes: Quiz[];
+  quizzes: StudentAssessmentRecord[];
   defaultLayout?: number[];
 }
 
@@ -25,7 +27,19 @@ export function Quiz({
   defaultLayout = [42, 58],
 }: QuizProps) {
   // selected assessment state
-  const [quiz] = useQuiz();
+  const [quiz, setQuiz] = useQuiz();
+
+  // ==================== SYNC SELECTED QUIZ ====================
+  useEffect(() => {
+    if (quizzes.length === 0) {
+      setQuiz({ selected: null })
+      return
+    }
+
+    if (!quiz.selected || !quizzes.some((item) => item.id === quiz.selected)) {
+      setQuiz({ selected: quizzes[0].id })
+    }
+  }, [quiz.selected, quizzes, setQuiz])
 
   return (
     <TooltipProvider delayDuration={0}>

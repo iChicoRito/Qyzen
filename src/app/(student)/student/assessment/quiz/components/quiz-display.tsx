@@ -18,21 +18,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import { type Quiz } from "../data";
+import type { StudentAssessmentRecord } from "@/lib/supabase/student-assessments";
 
 interface QuizDisplayProps {
-  quiz: Quiz | null;
+  quiz: StudentAssessmentRecord | null;
 }
 
 // ScheduleInfo - renders the assessment schedule details
-function ScheduleInfo({ quiz }: { quiz: Quiz }) {
+function ScheduleInfo({ quiz }: { quiz: StudentAssessmentRecord }) {
   return (
     <div className="text-muted-foreground text-xs">{quiz.schedule}</div>
   );
 }
 
 // AttachmentCard - renders the fake study material file
-function AttachmentCard({ quiz }: { quiz: Quiz }) {
+function AttachmentCard({ quiz }: { quiz: StudentAssessmentRecord }) {
   return (
     <div className="bg-card flex items-center justify-between rounded-lg border p-3">
       <div className="flex items-center gap-3">
@@ -115,9 +115,9 @@ export function QuizDisplay({ quiz }: QuizDisplayProps) {
           <div className="flex items-start justify-between gap-4 p-4">
             <div className="flex items-center gap-4 text-sm">
               <Avatar className="cursor-pointer">
-                <AvatarImage alt={quiz.name} />
+                <AvatarImage alt={quiz.educatorName} />
                 <AvatarFallback>
-                  {quiz.name
+                  {quiz.educatorName
                     .split(" ")
                     .map((chunk) => chunk[0])
                     .join("")}
@@ -125,7 +125,7 @@ export function QuizDisplay({ quiz }: QuizDisplayProps) {
               </Avatar>
               <div className="flex flex-col justify-center gap-1">
                 <div className="font-semibold">{quiz.educatorName}</div>
-                <Badge variant="outline" className="w-fit">{quiz.email}</Badge>
+                <Badge variant="outline" className="w-fit">{quiz.educatorUserType}</Badge>
               </div>
             </div>
             <ScheduleInfo quiz={quiz} />
@@ -133,7 +133,21 @@ export function QuizDisplay({ quiz }: QuizDisplayProps) {
           <Separator />
           {/* assessment body */}
           <div className="flex-1 p-4 text-sm whitespace-pre-wrap">
-            <div className="mb-2 text-base font-semibold">{quiz.name}</div>
+            <div className="mb-2 space-y-2 whitespace-normal">
+              <div className="text-base font-semibold">{quiz.subjectName}</div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <Badge variant="outline">{quiz.sectionName}</Badge>
+                <Badge className="rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500">
+                  {quiz.moduleCode}
+                </Badge>
+                <Badge variant="outline">{quiz.termName}</Badge>
+                <Badge className={quiz.statusLabel === "finished"
+                  ? "rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500"
+                  : "rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500"}>
+                  {quiz.statusLabel}
+                </Badge>
+              </div>
+            </div>
             {quiz.text}
             <div className="mt-6 space-y-2 whitespace-normal">
               <Separator />
@@ -148,7 +162,7 @@ export function QuizDisplay({ quiz }: QuizDisplayProps) {
           </div>
         </div>
       ) : (
-        <div className="text-muted-foreground p-8 text-center">No message selected</div>
+        <div className="text-muted-foreground p-8 text-center">No enrolled assessments found.</div>
       )}
     </div>
   );

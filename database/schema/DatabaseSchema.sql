@@ -275,6 +275,11 @@ CREATE POLICY "Users can read own profile" ON public.tbl_users AS PERMISSIVE FOR
 CREATE POLICY "Educators can read students for enrollment" ON public.tbl_users AS PERMISSIVE FOR SELECT TO authenticated
   USING ((has_role('educator'::text) AND (user_type = 'student'::text) AND (deleted_at IS NULL)));
 
+CREATE POLICY "Students can read assessment educators" ON public.tbl_users AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((has_role('student'::text) AND (user_type = 'educator'::text) AND (deleted_at IS NULL) AND (EXISTS ( SELECT 1
+   FROM tbl_enrolled enrolled
+  WHERE ((enrolled.student_id = get_current_tbl_user_id()) AND (enrolled.educator_id = tbl_users.id) AND (enrolled.is_active = true))))));
+
 CREATE POLICY "Users can read own role links" ON public.tbl_user_roles AS PERMISSIVE FOR SELECT TO authenticated
   USING ((user_id = get_current_tbl_user_id()));
 
@@ -296,6 +301,11 @@ CREATE POLICY "Educator quiz update access" ON public.tbl_quizzes AS PERMISSIVE 
 
 CREATE POLICY "Educator quiz delete access" ON public.tbl_quizzes AS PERMISSIVE FOR DELETE TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
+
+CREATE POLICY "Student quiz view access" ON public.tbl_quizzes AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((has_role('student'::text) AND (EXISTS ( SELECT 1
+   FROM tbl_enrolled enrolled
+  WHERE ((enrolled.student_id = get_current_tbl_user_id()) AND (enrolled.educator_id = tbl_quizzes.educator_id) AND (enrolled.subject_id = tbl_quizzes.subject_id) AND (enrolled.is_active = true))))));
 
 CREATE POLICY "Authenticated users can read role permissions" ON public.tbl_role_permissions AS PERMISSIVE FOR SELECT TO authenticated
   USING (true);
@@ -339,6 +349,12 @@ CREATE POLICY "Educator section update access" ON public.tbl_sections AS PERMISS
 CREATE POLICY "Educator section delete access" ON public.tbl_sections AS PERMISSIVE FOR DELETE TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id()) AND user_has_permission('sections:delete'::text)));
 
+CREATE POLICY "Student section view access" ON public.tbl_sections AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((has_role('student'::text) AND (EXISTS ( SELECT 1
+   FROM (tbl_enrolled enrolled
+     JOIN tbl_subjects subject ON ((subject.id = enrolled.subject_id)))
+  WHERE ((enrolled.student_id = get_current_tbl_user_id()) AND (enrolled.educator_id = tbl_sections.educator_id) AND (subject.sections_id = tbl_sections.id) AND (enrolled.is_active = true))))));
+
 CREATE POLICY "Educator section term view access" ON public.tbl_sections_term AS PERMISSIVE FOR SELECT TO authenticated
   USING ((has_role('educator'::text) AND user_has_permission('sections:view'::text) AND (EXISTS ( SELECT 1
    FROM tbl_sections
@@ -375,6 +391,11 @@ CREATE POLICY "Educator subject update access" ON public.tbl_subjects AS PERMISS
 CREATE POLICY "Educator subject delete access" ON public.tbl_subjects AS PERMISSIVE FOR DELETE TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id()) AND user_has_permission('subjects:delete'::text)));
 
+CREATE POLICY "Student subject view access" ON public.tbl_subjects AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((has_role('student'::text) AND (EXISTS ( SELECT 1
+   FROM tbl_enrolled enrolled
+  WHERE ((enrolled.student_id = get_current_tbl_user_id()) AND (enrolled.educator_id = tbl_subjects.educator_id) AND (enrolled.subject_id = tbl_subjects.id) AND (enrolled.is_active = true))))));
+
 CREATE POLICY "Educator module view access" ON public.tbl_modules AS PERMISSIVE FOR SELECT TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
 
@@ -388,6 +409,11 @@ CREATE POLICY "Educator module update access" ON public.tbl_modules AS PERMISSIV
 CREATE POLICY "Educator module delete access" ON public.tbl_modules AS PERMISSIVE FOR DELETE TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
 
+CREATE POLICY "Student module view access" ON public.tbl_modules AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((has_role('student'::text) AND (EXISTS ( SELECT 1
+   FROM tbl_enrolled enrolled
+  WHERE ((enrolled.student_id = get_current_tbl_user_id()) AND (enrolled.educator_id = tbl_modules.educator_id) AND (enrolled.subject_id = tbl_modules.subject_id) AND (enrolled.is_active = true))))));
+
 CREATE POLICY "Educator enrollment view access" ON public.tbl_enrolled AS PERMISSIVE FOR SELECT TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
 
@@ -400,3 +426,6 @@ CREATE POLICY "Educator enrollment update access" ON public.tbl_enrolled AS PERM
 
 CREATE POLICY "Educator enrollment delete access" ON public.tbl_enrolled AS PERMISSIVE FOR DELETE TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
+
+CREATE POLICY "Student enrollment view access" ON public.tbl_enrolled AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((has_role('student'::text) AND (student_id = get_current_tbl_user_id())));

@@ -8,6 +8,7 @@ DROP POLICY IF EXISTS "Educator quiz view access" ON public.tbl_quizzes;
 DROP POLICY IF EXISTS "Educator quiz create access" ON public.tbl_quizzes;
 DROP POLICY IF EXISTS "Educator quiz update access" ON public.tbl_quizzes;
 DROP POLICY IF EXISTS "Educator quiz delete access" ON public.tbl_quizzes;
+DROP POLICY IF EXISTS "Student quiz view access" ON public.tbl_quizzes;
 
 CREATE POLICY "Educator quiz view access" ON public.tbl_quizzes
 AS PERMISSIVE
@@ -47,4 +48,20 @@ TO authenticated
 USING (
   public.has_role('educator')
   AND educator_id = public.get_current_tbl_user_id()
+);
+
+CREATE POLICY "Student quiz view access" ON public.tbl_quizzes
+AS PERMISSIVE
+FOR SELECT
+TO authenticated
+USING (
+  public.has_role('student')
+  AND EXISTS (
+    SELECT 1
+    FROM public.tbl_enrolled AS enrolled
+    WHERE enrolled.student_id = public.get_current_tbl_user_id()
+      AND enrolled.educator_id = public.tbl_quizzes.educator_id
+      AND enrolled.subject_id = public.tbl_quizzes.subject_id
+      AND enrolled.is_active = true
+  )
 );

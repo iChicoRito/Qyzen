@@ -8,6 +8,7 @@ DROP POLICY IF EXISTS "Educator module view access" ON public.tbl_modules;
 DROP POLICY IF EXISTS "Educator module create access" ON public.tbl_modules;
 DROP POLICY IF EXISTS "Educator module update access" ON public.tbl_modules;
 DROP POLICY IF EXISTS "Educator module delete access" ON public.tbl_modules;
+DROP POLICY IF EXISTS "Student module view access" ON public.tbl_modules;
 
 CREATE POLICY "Educator module view access" ON public.tbl_modules
 AS PERMISSIVE
@@ -47,4 +48,20 @@ TO authenticated
 USING (
   public.has_role('educator')
   AND educator_id = public.get_current_tbl_user_id()
+);
+
+CREATE POLICY "Student module view access" ON public.tbl_modules
+AS PERMISSIVE
+FOR SELECT
+TO authenticated
+USING (
+  public.has_role('student')
+  AND EXISTS (
+    SELECT 1
+    FROM public.tbl_enrolled AS enrolled
+    WHERE enrolled.student_id = public.get_current_tbl_user_id()
+      AND enrolled.educator_id = public.tbl_modules.educator_id
+      AND enrolled.subject_id = public.tbl_modules.subject_id
+      AND enrolled.is_active = true
+  )
 );

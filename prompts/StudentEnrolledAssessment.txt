@@ -1,0 +1,155 @@
+Objective: Display Student Assessment on Enrolled Educator
+
+    1). In the educator side (src\app\(educator)\educator\assessment), this is where the educator
+        create their modules and quizzes to specific subject/section.
+    
+    2). Then here (src\app\(educator)\educator\enrollment) this is where the educator will enroll
+        their picked student on specific subjecet/section.
+
+    3). So basically it has proper wiring on the database.
+
+    4). Now in the (src\app\(student)\student\assessment\quiz), when the student visit that page
+        they student that is enrolled on that subject, section, educator, it will show all the content.
+
+    5). It shows the Subject Name, Section, status, module code, term. As u can see on the left sidebar
+        of the Assessment those data are static and using the JSON, Now I wanted that the data shows real
+        data from database. The paragraph must stay as static for now.
+
+    6). In the right sidebar, It shows the educator name, the user_type (of course only educator).
+        And also it shows the Date and Time of that selected module.
+
+    7). The study material must stay as static for now since I don't have an upload files yet on the
+        modules.
+
+    8). The statuses "Pending" and "Finished" must retain in static state for now and later I will impelement
+        a dynamic and the basis of that.
+
+    9). Before you proceed to the execution, give a summary of the process, what codes will be
+        modified or added and delete (risky) and wait for the "Go!" command.
+
+Instructions and Objective in JSON format for better readability:
+
+
+    {
+        "objective": "Display Student Assessment on Enrolled Educator",
+        "summary": "Wire the student-facing assessment quiz page to real database data, replacing static JSON sidebar content with live records, while keeping certain elements explicitly static as instructed.",
+
+        "context": {
+            "educator_side": {
+            "path": "src/app/(educator)/educator/assessment",
+            "purpose": "Where the educator creates their modules and quizzes tied to a specific subject and section."
+            },
+            "enrollment_side": {
+            "path": "src/app/(educator)/educator/enrollment",
+            "purpose": "Where the educator enrolls their picked students on a specific subject and section."
+            },
+            "database_wiring": {
+            "status": "Already properly wired on the database.",
+            "note": "No changes implied to the database schema or existing wiring."
+            },
+            "student_side": {
+            "path": "src/app/(student)/student/assessment/quiz",
+            "purpose": "The page a student visits to see their assessment content."
+            }
+        },
+
+        "current_behavior": {
+            "left_sidebar": {
+            "data_source": "Static JSON",
+            "fields_displayed": [
+                "Subject Name",
+                "Section",
+                "Status",
+                "Module Code",
+                "Term"
+            ],
+            "paragraph": {
+                "current_state": "Static",
+                "required_state": "Must remain static — do not change."
+            }
+            },
+            "right_sidebar": {
+            "fields_displayed": [
+                "Educator Name",
+                "User Type (educator only)",
+                "Date and Time of the selected module"
+            ]
+            }
+        },
+
+        "required_changes": {
+            "left_sidebar": {
+            "data_source_change": {
+                "from": "Static JSON",
+                "to": "Real data fetched from the database"
+            },
+            "fields_to_make_dynamic": [
+                "Subject Name",
+                "Section",
+                "Status",
+                "Module Code",
+                "Term"
+            ],
+            "data_filter_rule": {
+                "description": "Only show content where the student is enrolled on the matching subject, section, and educator."
+            },
+            "paragraph": {
+                "instruction": "Keep as static — do not modify."
+            }
+            },
+            "right_sidebar": {
+            "educator_name": {
+                "instruction": "Display real educator name from the database."
+            },
+            "user_type": {
+                "instruction": "Display user type — must only show educator.",
+                "source": "Database"
+            },
+            "date_and_time": {
+                "instruction": "Display date and time of the currently selected module.",
+                "source": "Database"
+            }
+            },
+            "study_material": {
+            "instruction": "Must remain static.",
+            "reason": "File upload feature for modules does not exist yet."
+            },
+            "statuses": {
+            "pending": {
+                "instruction": "Keep static."
+            },
+            "finished": {
+                "instruction": "Keep static."
+            },
+            "reason": "Dynamic status logic will be implemented later by the user. No implementation now."
+            }
+        },
+
+        "enrollment_filter_logic": {
+            "description": "When a student visits the quiz page, the system must verify the student is enrolled under the matching combination before showing any content.",
+            "required_match_fields": [
+            "Subject",
+            "Section",
+            "Educator"
+            ]
+        },
+
+        "execution_gate": {
+            "instruction": "Before proceeding to any code execution or modification, provide a summary of:",
+            "summary_must_include": [
+            "Which files will be modified",
+            "Which files will be added",
+            "Which files will be deleted (flagged as risky)"
+            ],
+            "proceed_condition": "Wait for the explicit command 'Go!' from the user before executing anything."
+        },
+
+        "constraints": [
+            "Do not change the paragraph in the left sidebar — keep it static.",
+            "Do not implement dynamic status logic for Pending and Finished.",
+            "Do not implement file upload or dynamic study materials.",
+            "Do not modify existing database wiring.",
+            "Only show content to students who are enrolled under the correct subject, section, and educator.",
+            "Right sidebar user_type display must be restricted to educator only."
+        ]
+    }
