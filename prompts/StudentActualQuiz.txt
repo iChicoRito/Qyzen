@@ -1,0 +1,117 @@
+Objective: Student Actual Assessment/Quiz taken on Module
+
+    1). Now since the student can now see their modules, once they click the "Take Assessment" button, the student will be
+        redirected to the actual assessment where the student will answer that choosen module.
+
+    2). The actual taking of the quiz must be in the path (src\app\(student)\student\assessment\take-quiz). Right now, I don't have
+        a page for that, so basically make that for me.
+
+    3). That take quiz page must have these:
+
+        The contents are from the "tbl_quizzes" and "tbl_modules" these are the related database tables, and you can still check
+        the whole database in the path (database).
+
+        a). It shows the modules information:
+            - All the questions choices (if the quiz type is multiple choice) so it displays the radio button in 2x2
+            - It shows all the questions and if the quiz type is identification, it just shows question and text input field.
+
+        b). It reflects the timer based on the time limit, it shows as floating. To make it more immersive, if the time
+            has more time, it uses the green badge based on the protocol, yellow for mid time and red for almost times out.
+
+        c). Shuffles the questions and the choices based on the "is_shuffle".
+
+        d). In the cheating attemps, I wanted that it shows warning whenever the student changes their tabs. The warning attempts will
+            shows based on the "cheating_attempts". The warning shows as dialog. As u can see in most of the delete-confirmation-modal.tsx
+            I wanted that kind of style and design of the Warning Dialog.
+
+        e). When the student finish answering, there's a button "Submit" and before submitting, it shows a dialog for confirmation.
+
+        f). Create a dedicated page for fallback that shows the student score, status, if failed or passed.
+
+    4). Now for the scores, it will be stored in the new database table name "tbl_scores" with these columns
+
+        - id
+        - student_id        (fk -> tbl_users.id) who is the student answered the quiz
+        - educator_id       (fk -> tbl_users.id) who is the educator of that student
+        - module_id         (fk -> tbl_modules.id) what module is that quiz
+        - subject_id        (fk -> tbl_subjects.id) what subject is that module
+        - section_id        (fk -> tbl_sections.id)
+        - score             (actuall score the student got)
+        - student_answer    (It will stores here the students answer or what choice their clicking in realtime. It stores as JSON)
+        - taken_at          (what time the student taken this quiz)
+        - submitted_at      (what time the student submit the quiz)
+        - ****              (add more timestamp for another information)
+
+    5). Before you proceed to the execution, give a summary of the process, what is the plan and flow, what codes will be
+        modified or added and delete (risky) and wait for the "Go!" command.
+
+Instructions and Objective in JSON format for better readability:
+
+    {
+    "objective": "Student Actual Assessment/Quiz taken on Module",
+    "requirements": [
+        {
+        "id": 1,
+        "description": "Once the student clicks the 'Take Assessment' button (from the modules view), they will be redirected to the actual assessment page to answer the chosen module."
+        },
+        {
+        "id": 2,
+        "description": "The actual quiz-taking page must be located at the path: src\\app\\(student)\\student\\assessment\\take-quiz. Currently this page does not exist; it must be created."
+        },
+        {
+        "id": 3,
+        "description": "The take-quiz page must include the following features:",
+        "subpoints": [
+            {
+            "subpoint": "a",
+            "description": "Display module information. Contents come from 'tbl_quizzes' and 'tbl_modules' tables. The full database schema is available in the 'database' path.",
+            "details": [
+                "If quiz type is multiple choice: show all questions and choices, using radio buttons arranged in a 2x2 grid.",
+                "If quiz type is identification: show each question with a text input field."
+            ]
+            },
+            {
+            "subpoint": "b",
+            "description": "Display a timer based on the time limit. The timer must be floating. Color coding: green badge when much time remains, yellow for mid time, red when almost out of time."
+            },
+            {
+            "subpoint": "c",
+            "description": "Shuffle questions and choices based on the 'is_shuffle' flag."
+            },
+            {
+            "subpoint": "d",
+            "description": "Cheating attempts: show a warning dialog whenever the student changes tabs. The number of allowed cheating attempts is based on the 'cheating_attempts' field. The warning dialog style/design should match the existing 'delete-confirmation-modal.tsx'."
+            },
+            {
+            "subpoint": "e",
+            "description": "When the student finishes answering, there must be a 'Submit' button. Before submitting, show a confirmation dialog."
+            },
+            {
+            "subpoint": "f",
+            "description": "Create a dedicated fallback page that shows the student's score, status (passed/failed)."
+            }
+        ]
+        },
+        {
+        "id": 4,
+        "description": "Scores will be stored in a new database table named 'tbl_scores' with the following columns:",
+        "columns": [
+            "id",
+            "student_id (fk -> tbl_users.id) who answered the quiz",
+            "educator_id (fk -> tbl_users.id) who is the educator of that student",
+            "module_id (fk -> tbl_modules.id) which module the quiz belongs to",
+            "subject_id (fk -> tbl_subjects.id) which subject the module belongs to",
+            "section_id (fk -> tbl_sections.id)",
+            "score (actual score the student got)",
+            "student_answer (stores student's answers or choices in real time, as JSON)",
+            "taken_at (time when the student took this quiz)",
+            "submitted_at (time when the student submitted the quiz)",
+            "**** (add more timestamp for another information)"
+        ]
+        },
+        {
+        "id": 5,
+        "description": "Before proceeding to execution, provide a summary of the process, plan, flow, which codes will be modified, added, or deleted (risky), and wait for the 'Go!' command."
+        }
+    ]
+    }
