@@ -10,7 +10,7 @@ import {
   IconUser,
   IconChalkboardTeacher,
   IconId,
-  IconSubtitlesEdit 
+  IconSubtitlesEdit,
 } from '@tabler/icons-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -196,15 +196,25 @@ function getNavigationGroupsByRole(role: AppRole): SidebarNavGroup[] {
           url: '/student/dashboard',
           icon: IconLayoutDashboard,
         },
+      ],
+    },
+    {
+      label: 'Assessment',
+      items: [
         {
-          title: 'Courses',
-          url: '/student/dashboard',
-          icon: IconBook2,
-        },
-        {
-          title: 'Tasks',
-          url: '/student/dashboard',
-          icon: IconChecklist,
+          title: 'Assessment',
+          url: '#',
+          icon: IconSubtitlesEdit,
+          items: [
+            {
+              title: 'Take Assessment',
+              url: '/student/assessment/quiz',
+            },
+            {
+              title: 'Scores',
+              url: '/student/assessment/scores',
+            },
+          ],
         },
       ],
     },
@@ -232,7 +242,7 @@ function mergeNavigationGroups(roles: AppRole[]) {
 
       group.items.forEach((item) => {
         const existingItem = existingGroup.items.find(
-          (existingNavItem) => existingNavItem.title === item.title
+          (existingNavItem) => existingNavItem.title === item.title,
         )
 
         if (!existingItem) {
