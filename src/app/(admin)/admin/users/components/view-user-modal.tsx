@@ -10,6 +10,7 @@ import {
   DialogDescription,
   DialogClose,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -57,21 +58,18 @@ export function ViewUserModal({ user, trigger, open, onOpenChange }: ViewUserMod
           </Button>
         </DialogTrigger>
       ) : null}
-      <DialogContent
-        showCloseButton={false}
-        className="overflow-hidden border-0 bg-background p-0 shadow-none sm:max-w-[560px]"
-      >
-        <DialogHeader className="sr-only">
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[560px]">
+        <DialogHeader className="px-6 pt-6 pb-4 text-left">
           <DialogTitle>{fullName}</DialogTitle>
           <DialogDescription>User information and assigned role details.</DialogDescription>
         </DialogHeader>
 
-        <div className="overflow-hidden rounded-[28px] bg-background">
+        <div className="border-t border-b">
           <div className="px-2 pt-2">
             <div className="h-[160px] rounded-[28px] bg-muted" />
           </div>
 
-          <div className="px-6 pb-6">
+          <div className="px-6 pb-4">
             <div className="-mt-12 flex h-24 w-24 items-center justify-center rounded-full border-4 border-background bg-background shadow-lg">
               <span className="sr-only">{fullName}</span>
               <div className="flex h-[5.25rem] w-[5.25rem] items-center justify-center rounded-full bg-muted">
@@ -121,14 +119,16 @@ export function ViewUserModal({ user, trigger, open, onOpenChange }: ViewUserMod
                 )}
               </div>
             </div>
-
-            <DialogClose asChild>
-              <Button variant="outline" className="h-10 w-full cursor-pointer rounded-xl">
-                Close
-              </Button>
-            </DialogClose>
           </div>
         </div>
+
+        <DialogFooter className="px-6 py-4 sm:justify-start">
+          <DialogClose asChild>
+            <Button type="button" variant="outline" className="cursor-pointer">
+              Close
+            </Button>
+          </DialogClose>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

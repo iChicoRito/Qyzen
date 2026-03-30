@@ -14,15 +14,6 @@ interface ColumnsProps {
   onUpdateQuiz?: (quiz: Quiz) => Promise<void> | void
 }
 
-// getQuizTypeClassName - build badge color by quiz type
-function getQuizTypeClassName(quizType: 'multiple_choice' | 'identification') {
-  if (quizType === 'multiple_choice') {
-    return 'rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500'
-  }
-
-  return 'rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500'
-}
-
 // getColumns - build quiz table columns
 export function getColumns({ onDeleteQuiz, onUpdateQuiz }: ColumnsProps): ColumnDef<Quiz>[] {
   return [
@@ -56,9 +47,12 @@ export function getColumns({ onDeleteQuiz, onUpdateQuiz }: ColumnsProps): Column
     cell: ({ row }) => (
       <div className="min-w-[220px]">
         <p className="font-medium">{row.original.moduleCode}</p>
-        <p className="text-sm text-muted-foreground">
-          {row.original.subjectName} | {row.original.sectionName}
-        </p>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <p className="text-sm text-muted-foreground">{row.original.subjectName}</p>
+          <Badge variant="outline" className="rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500">
+            {row.original.sectionName}
+          </Badge>
+        </div>
       </div>
     ),
   },
@@ -66,6 +60,16 @@ export function getColumns({ onDeleteQuiz, onUpdateQuiz }: ColumnsProps): Column
     accessorKey: 'termName',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Term" />,
     cell: ({ row }) => <div className="min-w-[160px]">{row.getValue('termName')}</div>,
+  },
+  {
+    accessorKey: 'subjectName',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Subject" />,
+    cell: ({ row }) => <div className="min-w-[180px]">{row.getValue('subjectName')}</div>,
+  },
+  {
+    accessorKey: 'sectionName',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Section" />,
+    cell: ({ row }) => <div className="min-w-[180px]">{row.getValue('sectionName')}</div>,
   },
   {
     accessorKey: 'question',
@@ -83,7 +87,7 @@ export function getColumns({ onDeleteQuiz, onUpdateQuiz }: ColumnsProps): Column
       const quizType = row.getValue('quizType') as 'multiple_choice' | 'identification'
 
       return (
-        <Badge variant="outline" className={getQuizTypeClassName(quizType)}>
+        <Badge variant="outline">
           {quizType === 'multiple_choice' ? 'Multiple Choice' : 'Identification'}
         </Badge>
       )

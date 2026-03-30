@@ -10,6 +10,7 @@ import {
   DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -52,72 +53,60 @@ export function ViewPermissionsModal({
           </Button>
         </DialogTrigger>
       ) : null}
-      <DialogContent
-        showCloseButton={false}
-        className="overflow-hidden border-1 p-0 shadow-none sm:max-w-[560px]"
-      >
-        <DialogHeader className="sr-only">
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[560px]">
+        <DialogHeader className="px-6 pt-6 pb-4 text-left">
           <DialogTitle>{permission.permissionName}</DialogTitle>
           <DialogDescription>
             Permission information and access details.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="overflow-hidden rounded-[28px]">
-          <div className="px-6 pb-6">
-            <div className="flex flex-wrap items-start justify-between gap-4 border-b py-6">
-              <div className="space-y-1">
-                <h2 className="font-semibold tracking-tight">{permission.permissionName}</h2>
-                <p className="text-muted-foreground">
-                  Permission information and access details.
-                </p>
-              </div>
-              <Badge variant="outline" className={`${statusClassName} mt-1 shrink-0`}>
-                {permission.status === 'active' ? 'Active' : 'Inactive'}
-              </Badge>
+        <div className="max-h-[50vh] space-y-6 overflow-y-auto border-t border-b px-6 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <p className="font-semibold">Description</p>
+              <p className="text-muted-foreground">{permission.description}</p>
+            </div>
+            <Badge variant="outline" className={`${statusClassName} shrink-0`}>
+              {permission.status === 'active' ? 'Active' : 'Inactive'}
+            </Badge>
+          </div>
+
+          <div className="space-y-3">
+            <p className="font-semibold">Permission String</p>
+            <Badge
+              variant="outline"
+              className="rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500"
+            >
+              {permission.permissionString}
+            </Badge>
+          </div>
+
+          <div className="space-y-2">
+            <p className="font-semibold">Module</p>
+            <p className="text-muted-foreground">{permission.module}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <p className="font-semibold">Resource</p>
+              <p className="text-muted-foreground">{permission.resource}</p>
             </div>
 
-            <div className="max-h-[40vh] space-y-6 overflow-y-auto py-6">
-              <div className="space-y-2">
-                <p className="font-semibold">Description</p>
-                <p className="text-muted-foreground">{permission.description}</p>
-              </div>
-
-              <div className="space-y-3">
-                <p className="font-semibold">Permission String</p>
-                <Badge
-                  variant="outline"
-                  className="rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500"
-                >
-                  {permission.permissionString}
-                </Badge>
-              </div>
-
-              <div className="space-y-2">
-                <p className="font-semibold">Module</p>
-                <p className="text-muted-foreground">{permission.module}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <p className="font-semibold">Resource</p>
-                  <p className="text-muted-foreground">{permission.resource}</p>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="font-semibold">Action</p>
-                  <p className="text-muted-foreground">{permission.action}</p>
-                </div>
-              </div>
+            <div className="space-y-2">
+              <p className="font-semibold">Action</p>
+              <p className="text-muted-foreground">{permission.action}</p>
             </div>
-
-            <DialogClose asChild>
-              <Button variant="outline" className="h-10 w-full cursor-pointer rounded-xl">
-                Close
-              </Button>
-            </DialogClose>
           </div>
         </div>
+
+        <DialogFooter className="px-6 py-4 sm:justify-start">
+          <DialogClose asChild>
+            <Button type="button" variant="outline" className="cursor-pointer">
+              Close
+            </Button>
+          </DialogClose>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

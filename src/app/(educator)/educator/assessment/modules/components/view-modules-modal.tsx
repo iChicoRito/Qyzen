@@ -10,6 +10,7 @@ import {
   DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -56,85 +57,73 @@ export function ViewModulesModal({
           </Button>
         </DialogTrigger>
       ) : null}
-      <DialogContent
-        showCloseButton={false}
-        className="overflow-hidden border-0 bg-background p-0 shadow-none sm:max-w-[560px]"
-      >
-        <DialogHeader className="sr-only">
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[560px]">
+        <DialogHeader className="px-6 pt-6 pb-4 text-left">
           <DialogTitle>{module.moduleCode}</DialogTitle>
           <DialogDescription>Module information and schedule details.</DialogDescription>
         </DialogHeader>
 
-        <div className="overflow-hidden rounded-[28px] bg-background">
-          <div className="px-6 pb-6">
-            <div className="flex flex-wrap items-start justify-between gap-4 border-b py-6">
-              <div className="space-y-1">
-                <h2 className="text-xl font-semibold tracking-tight">{module.moduleCode}</h2>
-                <p className="text-sm text-muted-foreground">
-                  Module information and schedule details.
-                </p>
-              </div>
-              <Badge variant="outline" className={`${statusClassName} mt-1 shrink-0`}>
-                {module.status === 'active' ? 'Active' : 'Inactive'}
-              </Badge>
+        <div className="max-h-[50vh] space-y-6 overflow-y-auto border-t border-b px-6 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <p className="font-semibold">Module ID</p>
+              <p className="text-muted-foreground">{module.moduleId}</p>
             </div>
+            <Badge variant="outline" className={`${statusClassName} shrink-0`}>
+              {module.status === 'active' ? 'Active' : 'Inactive'}
+            </Badge>
+          </div>
 
-            <div className="max-h-[40vh] space-y-6 overflow-y-auto py-6">
-              <div className="space-y-2">
-                <p className="font-semibold">Module ID</p>
-                <p className="text-muted-foreground">{module.moduleId}</p>
-              </div>
+          <div className="space-y-2">
+            <p className="font-semibold">Subject</p>
+            <p className="text-muted-foreground">{module.subjectName}</p>
+          </div>
 
-              <div className="space-y-2">
-                <p className="font-semibold">Subject</p>
-                <p className="text-muted-foreground">{module.subjectName}</p>
-              </div>
+          <div className="space-y-2">
+            <p className="font-semibold">Section</p>
+            <p className="text-muted-foreground">{module.sectionName}</p>
+          </div>
 
-              <div className="space-y-2">
-                <p className="font-semibold">Section</p>
-                <p className="text-muted-foreground">{module.sectionName}</p>
-              </div>
+          <div className="space-y-2">
+            <p className="font-semibold">Academic Term</p>
+            <p className="text-muted-foreground">{module.termName}</p>
+          </div>
 
-              <div className="space-y-2">
-                <p className="font-semibold">Academic Term</p>
-                <p className="text-muted-foreground">{module.termName}</p>
-              </div>
+          <div className="space-y-2">
+            <p className="font-semibold">Time Limit</p>
+            <p className="text-muted-foreground">{module.timeLimit}</p>
+          </div>
 
-              <div className="space-y-2">
-                <p className="font-semibold">Time Limit</p>
-                <p className="text-muted-foreground">{module.timeLimit}</p>
-              </div>
+          <div className="space-y-3">
+            <p className="font-semibold">Shuffle</p>
+            <Badge variant="outline" className={shuffleClassName}>
+              {module.isShuffle ? 'Enabled' : 'Disabled'}
+            </Badge>
+          </div>
 
-              <div className="space-y-3">
-                <p className="font-semibold">Shuffle</p>
-                <Badge variant="outline" className={shuffleClassName}>
-                  {module.isShuffle ? 'Enabled' : 'Disabled'}
-                </Badge>
-              </div>
+          <div className="space-y-2">
+            <p className="font-semibold">Schedule</p>
+            <p className="text-muted-foreground">
+              {module.startDate} {module.startTime}
+            </p>
+            <p className="text-muted-foreground">
+              {module.endDate} {module.endTime}
+            </p>
+          </div>
 
-              <div className="space-y-2">
-                <p className="font-semibold">Schedule</p>
-                <p className="text-muted-foreground">
-                  {module.startDate} {module.startTime}
-                </p>
-                <p className="text-muted-foreground">
-                  {module.endDate} {module.endTime}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <p className="font-semibold">Cheating Attempts</p>
-                <p className="text-muted-foreground">{module.cheatingAttempts}</p>
-              </div>
-            </div>
-
-            <DialogClose asChild>
-              <Button variant="outline" className="h-10 w-full cursor-pointer rounded-xl">
-                Close
-              </Button>
-            </DialogClose>
+          <div className="space-y-2">
+            <p className="font-semibold">Cheating Attempts</p>
+            <p className="text-muted-foreground">{module.cheatingAttempts}</p>
           </div>
         </div>
+
+        <DialogFooter className="px-6 py-4 sm:justify-start">
+          <DialogClose asChild>
+            <Button type="button" variant="outline" className="cursor-pointer">
+              Close
+            </Button>
+          </DialogClose>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

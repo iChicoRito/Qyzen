@@ -55,7 +55,7 @@ export function DeleteConfirmationModal({ enrollment, trigger, open, onOpenChang
 
           <div className="grid w-full max-w-[26rem] grid-cols-2 gap-3">
             <DialogClose asChild>
-              <Button type="button" variant="outline" className="h-11 w-full cursor-pointer">
+              <Button type="button" variant="outline" className="h-10 w-full cursor-pointer">
                 Cancel
               </Button>
             </DialogClose>

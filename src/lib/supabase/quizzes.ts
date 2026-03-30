@@ -295,6 +295,31 @@ export async function createQuiz(input: QuizRecord) {
   return mapQuizRow(data as QuizRow)
 }
 
+// createQuizzes - insert many quiz rows
+export async function createQuizzes(inputs: QuizRecord[]) {
+  if (inputs.length === 0) {
+    return
+  }
+
+  const educatorId = await getCurrentEducatorId()
+  const supabase = createClient()
+  const rowsToInsert = inputs.map((input) => ({
+    module_id: input.moduleRowId,
+    subject_id: input.subjectId,
+    section_id: input.sectionId,
+    educator_id: educatorId,
+    question: input.question.trim(),
+    quiz_type: input.quizType,
+    choices: input.quizType === 'multiple_choice' ? input.choices : null,
+    correct_answer: input.correctAnswer,
+  }))
+  const { error } = await supabase.from('tbl_quizzes').insert(rowsToInsert)
+
+  if (error) {
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to upload quizzes.'))
+  }
+}
+
 // updateQuiz - update one quiz row
 export async function updateQuiz(input: QuizRecord) {
   const educatorId = await getCurrentEducatorId()

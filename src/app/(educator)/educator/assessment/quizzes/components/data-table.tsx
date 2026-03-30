@@ -33,6 +33,7 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   onAddQuiz?: (quiz: Quiz) => Promise<void> | void
+  onUploadQuizzes?: (quizzes: Quiz[]) => Promise<void> | void
 }
 
 // DataTable - render the quiz table
@@ -40,10 +41,14 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   onAddQuiz,
+  onUploadQuizzes,
 }: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
+    React.useState<VisibilityState>({
+      subjectName: false,
+      sectionName: false,
+    })
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   )
@@ -73,7 +78,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      <DataTableToolbar table={table} onAddQuiz={onAddQuiz} />
+      <DataTableToolbar table={table} onAddQuiz={onAddQuiz} onUploadQuizzes={onUploadQuizzes} />
       <div className="rounded-md border">
         <Table>
           <TableHeader>

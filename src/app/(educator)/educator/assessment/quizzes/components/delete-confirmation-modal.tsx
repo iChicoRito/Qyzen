@@ -74,7 +74,7 @@ export function DeleteConfirmationModal({
 
           <div className="grid w-full max-w-[26rem] grid-cols-2 gap-3">
             <DialogClose asChild>
-              <Button type="button" variant="outline" className="h-11 w-full cursor-pointer">
+              <Button type="button" variant="outline" className="h-10 w-full cursor-pointer">
                 Cancel
               </Button>
             </DialogClose>
@@ -82,7 +82,7 @@ export function DeleteConfirmationModal({
               type="button"
               variant="destructive"
               onClick={handleDeleteClick}
-              className="h-11 w-full cursor-pointer"
+              className="h-10 w-full cursor-pointer"
               disabled={isDeleting}
             >
               {isDeleting ? (

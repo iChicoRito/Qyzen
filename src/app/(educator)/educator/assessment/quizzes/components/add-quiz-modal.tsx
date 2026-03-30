@@ -42,9 +42,11 @@ import { fetchQuizModuleOptions, type QuizModuleOption } from '@/lib/supabase/qu
 import { buildQuizPayload, quizFormSchema, type QuizFormSchema } from '@/lib/validations/quiz.schema'
 
 import type { Quiz } from '../data/schema'
+import { UploadQuizFileModal } from './upload-quiz-file-modal'
 
 interface AddQuizModalProps {
   onAddQuiz?: (quiz: Quiz) => Promise<void> | void
+  onUploadQuizzes?: (quizzes: Quiz[]) => Promise<void> | void
   trigger?: React.ReactNode
 }
 
@@ -56,7 +58,7 @@ const defaultChoices: QuizFormSchema['choices'] = [
 ]
 
 // AddQuizModal - create a new quiz row
-export function AddQuizModal({ onAddQuiz, trigger }: AddQuizModalProps) {
+export function AddQuizModal({ onAddQuiz, onUploadQuizzes, trigger }: AddQuizModalProps) {
   // ==================== STATE ====================
   const [open, setOpen] = useState(false)
   const [isLoadingModules, setIsLoadingModules] = useState(false)
@@ -188,10 +190,23 @@ export function AddQuizModal({ onAddQuiz, trigger }: AddQuizModalProps) {
           <form onSubmit={form.handleSubmit(handleSubmit)}>
             <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-[760px] flex-col overflow-hidden">
               <CardHeader className="sticky top-0 z-10 border-b bg-card">
-                <CardTitle>Add New Quiz</CardTitle>
-                <CardDescription>
-                  Create a quiz question for a module using multiple choice or identification.
-                </CardDescription>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <CardTitle>Add New Quiz</CardTitle>
+                    <CardDescription>
+                      Create a quiz question for a module using multiple choice or identification.
+                    </CardDescription>
+                  </div>
+                  <UploadQuizFileModal
+                    onUploadQuizzes={onUploadQuizzes}
+                    trigger={
+                      <Button type="button" variant="outline" className="cursor-pointer">
+                        <IconPlus size={18} className="mr-2" />
+                        Upload File
+                      </Button>
+                    }
+                  />
+                </div>
               </CardHeader>
 
               <CardContent className="flex-1 space-y-6 overflow-y-auto">
@@ -290,7 +305,7 @@ export function AddQuizModal({ onAddQuiz, trigger }: AddQuizModalProps) {
                               className="space-y-0"
                             >
                               {defaultChoices.map((choice, index) => (
-                                <div key={choice.key} className="rounded-md border p-4">
+                                <div key={choice.key} className="rounded-md border p-3">
                                   <div className="flex items-center gap-3">
                                     <RadioGroupItem
                                       value={choice.key}

@@ -10,6 +10,7 @@ import {
   DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -22,15 +23,6 @@ interface ViewQuizModalProps {
   trigger?: React.ReactNode
   open?: boolean
   onOpenChange?: (open: boolean) => void
-}
-
-// getQuizTypeClassName - build badge color by quiz type
-function getQuizTypeClassName(quizType: 'multiple_choice' | 'identification') {
-  if (quizType === 'multiple_choice') {
-    return 'rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500'
-  }
-
-  return 'rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500'
 }
 
 // ViewQuizModal - view quiz details
@@ -56,79 +48,112 @@ export function ViewQuizModal({
           </Button>
         </DialogTrigger>
       ) : null}
-      <DialogContent
-        showCloseButton={false}
-        className="overflow-hidden border-0 bg-background p-0 shadow-none sm:max-w-[560px]"
-      >
-        <DialogHeader className="sr-only">
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[560px]">
+        <DialogHeader className="px-6 pt-6 pb-4 text-left">
           <DialogTitle>{quiz.moduleCode}</DialogTitle>
           <DialogDescription>Quiz information and answer details.</DialogDescription>
         </DialogHeader>
 
-        <div className="overflow-hidden rounded-[28px] bg-background">
-          <div className="px-6 pb-6">
-            <div className="flex flex-wrap items-start justify-between gap-4 border-b py-6">
-              <div className="space-y-1">
-                <h2 className="text-xl font-semibold tracking-tight">{quiz.moduleCode}</h2>
-                <p className="text-sm text-muted-foreground">
-                  Quiz information and answer details.
-                </p>
-              </div>
-              <Badge variant="outline" className={`${getQuizTypeClassName(quiz.quizType)} mt-1 shrink-0`}>
-                {quiz.quizType === 'multiple_choice' ? 'Multiple Choice' : 'Identification'}
-              </Badge>
-            </div>
-
-            <div className="max-h-[40vh] space-y-6 overflow-y-auto py-6">
-              <div className="space-y-2">
-                <p className="font-semibold">Module</p>
-                <p className="text-muted-foreground">{quiz.moduleCode}</p>
-              </div>
-
-              <div className="space-y-2">
-                <p className="font-semibold">Subject and Section</p>
-                <p className="text-muted-foreground">
-                  {quiz.subjectName} | {quiz.sectionName}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <p className="font-semibold">Academic Term</p>
-                <p className="text-muted-foreground">{quiz.termName}</p>
-              </div>
-
-              <div className="space-y-2">
-                <p className="font-semibold">Question</p>
-                <p className="text-muted-foreground">{quiz.question}</p>
-              </div>
-
-              {quiz.quizType === 'multiple_choice' ? (
-                <div className="space-y-2">
-                  <p className="font-semibold">Choices</p>
-                  <div className="space-y-2">
-                    {quiz.choices.map((choice) => (
-                      <div key={choice.key} className="rounded-md border px-4 py-3">
-                        <p className="font-medium">Choice {choice.key}</p>
-                        <p className="text-sm text-muted-foreground">{choice.value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="space-y-2">
-                <p className="font-semibold">Correct Answer</p>
-                <p className="text-muted-foreground">{quiz.correctAnswers.join(', ')}</p>
-              </div>
-            </div>
-
-            <DialogClose asChild>
-              <Button variant="outline" className="h-10 w-full cursor-pointer rounded-xl">
-                Close
-              </Button>
-            </DialogClose>
+        <div className="max-h-[50vh] space-y-6 overflow-y-auto border-t border-b px-6 py-4">
+          <div className="space-y-2">
+            <p className="font-semibold">Module</p>
+            <p className="text-muted-foreground">
+              {quiz.moduleCode} | {quiz.moduleId}
+            </p>
           </div>
+
+          <div className="space-y-2">
+            <p className="font-semibold">Class</p>
+            <p className="text-muted-foreground">
+              {quiz.subjectName} | {quiz.sectionName} | {quiz.termName}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <p className="font-semibold">Question</p>
+            <p className="text-muted-foreground">{quiz.question}</p>
+          </div>
+
+          {quiz.quizType === 'multiple_choice' ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-medium text-muted-foreground">Choices</p>
+                <Badge variant="outline" className="shrink-0">
+                  Multiple Choice
+                </Badge>
+              </div>
+
+              <div className="space-y-3">
+                {quiz.choices.map((choice) => {
+                  const isCorrect = choice.value === quiz.correctAnswer
+
+                  return (
+                    <div
+                      key={choice.key}
+                      className={
+                        isCorrect
+                          ? 'rounded-xl border border-green-500 bg-green-500/10 px-4 py-2'
+                          : 'rounded-xl border bg-card px-4 py-2'
+                      }
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className={isCorrect ? 'font-semibold text-green-500' : 'font-semibold text-foreground'}>
+                            Choice {choice.key}
+                          </p>
+                          <p className="mt-1 text-muted-foreground">{choice.value}</p>
+                        </div>
+
+                        {isCorrect ? (
+                          <span className="text-xs rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500">
+                            Correct Answer
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-medium text-muted-foreground">Accepted Answers</p>
+                <Badge variant="outline" className="shrink-0">
+                  Identification
+                </Badge>
+              </div>
+
+              <div className="space-y-3">
+                {quiz.correctAnswers.map((answer) => (
+                  <div
+                    key={answer}
+                    className="rounded-xl border border-green-500 bg-green-500/10 px-4 py-5"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-green-500">Accepted Answer</p>
+                        <p className="mt-1 text-muted-foreground">{answer}</p>
+                      </div>
+
+                      <span className="text-xs rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500">
+                        Correct Answer
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+
+        <DialogFooter className="px-6 py-4 sm:justify-start">
+          <DialogClose asChild>
+            <Button type="button" variant="outline" className="cursor-pointer">
+              Close
+            </Button>
+          </DialogClose>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

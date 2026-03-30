@@ -11,6 +11,7 @@ import {
   DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -72,76 +73,64 @@ export function ViewRolesModal({ role, trigger, open, onOpenChange }: ViewRolesM
           </Button>
         </DialogTrigger>
       ) : null}
-      <DialogContent
-        showCloseButton={false}
-        className="overflow-hidden border-1 p-0 shadow-none sm:max-w-[560px]"
-      >
-        <DialogHeader className="sr-only">
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[560px]">
+        <DialogHeader className="px-6 pt-6 pb-4 text-left">
           <DialogTitle>{role.roleName}</DialogTitle>
           <DialogDescription>Role information and assigned permission details.</DialogDescription>
         </DialogHeader>
 
-        <div className="overflow-hidden rounded-[28px]">
-          <div className="px-6 pb-6">
-            <div className="flex flex-wrap items-start justify-between gap-4 border-b py-6">
-              <div className="space-y-1">
-                <h2 className="font-semibold tracking-tight">{role.roleName}</h2>
-                <p className="text-muted-foreground">
-                  Role information and assigned permission details.
-                </p>
-              </div>
-              <Badge variant="outline" className={`${statusClassName} mt-1 shrink-0`}>
-                {role.status === 'active' ? 'Active' : 'Inactive'}
+        <div className="max-h-[50vh] space-y-6 overflow-y-auto border-t border-b px-6 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <p className="font-semibold">Description</p>
+              <p className="text-muted-foreground">{role.description}</p>
+            </div>
+            <Badge variant="outline" className={`${statusClassName} shrink-0`}>
+              {role.status === 'active' ? 'Active' : 'Inactive'}
+            </Badge>
+          </div>
+
+          <div className="space-y-3">
+            <p className="font-semibold">Role Type</p>
+            <Badge variant="outline" className="rounded-md px-2.5 py-0.5">
+              {role.isSystem ? 'System Role' : 'Custom Role'}
+            </Badge>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <p className="font-semibold">Assigned Permissions</p>
+              <Badge variant="secondary" className="rounded-md px-2.5 py-0.5">
+                {permissions.length}
               </Badge>
             </div>
-
-            <div className="max-h-[40vh] space-y-6 overflow-y-auto py-6">
-              <div className="space-y-2">
-                <p className="font-semibold">Description</p>
-                <p className="text-muted-foreground">{role.description}</p>
-              </div>
-
-              <div className="space-y-3">
-                <p className="font-semibold">Role Type</p>
-                <Badge variant="outline" className="rounded-md px-2.5 py-0.5">
-                  {role.isSystem ? 'System Role' : 'Custom Role'}
-                </Badge>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <p className="font-semibold">Assigned Permissions</p>
-                  <Badge variant="secondary" className="rounded-md px-2.5 py-0.5">
-                    {permissions.length}
+            {isLoading ? (
+              <p className="text-muted-foreground">Loading assigned permissions...</p>
+            ) : permissions.length === 0 ? (
+              <p className="text-muted-foreground">No permissions assigned.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {permissions.map((permission) => (
+                  <Badge
+                    key={permission.permissionString}
+                    variant="outline"
+                    className="rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500"
+                  >
+                    {permission.permissionString}
                   </Badge>
-                </div>
-                {isLoading ? (
-                  <p className="text-muted-foreground">Loading assigned permissions...</p>
-                ) : permissions.length === 0 ? (
-                  <p className="text-muted-foreground">No permissions assigned.</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {permissions.map((permission) => (
-                      <Badge
-                        key={permission.permissionString}
-                        variant="outline"
-                        className="rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500"
-                      >
-                        {permission.permissionString}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
+                ))}
               </div>
-            </div>
-
-            <DialogClose asChild>
-              <Button variant="outline" className="h-10 w-full cursor-pointer rounded-xl">
-                Close
-              </Button>
-            </DialogClose>
+            )}
           </div>
         </div>
+
+        <DialogFooter className="px-6 py-4 sm:justify-start">
+          <DialogClose asChild>
+            <Button type="button" variant="outline" className="cursor-pointer">
+              Close
+            </Button>
+          </DialogClose>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

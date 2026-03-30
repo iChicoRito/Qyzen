@@ -18,25 +18,16 @@ import type { Quiz } from '../data/schema'
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
   onAddQuiz?: (quiz: Quiz) => Promise<void> | void
+  onUploadQuizzes?: (quizzes: Quiz[]) => Promise<void> | void
 }
 
 // DataTableToolbar - filter and create quiz rows
 export function DataTableToolbar<TData>({
   table,
   onAddQuiz,
+  onUploadQuizzes,
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0
-
-  // handleQuizTypeChange - update quiz type filter
-  const handleQuizTypeChange = (value: string) => {
-    const column = table.getColumn('quizType')
-
-    if (value === 'all') {
-      column?.setFilterValue(undefined)
-    } else {
-      column?.setFilterValue([value])
-    }
-  }
 
   // handleModuleChange - update module filter
   const handleModuleChange = (value: string) => {
@@ -60,9 +51,32 @@ export function DataTableToolbar<TData>({
     }
   }
 
-  const quizTypeFilter = table.getColumn('quizType')?.getFilterValue() as string[] | undefined
+  // handleSubjectChange - update subject filter
+  const handleSubjectChange = (value: string) => {
+    const column = table.getColumn('subjectName')
+
+    if (value === 'all') {
+      column?.setFilterValue(undefined)
+    } else {
+      column?.setFilterValue(value)
+    }
+  }
+
+  // handleSectionChange - update section filter
+  const handleSectionChange = (value: string) => {
+    const column = table.getColumn('sectionName')
+
+    if (value === 'all') {
+      column?.setFilterValue(undefined)
+    } else {
+      column?.setFilterValue(value)
+    }
+  }
+
   const moduleFilter = table.getColumn('moduleCode')?.getFilterValue() as string | undefined
   const termFilter = table.getColumn('termName')?.getFilterValue() as string[] | undefined
+  const subjectFilter = table.getColumn('subjectName')?.getFilterValue() as string | undefined
+  const sectionFilter = table.getColumn('sectionName')?.getFilterValue() as string | undefined
   const moduleOptions = Array.from(
     new Set(
       table
@@ -81,26 +95,28 @@ export function DataTableToolbar<TData>({
         .filter(Boolean)
     )
   ).sort((left, right) => left.localeCompare(right))
+  const subjectOptions = Array.from(
+    new Set(
+      table
+        .getCoreRowModel()
+        .rows
+        .map((row) => String(row.getValue('subjectName')))
+        .filter(Boolean)
+    )
+  ).sort((left, right) => left.localeCompare(right))
+  const sectionOptions = Array.from(
+    new Set(
+      table
+        .getCoreRowModel()
+        .rows
+        .map((row) => String(row.getValue('sectionName')))
+        .filter(Boolean)
+    )
+  ).sort((left, right) => left.localeCompare(right))
 
   return (
-    <div className="flex items-center justify-between gap-2">
-      <div className="flex flex-1 items-center gap-2">
-        <Select value={quizTypeFilter?.[0] || 'all'} onValueChange={handleQuizTypeChange}>
-          <SelectTrigger className="w-[180px] cursor-pointer">
-            <SelectValue placeholder="Quiz Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" className="cursor-pointer">
-              All Quiz Types
-            </SelectItem>
-            <SelectItem value="multiple_choice" className="cursor-pointer">
-              Multiple Choice
-            </SelectItem>
-            <SelectItem value="identification" className="cursor-pointer">
-              Identification
-            </SelectItem>
-          </SelectContent>
-        </Select>
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-1 flex-wrap items-center gap-2">
         <Select value={moduleFilter || 'all'} onValueChange={handleModuleChange}>
           <SelectTrigger className="w-[180px] cursor-pointer">
             <SelectValue placeholder="Module" />
@@ -131,6 +147,36 @@ export function DataTableToolbar<TData>({
             ))}
           </SelectContent>
         </Select>
+        <Select value={subjectFilter || 'all'} onValueChange={handleSubjectChange}>
+          <SelectTrigger className="w-[180px] cursor-pointer">
+            <SelectValue placeholder="Subject" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all" className="cursor-pointer">
+              All Subjects
+            </SelectItem>
+            {subjectOptions.map((subjectName) => (
+              <SelectItem key={subjectName} value={subjectName} className="cursor-pointer">
+                {subjectName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={sectionFilter || 'all'} onValueChange={handleSectionChange}>
+          <SelectTrigger className="w-[180px] cursor-pointer">
+            <SelectValue placeholder="Section" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all" className="cursor-pointer">
+              All Sections
+            </SelectItem>
+            {sectionOptions.map((sectionName) => (
+              <SelectItem key={sectionName} value={sectionName} className="cursor-pointer">
+                {sectionName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button
           variant="outline"
           onClick={() => table.resetColumnFilters()}
@@ -141,9 +187,9 @@ export function DataTableToolbar<TData>({
           <span className="hidden lg:block">Reset Filters</span>
         </Button>
       </div>
-      <div className="flex items-center space-x-2">
+      <div className="flex flex-wrap items-center gap-2 lg:justify-end">
         <DataTableViewOptions table={table} />
-        <AddQuizModal onAddQuiz={onAddQuiz} />
+        <AddQuizModal onAddQuiz={onAddQuiz} onUploadQuizzes={onUploadQuizzes} />
       </div>
     </div>
   )

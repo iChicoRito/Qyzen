@@ -11,7 +11,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { createQuiz, deleteQuiz, fetchQuizzes, type QuizRecord, updateQuiz } from '@/lib/supabase/quizzes'
+import { createQuiz, createQuizzes, deleteQuiz, fetchQuizzes, type QuizRecord, updateQuiz } from '@/lib/supabase/quizzes'
 
 import type { Quiz } from '../data/schema'
 import { quizSchema } from '../data/schema'
@@ -61,6 +61,12 @@ export function QuizzesPageClient() {
     const savedQuiz = await updateQuiz(updatedQuiz as QuizRecord)
     const parsedQuiz = quizSchema.parse(savedQuiz)
     setQuizzes((prev) => prev.map((quiz) => (quiz.id === parsedQuiz.id ? parsedQuiz : quiz)))
+  }
+
+  // handleUploadQuizzes - save uploaded quiz rows then refresh the list
+  const handleUploadQuizzes = async (uploadedQuizzes: Quiz[]) => {
+    await createQuizzes(uploadedQuizzes as QuizRecord[])
+    await loadQuizzes()
   }
 
   // ==================== STATS ====================
@@ -225,6 +231,7 @@ export function QuizzesPageClient() {
                 onUpdateQuiz: handleUpdateQuiz,
               })}
               onAddQuiz={handleAddQuiz}
+              onUploadQuizzes={handleUploadQuizzes}
             />
           </CardContent>
         </Card>
