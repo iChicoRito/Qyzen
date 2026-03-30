@@ -87,6 +87,21 @@ CREATE TABLE public.tbl_modules (
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+CREATE SEQUENCE IF NOT EXISTS tbl_quizzes_id_seq;
+CREATE TABLE public.tbl_quizzes (
+  id bigint DEFAULT nextval('tbl_quizzes_id_seq'::regclass) NOT NULL,
+  module_id bigint NOT NULL,
+  subject_id bigint NOT NULL,
+  section_id bigint NOT NULL,
+  educator_id bigint NOT NULL,
+  question text NOT NULL,
+  quiz_type text NOT NULL,
+  choices jsonb,
+  correct_answer text NOT NULL,
+  created_at timestamp with time zone DEFAULT now() NOT NULL,
+  updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
 CREATE SEQUENCE IF NOT EXISTS tbl_enrolled_id_seq;
 CREATE TABLE public.tbl_enrolled (
   id bigint DEFAULT nextval('tbl_enrolled_id_seq'::regclass) NOT NULL,
@@ -133,6 +148,7 @@ ALTER TABLE public.tbl_sections ADD CONSTRAINT tbl_sections_pkey PRIMARY KEY (id
 ALTER TABLE public.tbl_sections_term ADD CONSTRAINT tbl_sections_term_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_subjects ADD CONSTRAINT tbl_subjects_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_modules ADD CONSTRAINT tbl_modules_pkey PRIMARY KEY (id);
+ALTER TABLE public.tbl_quizzes ADD CONSTRAINT tbl_quizzes_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_user_roles ADD CONSTRAINT user_roles_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_users ADD CONSTRAINT users_pkey PRIMARY KEY (id);
@@ -152,6 +168,10 @@ ALTER TABLE public.tbl_modules ADD CONSTRAINT tbl_modules_educator_id_fkey FOREI
 ALTER TABLE public.tbl_modules ADD CONSTRAINT tbl_modules_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.tbl_subjects(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_modules ADD CONSTRAINT tbl_modules_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.tbl_sections(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_modules ADD CONSTRAINT tbl_modules_term_fkey FOREIGN KEY (term) REFERENCES public.tbl_academic_term(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_quizzes ADD CONSTRAINT tbl_quizzes_module_id_fkey FOREIGN KEY (module_id) REFERENCES public.tbl_modules(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_quizzes ADD CONSTRAINT tbl_quizzes_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.tbl_subjects(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_quizzes ADD CONSTRAINT tbl_quizzes_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.tbl_sections(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_quizzes ADD CONSTRAINT tbl_quizzes_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.tbl_subjects(id) ON DELETE CASCADE;
@@ -193,6 +213,11 @@ CREATE INDEX idx_tbl_modules_section_id ON public.tbl_modules USING btree (secti
 CREATE INDEX idx_tbl_modules_term ON public.tbl_modules USING btree (term);
 CREATE INDEX idx_tbl_modules_module_code ON public.tbl_modules USING btree (module_code);
 CREATE INDEX idx_tbl_modules_start_date ON public.tbl_modules USING btree (start_date);
+CREATE INDEX idx_tbl_quizzes_module_id ON public.tbl_quizzes USING btree (module_id);
+CREATE INDEX idx_tbl_quizzes_subject_id ON public.tbl_quizzes USING btree (subject_id);
+CREATE INDEX idx_tbl_quizzes_section_id ON public.tbl_quizzes USING btree (section_id);
+CREATE INDEX idx_tbl_quizzes_educator_id ON public.tbl_quizzes USING btree (educator_id);
+CREATE INDEX idx_tbl_quizzes_quiz_type ON public.tbl_quizzes USING btree (quiz_type);
 CREATE UNIQUE INDEX tbl_enrolled_unique_student_subject_per_educator ON public.tbl_enrolled USING btree (educator_id, student_id, subject_id);
 CREATE INDEX idx_tbl_enrolled_educator_id ON public.tbl_enrolled USING btree (educator_id);
 CREATE INDEX idx_tbl_enrolled_student_id ON public.tbl_enrolled USING btree (student_id);
@@ -211,6 +236,7 @@ ALTER TABLE public.tbl_sections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_sections_term ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_subjects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_modules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tbl_quizzes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_enrolled ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
@@ -257,6 +283,19 @@ CREATE POLICY "Authenticated users can read active roles" ON public.tbl_roles AS
 
 CREATE POLICY "Authenticated users can read active permissions" ON public.tbl_permissions AS PERMISSIVE FOR SELECT TO authenticated
   USING ((is_active = true));
+
+CREATE POLICY "Educator quiz view access" ON public.tbl_quizzes AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
+
+CREATE POLICY "Educator quiz create access" ON public.tbl_quizzes AS PERMISSIVE FOR INSERT TO authenticated
+  WITH CHECK ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
+
+CREATE POLICY "Educator quiz update access" ON public.tbl_quizzes AS PERMISSIVE FOR UPDATE TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())))
+  WITH CHECK ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
+
+CREATE POLICY "Educator quiz delete access" ON public.tbl_quizzes AS PERMISSIVE FOR DELETE TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
 
 CREATE POLICY "Authenticated users can read role permissions" ON public.tbl_role_permissions AS PERMISSIVE FOR SELECT TO authenticated
   USING (true);
