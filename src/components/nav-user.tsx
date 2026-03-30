@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import {
-  IconBrandNextjs,
+  IconUserCircle,
   IconDotsVertical,
   IconLoader2 as Loader2,
   IconLogout,
@@ -79,7 +79,7 @@ export function NavUser({ user, role, roles }: NavUserProps) {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
             >
               <div className="flex h-8 w-8 items-center justify-center rounded-lg">
-                <IconBrandNextjs size={20} />
+                <IconUserCircle size={20} />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
@@ -99,7 +99,7 @@ export function NavUser({ user, role, roles }: NavUserProps) {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <div className="h-full w-6 rounded-lg">
-                  <IconBrandNextjs size={20} />
+                  <IconUserCircle size={20} />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>

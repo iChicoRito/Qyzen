@@ -3,7 +3,6 @@
 import * as React from 'react'
 import {
   IconBook2,
-  IconBrandNextjs,
   IconChecklist,
   IconLayoutDashboard,
   IconSchool,
@@ -13,7 +12,10 @@ import {
   IconId,
   IconSubtitlesEdit 
 } from '@tabler/icons-react'
+import Image from 'next/image'
 import Link from 'next/link'
+import qDark from '../../public/q-dark.png'
+import qLight from '../../public/q-light.png'
 
 import { NavMain } from '@/components/nav-main'
 import { NavUser } from '@/components/nav-user'
@@ -292,11 +294,24 @@ export function AppSidebar({ role = 'admin', roles, user, ...props }: AppSidebar
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href={role === 'admin' ? '/admin/dashboard' : `/${role}/dashboard`}>
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <IconBrandNextjs size={20} />
+                <div className="flex aspect-square size-8 items-center justify-center overflow-hidden rounded-lg">
+                  <Image
+                    src={qDark}
+                    alt="Qyzen logo"
+                    width={32}
+                    height={32}
+                    className="block dark:hidden"
+                  />
+                  <Image
+                    src={qLight}
+                    alt="Qyzen logo"
+                    width={32}
+                    height={32}
+                    className="hidden dark:block"
+                  />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">Shadcn Dashboard</span>
+                  <span className="truncate font-medium">Qyzen</span>
                   <span className="truncate text-xs">{getSidebarSubtitle(assignedRoles)}</span>
                 </div>
               </Link>
