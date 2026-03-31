@@ -13,13 +13,16 @@ export const moduleFormSchema = z
     moduleCodePreset: z.string().optional(),
     moduleCodeManual: z.string().optional(),
     subjectIds: z.array(z.number()).min(1, 'Select at least one subject.'),
-    academicTermId: z.number().min(1, 'Academic term is required.'),
+    academicTermId: z.number().optional(),
     timeLimit: z.string().min(1, 'Time limit is required.'),
     cheatingAttempts: z
       .string()
       .min(1, 'Cheating attempts is required.')
       .regex(/^\d+$/, 'Cheating attempts must contain numbers only.'),
     isShuffle: z.boolean(),
+    allowReview: z.boolean(),
+    allowHint: z.boolean(),
+    hintCount: z.string().optional(),
     status: z.enum(['active', 'inactive']),
     startDate: z.date({ message: 'Start date is required.' }),
     endDate: z.date({ message: 'End date is required.' }),
@@ -38,6 +41,32 @@ export const moduleFormSchema = z
         message: 'Module code is required.',
         path: values.moduleCodeMode === 'preset' ? ['moduleCodePreset'] : ['moduleCodeManual'],
       })
+    }
+
+    if (!values.academicTermId || values.academicTermId < 1) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Academic term is required.',
+        path: ['academicTermId'],
+      })
+    }
+
+    if (values.allowHint) {
+      const normalizedHintCount = values.hintCount?.trim() || ''
+
+      if (!normalizedHintCount) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Hint count is required when Allow Hint is enabled.',
+          path: ['hintCount'],
+        })
+      } else if (!/^\d+$/.test(normalizedHintCount)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Hint count must contain numbers only.',
+          path: ['hintCount'],
+        })
+      }
     }
 
     if (values.endDate < values.startDate) {

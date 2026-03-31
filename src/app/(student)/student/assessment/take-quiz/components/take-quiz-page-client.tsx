@@ -44,6 +44,7 @@ interface TakeQuizPageClientProps {
 const TIMER_TOP_OFFSET = 96
 const TIMER_RIGHT_OFFSET = 24
 const TIMER_VIEWPORT_PADDING = 16
+const QUIZ_HINT_MIN_DURATION = 3000
 
 // shuffleArray - randomize array order
 function shuffleArray<T>(items: T[]) {
@@ -102,6 +103,33 @@ function getTimerBadgeClassName(secondsLeft: number, totalSeconds: number) {
   return 'rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500'
 }
 
+// getRandomHintMoments - create sorted random hint trigger times
+function getRandomHintMoments(totalSeconds: number, hintCount: number) {
+  if (totalSeconds <= 10 || hintCount <= 0) {
+    return []
+  }
+
+  const safeHintCount = Math.min(hintCount, totalSeconds)
+  const startBoundary = Math.min(15, Math.max(3, Math.floor(totalSeconds * 0.15)))
+  const endBoundary = Math.min(15, Math.max(3, Math.floor(totalSeconds * 0.15)))
+  const minSecond = startBoundary
+  const maxSecond = Math.max(minSecond, totalSeconds - endBoundary)
+  const usedMoments = new Set<number>()
+
+  while (usedMoments.size < safeHintCount) {
+    const randomSecond =
+      Math.floor(Math.random() * (maxSecond - minSecond + 1)) + minSecond
+    usedMoments.add(randomSecond)
+  }
+
+  return Array.from(usedMoments).sort((leftValue, rightValue) => leftValue - rightValue)
+}
+
+// getRandomHintPool - shuffle hint pool for toast rotation
+function getRandomHintPool(hints: StudentQuizSession['hints']) {
+  return shuffleArray(hints)
+}
+
 // isTimerAlmostDone - detect critical timer state
 function isTimerAlmostDone(secondsLeft: number, totalSeconds: number) {
   const safeTotalSeconds = totalSeconds <= 0 ? 1 : totalSeconds
@@ -131,6 +159,10 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
   const router = useRouter()
   const orderedQuestionsRef = useRef(getOrderedQuestions(session))
   const lastSavedAnswersRef = useRef(JSON.stringify(session.existingAnswers || {}))
+  const availableHintCount = session.allowHint ? Math.min(session.hintCount, session.hints.length) : 0
+  const hintMomentsRef = useRef(getRandomHintMoments(session.timeLimitMinutes * 60, availableHintCount))
+  const hintPoolRef = useRef(getRandomHintPool(session.hints).slice(0, availableHintCount))
+  const shownHintMomentsRef = useRef(new Set<number>())
   const timerContainerRef = useRef<HTMLDivElement | null>(null)
   const showTimerButtonRef = useRef<HTMLButtonElement | null>(null)
   const autoSubmitTriggeredRef = useRef(false)
@@ -185,6 +217,24 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
     const answerValue = (watchedAnswers || {})[String(question.id)]
     return !answerValue?.trim()
   }).length
+
+  // ==================== SHOW RANDOM HINT ====================
+  const showRandomHint = useCallback(() => {
+    if (!session.allowHint || availableHintCount <= 0 || hintPoolRef.current.length === 0) {
+      return
+    }
+
+    const nextHint = hintPoolRef.current.shift()
+
+    if (!nextHint) {
+      return
+    }
+
+    toast.success(`Hint: ${nextHint.answer}`, {
+      description: nextHint.question,
+      duration: QUIZ_HINT_MIN_DURATION,
+    })
+  }, [availableHintCount, session.allowHint])
 
   // ==================== CLAMP TIMER POSITION ====================
   const clampTimerPosition = useCallback(
@@ -339,6 +389,33 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
       void handleAutoSubmit()
     }
   }, [secondsLeft])
+
+  // ==================== QUIZ HINT EFFECT ====================
+  useEffect(() => {
+    if (!session.allowHint || availableHintCount <= 0 || isSubmitting || timesUpDialogOpen) {
+      return
+    }
+
+    const elapsedSeconds = totalSeconds - secondsLeft
+    const nextHintMoment = hintMomentsRef.current.find(
+      (moment) => moment <= elapsedSeconds && !shownHintMomentsRef.current.has(moment)
+    )
+
+    if (nextHintMoment === undefined) {
+      return
+    }
+
+    shownHintMomentsRef.current.add(nextHintMoment)
+    showRandomHint()
+  }, [
+    isSubmitting,
+    availableHintCount,
+    secondsLeft,
+    session.allowHint,
+    showRandomHint,
+    timesUpDialogOpen,
+    totalSeconds,
+  ])
 
   // ==================== VISIBILITY EFFECT ====================
   useEffect(() => {

@@ -29,9 +29,18 @@ function getStatusClassName(status: 'passed' | 'failed') {
 }
 
 // getChoiceClassName - style reviewed multiple choice answers
-function getChoiceClassName(isCorrect: boolean, isStudentChoice: boolean, isIncorrectChoice: boolean) {
-  if (isCorrect) {
+function getChoiceClassName(
+  shouldRevealCorrectAnswer: boolean,
+  isStudentChoice: boolean,
+  isIncorrectChoice: boolean,
+  isCorrectStudentChoice: boolean
+) {
+  if (isCorrectStudentChoice) {
     return 'border-primary/30 bg-primary/10'
+  }
+
+  if (shouldRevealCorrectAnswer) {
+    return 'border-green-500/30 bg-green-500/10'
   }
 
   if (isStudentChoice && isIncorrectChoice) {
@@ -42,9 +51,18 @@ function getChoiceClassName(isCorrect: boolean, isStudentChoice: boolean, isInco
 }
 
 // getChoiceChipClassName - style reviewed option key chip
-function getChoiceChipClassName(isCorrect: boolean, isStudentChoice: boolean, isIncorrectChoice: boolean) {
-  if (isCorrect) {
+function getChoiceChipClassName(
+  shouldRevealCorrectAnswer: boolean,
+  isStudentChoice: boolean,
+  isIncorrectChoice: boolean,
+  isCorrectStudentChoice: boolean
+) {
+  if (isCorrectStudentChoice) {
     return 'border-primary/30 bg-primary text-primary-foreground'
+  }
+
+  if (shouldRevealCorrectAnswer) {
+    return 'border-green-500/30 bg-green-500 text-white'
   }
 
   if (isStudentChoice && isIncorrectChoice) {
@@ -55,9 +73,18 @@ function getChoiceChipClassName(isCorrect: boolean, isStudentChoice: boolean, is
 }
 
 // getChoiceTextClassName - style reviewed option text
-function getChoiceTextClassName(isCorrect: boolean, isStudentChoice: boolean, isIncorrectChoice: boolean) {
-  if (isCorrect) {
+function getChoiceTextClassName(
+  shouldRevealCorrectAnswer: boolean,
+  isStudentChoice: boolean,
+  isIncorrectChoice: boolean,
+  isCorrectStudentChoice: boolean
+) {
+  if (isCorrectStudentChoice) {
     return 'text-foreground'
+  }
+
+  if (shouldRevealCorrectAnswer) {
+    return 'text-green-500'
   }
 
   if (isStudentChoice && isIncorrectChoice) {
@@ -147,22 +174,40 @@ export default async function TakeQuizResultPage({ searchParams }: TakeQuizResul
                   <div className="space-y-2">
                     {question.choices.map((choice) => {
                       const isCorrect = question.correctAnswers.includes(choice.value)
-                      const isStudentChoice = question.studentAnswer === choice.value && !question.isCorrect
+                      const isSelectedChoice = question.studentAnswer === choice.value
+                      const isStudentChoice = isSelectedChoice && !question.isCorrect
                       const isIncorrectChoice = Boolean(question.studentAnswer) && !question.isCorrect
+                      const isCorrectStudentChoice = isSelectedChoice && question.isCorrect
+                      const shouldRevealCorrectAnswer = isCorrect && (result.allowReview || question.isCorrect)
 
                       return (
                         <div
                           key={`${question.id}-${choice.key}`}
-                          className={`flex items-center gap-2 rounded-xl border px-2 py-1.5 ${getChoiceClassName(isCorrect, isStudentChoice, isIncorrectChoice)}`}
+                          className={`flex items-center gap-2 rounded-xl border px-2 py-1.5 ${getChoiceClassName(
+                            shouldRevealCorrectAnswer,
+                            isStudentChoice,
+                            isIncorrectChoice,
+                            isCorrectStudentChoice
+                          )}`}
                         >
                           <div
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold ${getChoiceChipClassName(isCorrect, isStudentChoice, isIncorrectChoice)}`}
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold ${getChoiceChipClassName(
+                              shouldRevealCorrectAnswer,
+                              isStudentChoice,
+                              isIncorrectChoice,
+                              isCorrectStudentChoice
+                            )}`}
                           >
                             {choice.key}
                           </div>
                           <div className="flex min-h-9 flex-1 items-center pr-1">
                             <div
-                              className={`text-sm leading-4 ${getChoiceTextClassName(isCorrect, isStudentChoice, isIncorrectChoice)}`}
+                              className={`text-sm leading-4 ${getChoiceTextClassName(
+                                shouldRevealCorrectAnswer,
+                                isStudentChoice,
+                                isIncorrectChoice,
+                                isCorrectStudentChoice
+                              )}`}
                             >
                               {choice.value}
                             </div>
@@ -173,9 +218,11 @@ export default async function TakeQuizResultPage({ searchParams }: TakeQuizResul
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <div className="rounded-lg border-0 bg-primary/10 px-4 py-3 text-sm font-medium text-primary">
-                      Correct Answer: {question.correctAnswers.join(', ')}
-                    </div>
+                    {result.allowReview || question.isCorrect ? (
+                      <div className="rounded-lg border-0 bg-primary/10 px-4 py-3 text-sm font-medium text-primary">
+                        Correct Answer: {question.correctAnswers.join(', ')}
+                      </div>
+                    ) : null}
                   </div>
                 )}
 

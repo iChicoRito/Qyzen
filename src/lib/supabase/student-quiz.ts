@@ -14,6 +14,12 @@ export interface StudentQuizQuestion {
   choices: StudentQuizChoice[]
 }
 
+export interface StudentQuizHint {
+  questionId: number
+  question: string
+  answer: string
+}
+
 export interface StudentQuizSession {
   moduleRowId: number
   moduleId: string
@@ -29,11 +35,14 @@ export interface StudentQuizSession {
   timeLimitMinutes: number
   cheatingAttempts: number
   isShuffle: boolean
+  allowHint: boolean
+  hintCount: number
   startDate: string
   endDate: string
   startTime: string
   endTime: string
   questions: StudentQuizQuestion[]
+  hints: StudentQuizHint[]
   existingScoreId: number | null
   existingAnswers: Record<string, string>
   warningAttempts: number
@@ -88,6 +97,7 @@ export interface StudentQuizReviewResult extends StudentQuizResult {
   endTime: string
   timeLimitMinutes: number
   isShuffle: boolean
+  allowReview: boolean
   warningAttempts: number
   questions: StudentQuizReviewQuestion[]
 }
@@ -128,6 +138,9 @@ interface ModuleRow {
   time_limit: string
   cheating_attempts: number
   is_shuffle: boolean
+  allow_review: boolean
+  allow_hint: boolean
+  hint_count: number
   start_date: string
   end_date: string
   start_time: string
@@ -180,6 +193,7 @@ interface ModuleResultRow {
   end_time: string
   time_limit: string
   is_shuffle: boolean
+  allow_review: boolean
   subject: ModuleSubjectRow | ModuleSubjectRow[] | null
   section: ModuleSectionRow | ModuleSectionRow[] | null
   educator: ModuleEducatorRow | ModuleEducatorRow[] | null
@@ -264,6 +278,21 @@ function normalizeCorrectAnswers(quizType: 'multiple_choice' | 'identification',
   }
 }
 
+// getHintAnswerLabel - format hint answer text for students
+function getHintAnswerLabel(question: StudentQuizQuestionWithAnswers) {
+  if (question.quizType === 'multiple_choice') {
+    const correctChoice = question.choices.find((choice) => choice.value === question.correctAnswers[0])
+
+    if (!correctChoice) {
+      return question.correctAnswers[0] || 'No answer available'
+    }
+
+    return `${correctChoice.key}. ${correctChoice.value}`
+  }
+
+  return question.correctAnswers.join(', ') || 'No answer available'
+}
+
 // normalizeStoredAnswers - normalize saved student answers
 function normalizeStoredAnswers(studentAnswer: unknown) {
   if (!studentAnswer || typeof studentAnswer !== 'object' || Array.isArray(studentAnswer)) {
@@ -301,6 +330,7 @@ function buildSessionRecord(
   quizzes: QuizRow[],
   score: ScoreRow | null
 ): StudentQuizGradingSession {
+  const questionRecords = quizzes.map(buildQuestionRecord)
   const subject = getSingleRelation(module.subject)
   const section = getSingleRelation(module.section)
   const educator = getSingleRelation(module.educator)
@@ -325,11 +355,19 @@ function buildSessionRecord(
     timeLimitMinutes: Number(module.time_limit) || 0,
     cheatingAttempts: module.cheating_attempts,
     isShuffle: module.is_shuffle,
+    allowReview: module.allow_review,
+    allowHint: module.allow_hint,
+    hintCount: module.hint_count,
     startDate: module.start_date,
     endDate: module.end_date,
     startTime: module.start_time,
     endTime: module.end_time,
-    questions: quizzes.map(buildQuestionRecord),
+    questions: questionRecords,
+    hints: questionRecords.map((question) => ({
+      questionId: question.id,
+      question: question.question,
+      answer: getHintAnswerLabel(question),
+    })),
     existingScoreId: score?.id ?? null,
     existingAnswers: normalizeStoredAnswers(score?.student_answer ?? {}),
     warningAttempts: score?.warning_attempts ?? 0,
@@ -371,7 +409,7 @@ async function fetchModuleRow(moduleId: number) {
   const { data, error } = await supabase
     .from('tbl_modules')
     .select(
-      'id,module_id,module_code,subject_id,section_id,educator_id,time_limit,cheating_attempts,is_shuffle,start_date,end_date,start_time,end_time,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester)'
+      'id,module_id,module_code,subject_id,section_id,educator_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_hint,hint_count,start_date,end_date,start_time,end_time,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester)'
     )
     .eq('id', moduleId)
     .eq('is_active', true)
@@ -458,7 +496,7 @@ export async function fetchStudentScoreResult(studentId: number, scoreId?: numbe
   let query = supabase
     .from('tbl_scores')
     .select(
-      'id,module_id,score,total_questions,taken_at,submitted_at,status,is_passed,warning_attempts,module:module_id(module_code,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester))'
+      'id,module_id,score,total_questions,taken_at,submitted_at,status,is_passed,warning_attempts,module:module_id(module_code,allow_review,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester))'
     )
     .eq('student_id', studentId)
     .not('submitted_at', 'is', null)
@@ -526,7 +564,7 @@ export async function fetchStudentQuizReviewResult(studentId: number, scoreId: n
   const { data, error } = await supabase
     .from('tbl_scores')
     .select(
-      'id,module_id,score,total_questions,student_answer,taken_at,submitted_at,status,is_passed,warning_attempts,module:module_id(module_code,start_date,end_date,start_time,end_time,time_limit,is_shuffle,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester))'
+      'id,module_id,score,total_questions,student_answer,taken_at,submitted_at,status,is_passed,warning_attempts,module:module_id(module_code,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester))'
     )
     .eq('student_id', studentId)
     .eq('id', scoreId)
@@ -562,6 +600,7 @@ export async function fetchStudentQuizReviewResult(studentId: number, scoreId: n
     endTime: module.end_time,
     timeLimitMinutes: Number(module.time_limit) || 0,
     isShuffle: module.is_shuffle,
+    allowReview: module.allow_review,
     warningAttempts: scoreRow.warning_attempts ?? 0,
     questions: questionRecords.map((question) => {
       const studentAnswer = studentAnswers[String(question.id)] || ''

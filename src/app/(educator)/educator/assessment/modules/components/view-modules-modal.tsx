@@ -45,6 +45,14 @@ export function ViewModulesModal({
     ? 'rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500'
     : 'rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500'
 
+  const reviewClassName = module.allowReview
+    ? 'rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500'
+    : 'rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500'
+
+  const hintClassName = module.allowHint
+    ? 'rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500'
+    : 'rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500'
+
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       {trigger ? (
@@ -99,6 +107,25 @@ export function ViewModulesModal({
             <Badge variant="outline" className={shuffleClassName}>
               {module.isShuffle ? 'Enabled' : 'Disabled'}
             </Badge>
+          </div>
+
+          <div className="space-y-3">
+            <p className="font-semibold">Allow Review</p>
+            <Badge variant="outline" className={reviewClassName}>
+              {module.allowReview ? 'Enabled' : 'Disabled'}
+            </Badge>
+          </div>
+
+          <div className="space-y-3">
+            <p className="font-semibold">Allow Hint</p>
+            <Badge variant="outline" className={hintClassName}>
+              {module.allowHint ? 'Enabled' : 'Disabled'}
+            </Badge>
+          </div>
+
+          <div className="space-y-2">
+            <p className="font-semibold">Hint Count</p>
+            <p className="text-muted-foreground">{module.allowHint ? module.hintCount : 0}</p>
           </div>
 
           <div className="space-y-2">

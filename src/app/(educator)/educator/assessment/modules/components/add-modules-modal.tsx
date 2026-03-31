@@ -106,10 +106,13 @@ export function AddModulesModal({ onAddModules, trigger }: AddModulesModalProps)
       moduleCodePreset: moduleCodeOptions[0],
       moduleCodeManual: '',
       subjectIds: [],
-      academicTermId: 0,
+      academicTermId: undefined,
       timeLimit: '',
       cheatingAttempts: '0',
       isShuffle: false,
+      allowReview: false,
+      allowHint: false,
+      hintCount: '',
       status: 'active',
       startDate: undefined,
       endDate: undefined,
@@ -120,6 +123,7 @@ export function AddModulesModal({ onAddModules, trigger }: AddModulesModalProps)
 
   const selectedSubjectIds = form.watch('subjectIds')
   const moduleCodeMode = form.watch('moduleCodeMode')
+  const allowHint = form.watch('allowHint')
   const selectedSubjects = useMemo(
     () => subjectOptions.filter((option) => selectedSubjectIds.includes(option.subjectId)),
     [selectedSubjectIds, subjectOptions]
@@ -169,9 +173,9 @@ export function AddModulesModal({ onAddModules, trigger }: AddModulesModalProps)
       return
     }
 
-    form.setValue('academicTermId', 0, {
-      shouldDirty: true,
-      shouldValidate: true,
+    form.setValue('academicTermId', undefined, {
+      shouldDirty: false,
+      shouldValidate: false,
     })
   }, [availableAcademicTerms, form])
 
@@ -220,10 +224,13 @@ export function AddModulesModal({ onAddModules, trigger }: AddModulesModalProps)
         moduleCodePreset: moduleCodeOptions[0],
         moduleCodeManual: '',
         subjectIds: [],
-        academicTermId: 0,
+        academicTermId: undefined,
         timeLimit: '',
         cheatingAttempts: '0',
         isShuffle: false,
+        allowReview: false,
+        allowHint: false,
+        hintCount: '',
         status: 'active',
         startDate: undefined,
         endDate: undefined,
@@ -241,10 +248,13 @@ export function AddModulesModal({ onAddModules, trigger }: AddModulesModalProps)
       await onAddModules?.({
         moduleCode: getModuleCodeValue(values),
         selections,
-        academicTermId: values.academicTermId,
+        academicTermId: values.academicTermId as number,
         timeLimit: values.timeLimit.trim(),
         cheatingAttempts: Number(values.cheatingAttempts),
         isShuffle: values.isShuffle,
+        allowReview: values.allowReview,
+        allowHint: values.allowHint,
+        hintCount: values.allowHint ? Number(values.hintCount || '0') : 0,
         status: values.status,
         startDate: format(values.startDate, 'yyyy-MM-dd'),
         endDate: format(values.endDate, 'yyyy-MM-dd'),
@@ -460,9 +470,9 @@ export function AddModulesModal({ onAddModules, trigger }: AddModulesModalProps)
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Academic Term</FormLabel>
-                        <Select
+                      <Select
                           onValueChange={(value) => field.onChange(Number(value))}
-                        value={field.value > 0 ? String(field.value) : undefined}
+                        value={field.value && field.value > 0 ? String(field.value) : undefined}
                         disabled={selectedSubjects.length === 0 || availableAcademicTerms.length === 0}
                       >
                         <FormControl>
@@ -531,6 +541,85 @@ export function AddModulesModal({ onAddModules, trigger }: AddModulesModalProps)
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="allowReview"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-md border p-4">
+                      <div className="space-y-1">
+                        <FormLabel>Allow Review</FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Let students review their answers after submission.
+                        </p>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className="cursor-pointer"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="allowHint"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-md border p-4">
+                      <div className="space-y-1">
+                        <FormLabel>Allow Hint</FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Allow random answer hints during the student assessment.
+                        </p>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked)
+
+                            if (!checked) {
+                              form.setValue('hintCount', '', {
+                                shouldDirty: true,
+                                shouldValidate: false,
+                              })
+                            }
+                          }}
+                          className="cursor-pointer"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {allowHint ? (
+                  <FormField
+                    control={form.control}
+                    name="hintCount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Hint Count</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="Enter number of hints"
+                            value={field.value ?? ''}
+                            onChange={(event) => {
+                              const nextValue = event.target.value.replace(/\D/g, '')
+                              field.onChange(nextValue)
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : null}
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <FormField
