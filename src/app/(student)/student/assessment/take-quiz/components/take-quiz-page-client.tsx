@@ -1,9 +1,14 @@
 'use client'
 
-import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react'
+import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { IconClock, IconLoader2 as Loader2 } from '@tabler/icons-react'
+import {
+  IconClock,
+  IconEye,
+  IconEyeOff,
+  IconLoader2 as Loader2,
+} from '@tabler/icons-react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
@@ -20,18 +25,25 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { StudentQuizQuestion, StudentQuizSession } from '@/lib/supabase/student-quiz'
 import {
   studentQuizFormSchema,
+  type StudentQuizFormInput,
   type StudentQuizFormSchema,
 } from '@/lib/validations/student-quiz.schema'
 
 import { CheatingWarningDialog } from './cheating-warning-dialog'
 import { SubmitQuizDialog } from './submit-quiz-dialog'
+import { TimesUpDialog } from './times-up-dialog'
 
 interface TakeQuizPageClientProps {
   session: StudentQuizSession
 }
+
+const TIMER_TOP_OFFSET = 96
+const TIMER_RIGHT_OFFSET = 24
+const TIMER_VIEWPORT_PADDING = 16
 
 // shuffleArray - randomize array order
 function shuffleArray<T>(items: T[]) {
@@ -90,17 +102,23 @@ function getTimerBadgeClassName(secondsLeft: number, totalSeconds: number) {
   return 'rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500'
 }
 
+// isTimerAlmostDone - detect critical timer state
+function isTimerAlmostDone(secondsLeft: number, totalSeconds: number) {
+  const safeTotalSeconds = totalSeconds <= 0 ? 1 : totalSeconds
+  return secondsLeft / safeTotalSeconds <= 0.2
+}
+
 // getQuestionStatusClassName - style question type badge
 function getQuestionStatusClassName(quizType: StudentQuizQuestion['quizType']) {
   if (quizType === 'identification') {
     return 'rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500'
   }
 
-  return 'rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500'
+  return 'rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500'
 }
 
 // buildDraftPayload - normalize answer values for saving
-function buildDraftPayload(values: StudentQuizFormSchema) {
+function buildDraftPayload(values: StudentQuizFormInput | StudentQuizFormSchema) {
   return Object.entries(values.answers || {}).reduce<Record<string, string>>((result, [key, value]) => {
     result[key] = value || ''
     return result
@@ -113,6 +131,8 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
   const router = useRouter()
   const orderedQuestionsRef = useRef(getOrderedQuestions(session))
   const lastSavedAnswersRef = useRef(JSON.stringify(session.existingAnswers || {}))
+  const timerContainerRef = useRef<HTMLDivElement | null>(null)
+  const showTimerButtonRef = useRef<HTMLButtonElement | null>(null)
   const autoSubmitTriggeredRef = useRef(false)
   const timerDragStateRef = useRef({
     startPointerX: 0,
@@ -140,10 +160,15 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false)
+  const [timesUpDialogOpen, setTimesUpDialogOpen] = useState(false)
   const [warningDialogOpen, setWarningDialogOpen] = useState(false)
   const [isTimerDragging, setIsTimerDragging] = useState(false)
+  const [isTimerVisible, setIsTimerVisible] = useState(true)
+  const [viewMode, setViewMode] = useState<'list' | 'slideshow'>('list')
+  const [activeQuestionIndex, setActiveQuestionIndex] = useState(0)
   const [timerPosition, setTimerPosition] = useState({ x: 0, y: 0 })
-  const form = useForm<StudentQuizFormSchema>({
+  const [timeoutResultId, setTimeoutResultId] = useState<number | null>(null)
+  const form = useForm<StudentQuizFormInput, unknown, StudentQuizFormSchema>({
     resolver: zodResolver(studentQuizFormSchema),
     defaultValues: {
       answers: session.existingAnswers || {},
@@ -152,6 +177,42 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
   const watchedAnswers = form.watch('answers')
   const totalSeconds = session.timeLimitMinutes * 60
   const remainingAttempts = Math.max(session.cheatingAttempts - warningAttempts, 0)
+  const totalQuestions = orderedQuestionsRef.current.length
+  const activeQuestion = orderedQuestionsRef.current[activeQuestionIndex] || null
+  const isLastSlideshowQuestion = activeQuestionIndex === totalQuestions - 1
+  const shouldShakeTimer = isTimerAlmostDone(secondsLeft, totalSeconds)
+  const unansweredCount = orderedQuestionsRef.current.filter((question) => {
+    const answerValue = (watchedAnswers || {})[String(question.id)]
+    return !answerValue?.trim()
+  }).length
+
+  // ==================== CLAMP TIMER POSITION ====================
+  const clampTimerPosition = useCallback(
+    (nextPosition: { x: number; y: number }, options?: { hidden?: boolean }) => {
+      if (typeof window === 'undefined') {
+        return nextPosition
+      }
+
+      const targetElement = options?.hidden ? showTimerButtonRef.current : timerContainerRef.current
+
+      if (!targetElement) {
+        return nextPosition
+      }
+
+      const { width, height } = targetElement.getBoundingClientRect()
+      const baseLeft = window.innerWidth - TIMER_RIGHT_OFFSET - width
+      const minX = TIMER_VIEWPORT_PADDING - baseLeft
+      const maxX = TIMER_RIGHT_OFFSET - TIMER_VIEWPORT_PADDING
+      const minY = TIMER_VIEWPORT_PADDING - TIMER_TOP_OFFSET
+      const maxY = window.innerHeight - height - TIMER_VIEWPORT_PADDING - TIMER_TOP_OFFSET
+
+      return {
+        x: Math.min(Math.max(nextPosition.x, minX), maxX),
+        y: Math.min(Math.max(nextPosition.y, minY), Math.max(minY, maxY)),
+      }
+    },
+    []
+  )
 
   // ==================== SAVE ATTEMPT ====================
   const persistAttempt = async (mode: 'draft' | 'submit', nextWarningAttempts: number) => {
@@ -200,7 +261,7 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
   }
 
   // ==================== HANDLE SUBMIT ====================
-  const handleSubmitQuiz = async () => {
+  const handleSubmitQuiz = async (options?: { showTimesUpDialog?: boolean }) => {
     try {
       setIsSubmitting(true)
       const payload = await persistAttempt('submit', warningAttempts)
@@ -211,6 +272,12 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
       }
 
       toast.success('Assessment submitted successfully.')
+      if (options?.showTimesUpDialog) {
+        setTimeoutResultId(scoreId)
+        setTimesUpDialogOpen(true)
+        return
+      }
+
       router.push(`/student/assessment/take-quiz/result?scoreId=${scoreId}`)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to submit assessment.')
@@ -227,7 +294,17 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
     }
 
     autoSubmitTriggeredRef.current = true
-    await handleSubmitQuiz()
+    await handleSubmitQuiz({ showTimesUpDialog: secondsLeft === 0 })
+  }
+
+  // ==================== HANDLE TIMES UP CONTINUE ====================
+  const handleTimesUpContinue = () => {
+    if (!timeoutResultId) {
+      return
+    }
+
+    setTimesUpDialogOpen(false)
+    router.push(`/student/assessment/take-quiz/result?scoreId=${timeoutResultId}`)
   }
 
   // ==================== HANDLE TAB SWITCH ====================
@@ -297,14 +374,15 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
       return
     }
 
-    const handlePointerMove = (event: PointerEvent) => {
-      const nextX = timerDragStateRef.current.startOffsetX + (event.clientX - timerDragStateRef.current.startPointerX)
-      const nextY = timerDragStateRef.current.startOffsetY + (event.clientY - timerDragStateRef.current.startPointerY)
+    document.body.style.userSelect = 'none'
 
-      setTimerPosition({
-        x: nextX,
-        y: nextY,
-      })
+    const handlePointerMove = (event: PointerEvent) => {
+      const nextX =
+        timerDragStateRef.current.startOffsetX + (event.clientX - timerDragStateRef.current.startPointerX)
+      const nextY =
+        timerDragStateRef.current.startOffsetY + (event.clientY - timerDragStateRef.current.startPointerY)
+
+      setTimerPosition(clampTimerPosition({ x: nextX, y: nextY }, { hidden: !isTimerVisible }))
     }
 
     const handlePointerUp = () => {
@@ -315,13 +393,33 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
     window.addEventListener('pointerup', handlePointerUp)
 
     return () => {
+      document.body.style.userSelect = ''
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerUp)
     }
-  }, [isTimerDragging])
+  }, [clampTimerPosition, isTimerDragging, isTimerVisible])
+
+  // ==================== TIMER POSITION EFFECT ====================
+  useEffect(() => {
+    const syncTimerPosition = () => {
+      setTimerPosition((currentValue) =>
+        clampTimerPosition(currentValue, { hidden: !isTimerVisible })
+      )
+    }
+
+    const timeoutId = window.setTimeout(syncTimerPosition, 0)
+    window.addEventListener('resize', syncTimerPosition)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+      window.removeEventListener('resize', syncTimerPosition)
+    }
+  }, [clampTimerPosition, isTimerVisible])
 
   // ==================== HANDLE TIMER DRAG ====================
-  const handleTimerPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const handleTimerPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
     timerDragStateRef.current = {
       startPointerX: event.clientX,
       startPointerY: event.clientY,
@@ -331,23 +429,172 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
     setIsTimerDragging(true)
   }
 
+  // ==================== HANDLE VIEW MODE ====================
+  const handleViewModeChange = (mode: 'list' | 'slideshow') => {
+    setViewMode(mode)
+    setActiveQuestionIndex(0)
+  }
+
+  // ==================== HANDLE QUESTION NAVIGATION ====================
+  const handlePreviousQuestion = () => {
+    setActiveQuestionIndex((currentValue) => Math.max(currentValue - 1, 0))
+  }
+
+  // ==================== HANDLE NEXT QUESTION ====================
+  const handleNextQuestion = () => {
+    setActiveQuestionIndex((currentValue) =>
+      Math.min(currentValue + 1, totalQuestions - 1)
+    )
+  }
+
+  // ==================== RENDER QUESTION CARD ====================
+  const renderQuestionCard = (question: StudentQuizQuestion, index: number) => (
+    <Card key={question.id}>
+      <CardHeader className="border-b">
+        <div className="flex flex-wrap items-center gap-2">
+          <CardTitle>Question {index + 1}</CardTitle>
+          <Badge className={getQuestionStatusClassName(question.quizType)}>
+            {question.quizType === 'multiple_choice' ? 'Multiple Choice' : 'Identification'}
+          </Badge>
+        </div>
+        <CardDescription>{question.question}</CardDescription>
+      </CardHeader>
+      <CardContent className="pt-6">
+        {question.quizType === 'multiple_choice' ? (
+          <FormField
+            control={form.control}
+            name={`answers.${question.id}` as `answers.${string}`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Select your answer</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    value={field.value || ''}
+                    onValueChange={field.onChange}
+                    className="grid gap-3 md:grid-cols-2"
+                  >
+                    {question.choices.map((choice) => (
+                      <label
+                        key={`${question.id}-${choice.key}`}
+                        className={`flex cursor-pointer items-center gap-2 rounded-xl border px-2 py-1.5 transition-colors ${
+                          field.value === choice.value
+                            ? 'border-primary/30 bg-primary/10'
+                            : 'border-border bg-muted/40 hover:bg-muted/60'
+                        }`}
+                      >
+                        <RadioGroupItem value={choice.value} className="sr-only" />
+                        <div
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold transition-colors ${
+                            field.value === choice.value
+                              ? 'border-primary/30 bg-primary text-primary-foreground'
+                              : 'border-border bg-card text-foreground'
+                          }`}
+                        >
+                          {choice.key}
+                        </div>
+                        <div className="flex min-h-9 flex-1 items-center pr-1">
+                          <div
+                            className={`text-sm leading-4 ${
+                              field.value === choice.value ? 'text-foreground' : 'text-muted-foreground'
+                            }`}
+                          >
+                            {choice.value}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : (
+          <FormField
+            control={form.control}
+            name={`answers.${question.id}` as `answers.${string}`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Your answer</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value || ''}
+                    placeholder="Type your answer here"
+                    autoComplete="off"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+      </CardContent>
+    </Card>
+  )
+
   return (
     <>
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 md:px-6">
+      <div className="mx-auto flex w-full max-w-none flex-col gap-6 px-4 py-6 lg:px-8 xl:px-10">
         <Card>
           <CardHeader className="border-b">
-            <CardTitle>{session.subjectName}</CardTitle>
-            <CardDescription>
-              {session.sectionName} - {session.moduleCode} - {session.termName}
-            </CardDescription>
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+              <div>
+                <CardTitle>{session.subjectName}</CardTitle>
+                <CardDescription>
+                  {session.sectionName} - {session.moduleCode} - {session.termName}
+                </CardDescription>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="cursor-pointer"
+                  onClick={() => void handleDraftSave(warningAttempts)}
+                  disabled={isSavingDraft || isSubmitting}
+                >
+                  {isSavingDraft ? (
+                    <>
+                      <Loader2 size={18} className="mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Progress'
+                  )}
+                </Button>
+                <Tabs
+                  value={viewMode}
+                  onValueChange={(value) => handleViewModeChange(value as 'list' | 'slideshow')}
+                  className="w-auto"
+                >
+                  <TabsList>
+                    <TabsTrigger value="list" className="cursor-pointer">
+                      List
+                    </TabsTrigger>
+                    <TabsTrigger value="slideshow" className="cursor-pointer">
+                      Slideshow
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4 pt-6">
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline">{session.educatorName}</Badge>
-              <Badge variant="outline">{session.educatorUserType}</Badge>
-              <Badge variant="outline">
-                {session.startDate} {session.startTime} - {session.endDate} {session.endTime}
-              </Badge>
+          <CardContent className="space-y-0">
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="font-medium">{session.educatorName}</div>
+                  <Badge variant="outline">{session.educatorUserType}</Badge>
+                </div>
+              </div>
+              <div className="space-y-1 md:text-right">
+                <div className="text-muted-foreground text-xs uppercase tracking-[0.24em]">
+                  Schedule
+                </div>
+                <div className="text-sm">
+                  {session.startDate} {session.startTime} - {session.endDate} {session.endTime}
+                </div>
+              </div>
             </div>
             <div className="text-muted-foreground text-sm">
               Answer each question carefully. Your answers are saved while you work.
@@ -357,137 +604,139 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
 
         <Form {...form}>
           <form className="space-y-6">
-            {orderedQuestionsRef.current.map((question, index) => (
-              <Card key={question.id}>
-                <CardHeader className="border-b">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <CardTitle>Question {index + 1}</CardTitle>
-                    <Badge className={getQuestionStatusClassName(question.quizType)}>
-                      {question.quizType === 'multiple_choice' ? 'Multiple Choice' : 'Identification'}
-                    </Badge>
+            {viewMode === 'list' ? (
+              orderedQuestionsRef.current.map((question, index) => renderQuestionCard(question, index))
+            ) : activeQuestion ? (
+              <div className="space-y-4">
+                {renderQuestionCard(activeQuestion, activeQuestionIndex)}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="text-muted-foreground text-sm">
+                    Question {activeQuestionIndex + 1} of {totalQuestions}
                   </div>
-                  <CardDescription>{question.question}</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  {question.quizType === 'multiple_choice' ? (
-                    <FormField
-                      control={form.control}
-                      name={`answers.${question.id}` as `answers.${string}`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Select your answer</FormLabel>
-                          <FormControl>
-                            <RadioGroup
-                              value={field.value || ''}
-                              onValueChange={field.onChange}
-                              className="grid gap-3 md:grid-cols-2"
-                            >
-                              {question.choices.map((choice) => (
-                                <label
-                                  key={`${question.id}-${choice.key}`}
-                                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
-                                    field.value === choice.value
-                                      ? 'border-green-500/20 bg-green-500/10'
-                                      : 'hover:bg-accent'
-                                  }`}
-                                >
-                                  <RadioGroupItem value={choice.value} className="sr-only" />
-                                  <div className="space-y-1">
-                                    <div className="text-sm font-medium">{choice.key}</div>
-                                    <div className="text-muted-foreground text-sm">{choice.value}</div>
-                                  </div>
-                                </label>
-                              ))}
-                            </RadioGroup>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  ) : (
-                    <FormField
-                      control={form.control}
-                      name={`answers.${question.id}` as `answers.${string}`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Your answer</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value || ''}
-                              placeholder="Type your answer here"
-                              autoComplete="off"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="cursor-pointer"
+                      disabled={activeQuestionIndex === 0}
+                      onClick={handlePreviousQuestion}
+                    >
+                      Previous
+                    </Button>
+                    {isLastSlideshowQuestion ? (
+                      <Button
+                        type="button"
+                        className="cursor-pointer"
+                        disabled={isSubmitting}
+                        onClick={() => setSubmitDialogOpen(true)}
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 size={18} className="mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          'Submit'
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="cursor-pointer"
+                        onClick={handleNextQuestion}
+                      >
+                        Next
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                className="cursor-pointer"
-                onClick={() => void handleDraftSave(warningAttempts)}
-                disabled={isSavingDraft || isSubmitting}
-              >
-                {isSavingDraft ? (
-                  <>
-                    <Loader2 size={18} className="mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Progress'
-                )}
-              </Button>
-              <Button
-                type="button"
-                className="cursor-pointer"
-                onClick={() => setSubmitDialogOpen(true)}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 size={18} className="mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Submit'
-                )}
-              </Button>
+              {viewMode === 'list' ? (
+                <Button
+                  type="button"
+                  className="cursor-pointer"
+                  onClick={() => setSubmitDialogOpen(true)}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={18} className="mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Submit'
+                  )}
+                </Button>
+              ) : null}
             </div>
           </form>
         </Form>
       </div>
 
-      <div
-        className={`fixed top-24 right-6 z-40 w-[280px] rounded-xl border bg-card p-4 shadow-lg ${isTimerDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-        style={{
-          transform: `translate(${timerPosition.x}px, ${timerPosition.y}px)`,
-        }}
-        onPointerDown={handleTimerPointerDown}
-      >
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold">Time Remaining</div>
-            <div className="text-muted-foreground text-xs">Drag this timer anywhere while you answer</div>
+      {isTimerVisible ? (
+        <div
+          ref={timerContainerRef}
+          className={`fixed top-24 right-6 z-40 w-[280px] ${isTimerDragging ? 'cursor-grabbing' : 'cursor-grab'} select-none`}
+          style={{
+            transform: `translate(${timerPosition.x}px, ${timerPosition.y}px)`,
+            touchAction: 'none',
+          }}
+          onPointerDown={handleTimerPointerDown}
+        >
+          <div className={`rounded-xl border bg-card p-4 shadow-lg ${shouldShakeTimer ? 'animate-[timer-shake_0.6s_ease-in-out_infinite]' : ''}`}>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold">Time Remaining</div>
+                <div className="text-muted-foreground text-xs">Drag this timer anywhere while you answer</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="cursor-pointer"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setIsTimerVisible(false)
+                  }}
+                >
+                  <IconEyeOff size={18} />
+                  <span className="sr-only">Hide timer</span>
+                </Button>
+                <IconClock size={20} className="text-muted-foreground" />
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between">
+              <Badge className={getTimerBadgeClassName(secondsLeft, totalSeconds)}>
+                {formatRemainingTime(secondsLeft)}
+              </Badge>
+              <span className="text-muted-foreground text-xs">
+                Warning left: {Math.max(session.cheatingAttempts - warningAttempts, 0)}
+              </span>
+            </div>
           </div>
-          <IconClock size={20} className="text-muted-foreground" />
         </div>
-        <div className="mt-4 flex items-center justify-between">
-          <Badge className={getTimerBadgeClassName(secondsLeft, totalSeconds)}>
-            {formatRemainingTime(secondsLeft)}
-          </Badge>
-          <span className="text-muted-foreground text-xs">
-            Warning left: {Math.max(session.cheatingAttempts - warningAttempts, 0)}
-          </span>
-        </div>
-      </div>
+      ) : (
+        <Button
+          ref={showTimerButtonRef}
+          type="button"
+          variant="outline"
+          className={`fixed top-24 right-6 z-40 cursor-grab rounded-full border !bg-card shadow-lg select-none hover:!bg-card ${isTimerDragging ? 'cursor-grabbing' : ''}`}
+          style={{
+            transform: `translate(${timerPosition.x}px, ${timerPosition.y}px)`,
+            touchAction: 'none',
+          }}
+          onPointerDown={handleTimerPointerDown}
+          onClick={() => setIsTimerVisible(true)}
+        >
+          <IconEye size={18} className="mr-2" />
+          Show Timer
+        </Button>
+      )}
 
       <CheatingWarningDialog
         open={warningDialogOpen}
@@ -498,8 +747,14 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
       <SubmitQuizDialog
         open={submitDialogOpen}
         isSubmitting={isSubmitting}
+        unansweredCount={unansweredCount}
         onOpenChange={setSubmitDialogOpen}
         onSubmit={() => void handleSubmitQuiz()}
+      />
+
+      <TimesUpDialog
+        open={timesUpDialogOpen}
+        onContinue={handleTimesUpContinue}
       />
     </>
   )

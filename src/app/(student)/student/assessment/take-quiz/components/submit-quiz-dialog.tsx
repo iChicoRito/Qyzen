@@ -15,6 +15,7 @@ import {
 interface SubmitQuizDialogProps {
   open: boolean
   isSubmitting: boolean
+  unansweredCount: number
   onOpenChange: (open: boolean) => void
   onSubmit: () => void
 }
@@ -23,9 +24,12 @@ interface SubmitQuizDialogProps {
 export function SubmitQuizDialog({
   open,
   isSubmitting,
+  unansweredCount,
   onOpenChange,
   onSubmit,
 }: SubmitQuizDialogProps) {
+  const hasUnansweredQuestions = unansweredCount > 0
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton={false} className="rounded-[1rem] sm:max-w-[500px]">
@@ -35,10 +39,17 @@ export function SubmitQuizDialog({
           </div>
 
           <DialogHeader className="items-center text-center sm:text-center">
-            <DialogTitle className="text-center">Submit your assessment?</DialogTitle>
+            <DialogTitle className="text-center">
+              {hasUnansweredQuestions
+                ? 'Submit with unanswered questions?'
+                : 'Submit your assessment?'}
+            </DialogTitle>
             <DialogDescription className="max-w-[34rem] text-center">
-              Make sure you have reviewed your answers. Once submitted, your score will be
-              finalized.
+              {hasUnansweredQuestions
+                ? `You still have ${unansweredCount} unanswered question${
+                    unansweredCount === 1 ? '' : 's'
+                  }. Are you sure you want to submit your assessment with blank answers? Once submitted, your score will be finalized.`
+                : 'Make sure you have reviewed your answers. Once submitted, your score will be finalized.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -60,7 +71,7 @@ export function SubmitQuizDialog({
                   Saving...
                 </>
               ) : (
-                'Submit'
+                hasUnansweredQuestions ? 'Submit Anyway' : 'Submit'
               )}
             </Button>
           </div>

@@ -84,10 +84,24 @@ Objective #2: UIUX Minor Revisions and Security
             answer so student can review it. It also shows the student incorrect answer. In the right column, it shows the summary
             of the quiz, score, status and important information. Like a neolms layout.
 
+Objective #3: Part 2 of UIUX Improvements
+
+    1). In the actual page where the student answer their quiz, I wanted that student can toggle the quiz experience
+
+        a). The student can toggle between Slideshow type or List type
+            - What I mean in slideshow that it only shows 1 card of questions then there's a button for previous and next button.
+            - In the List type, this is the original where they answer from top to bottom.
+
+    2). In the actual quiz of the student, the sidebar is hidden right, now since it's hidden, use the full width of the
+        screen. Make sure it still has proper spacing and mobile responsive.
+
+    3). Add a toggle button to hide/show the timer and also I noticed when I drag the timer, it shows a blue highlighting
+        the text, fix that bug.
+
 Instructions and Objective in JSON format for better readability:
 
     {
-        "objective": "Student Actual Assessment/Quiz taken on Module",
+        "objective_1": "Student Actual Assessment/Quiz taken on Module",
         "requirements": [
             {
             "id": 1,
@@ -152,10 +166,7 @@ Instructions and Objective in JSON format for better readability:
             "id": 5,
             "description": "Before proceeding to execution, provide a summary of the process, plan, flow, which codes will be modified, added, or deleted (risky), and wait for the 'Go!' command."
             }
-        ]
-    }
-
-    {
+        ],
         "objective_2": "UIUX Minor Revisions and Security",
         "requirements": [
             {
@@ -221,5 +232,29 @@ Instructions and Objective in JSON format for better readability:
             ]
             }
         ],
-        "note": "All requirements above are explicitly derived from the user's instructions. No external knowledge, assumptions, or database schema details beyond what is stated are included."
+        "objective_3": "Part 2 of UIUX Improvements",
+        "requirements": [
+            {
+            "id": 1,
+            "description": "In the actual page where the student answers their quiz, the student can toggle the quiz experience.",
+            "subpoints": [
+                {
+                "subpoint": "a",
+                "description": "Toggle between Slideshow type or List type.",
+                "details": [
+                    "Slideshow type: shows only 1 card of questions at a time, with previous and next buttons.",
+                    "List type: original layout where questions are answered from top to bottom."
+                ]
+                }
+            ]
+            },
+            {
+            "id": 2,
+            "description": "In the actual quiz, the sidebar is hidden. Since it's hidden, use the full width of the screen. Ensure proper spacing and mobile responsiveness."
+            },
+            {
+            "id": 3,
+            "description": "Add a toggle button to hide/show the timer. Also fix the bug where dragging the timer shows blue highlighting on the text."
+            }
+        ]
     }

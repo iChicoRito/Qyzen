@@ -31,14 +31,40 @@ function getStatusClassName(status: 'passed' | 'failed') {
 // getChoiceClassName - style reviewed multiple choice answers
 function getChoiceClassName(isCorrect: boolean, isStudentChoice: boolean, isIncorrectChoice: boolean) {
   if (isCorrect) {
-    return 'border-0 bg-primary/10 text-primary'
+    return 'border-primary/30 bg-primary/10'
   }
 
   if (isStudentChoice && isIncorrectChoice) {
-    return 'border-0 bg-rose-500/10 text-rose-500'
+    return 'border-rose-500/30 bg-rose-500/10'
   }
 
-  return 'bg-card'
+  return 'border-border bg-muted/40'
+}
+
+// getChoiceChipClassName - style reviewed option key chip
+function getChoiceChipClassName(isCorrect: boolean, isStudentChoice: boolean, isIncorrectChoice: boolean) {
+  if (isCorrect) {
+    return 'border-primary/30 bg-primary text-primary-foreground'
+  }
+
+  if (isStudentChoice && isIncorrectChoice) {
+    return 'border-rose-500/30 bg-rose-500 text-white'
+  }
+
+  return 'border-border bg-card text-foreground'
+}
+
+// getChoiceTextClassName - style reviewed option text
+function getChoiceTextClassName(isCorrect: boolean, isStudentChoice: boolean, isIncorrectChoice: boolean) {
+  if (isCorrect) {
+    return 'text-foreground'
+  }
+
+  if (isStudentChoice && isIncorrectChoice) {
+    return 'text-rose-500'
+  }
+
+  return 'text-muted-foreground'
 }
 
 // getChoiceLabel - build review choice text
@@ -127,10 +153,19 @@ export default async function TakeQuizResultPage({ searchParams }: TakeQuizResul
                       return (
                         <div
                           key={`${question.id}-${choice.key}`}
-                          className={`rounded-lg border px-4 py-2.5 ${getChoiceClassName(isCorrect, isStudentChoice, isIncorrectChoice)}`}
+                          className={`flex items-center gap-2 rounded-xl border px-2 py-1.5 ${getChoiceClassName(isCorrect, isStudentChoice, isIncorrectChoice)}`}
                         >
-                          <div className="text-sm font-medium">
-                            {getChoiceLabel(choice.key, choice.value)}
+                          <div
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold ${getChoiceChipClassName(isCorrect, isStudentChoice, isIncorrectChoice)}`}
+                          >
+                            {choice.key}
+                          </div>
+                          <div className="flex min-h-9 flex-1 items-center pr-1">
+                            <div
+                              className={`text-sm leading-4 ${getChoiceTextClassName(isCorrect, isStudentChoice, isIncorrectChoice)}`}
+                            >
+                              {choice.value}
+                            </div>
                           </div>
                         </div>
                       )
