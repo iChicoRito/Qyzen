@@ -102,6 +102,8 @@ export interface StudentQuizReviewResult extends StudentQuizResult {
   questions: StudentQuizReviewQuestion[]
 }
 
+export interface StudentQuizReviewListItem extends StudentQuizReviewResult {}
+
 interface EnrollmentRow {
   student_id: number
   educator_id: number
@@ -616,4 +618,79 @@ export async function fetchStudentQuizReviewResult(studentId: number, scoreId: n
       } satisfies StudentQuizReviewQuestion
     }),
   } satisfies StudentQuizReviewResult
+}
+
+// fetchStudentQuizReviewList - load all submitted assessment reviews for a student
+export async function fetchStudentQuizReviewList(studentId: number) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('tbl_scores')
+    .select(
+      'id,module_id,score,total_questions,student_answer,taken_at,submitted_at,status,is_passed,warning_attempts,module:module_id(module_code,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester))'
+    )
+    .eq('student_id', studentId)
+    .not('submitted_at', 'is', null)
+    .order('submitted_at', { ascending: false })
+
+  if (error) {
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to load student score reviews.'))
+  }
+
+  const scoreRows = (data || []) as ScoreReviewRow[]
+  const reviewResults = await Promise.all(
+    scoreRows.map(async (scoreRow) => {
+      const module = getSingleRelation(scoreRow.module)
+      const subject = getSingleRelation(module?.subject || null)
+      const section = getSingleRelation(module?.section || null)
+      const educator = getSingleRelation(module?.educator || null)
+      const term = getSingleRelation(module?.academic_term || null)
+      const quizzes = await fetchModuleQuizzes(scoreRow.module_id)
+      const questionRecords = quizzes.map(buildQuestionRecord)
+      const studentAnswers = normalizeStoredAnswers(scoreRow.student_answer)
+      const percentage = scoreRow.total_questions > 0
+        ? Math.round((scoreRow.score / scoreRow.total_questions) * 100)
+        : 0
+
+      return {
+        scoreId: scoreRow.id,
+        moduleRowId: scoreRow.module_id,
+        moduleCode: module?.module_code || 'Unknown Module',
+        subjectName: subject?.subject_name || 'Unknown Subject',
+        sectionName: section?.section_name || 'Unknown Section',
+        educatorName:
+          `${educator?.given_name || ''} ${educator?.surname || ''}`.trim() || 'Unknown Educator',
+        termName: buildAcademicTermLabel(term),
+        score: scoreRow.score,
+        totalQuestions: scoreRow.total_questions,
+        percentage,
+        isPassed: scoreRow.is_passed,
+        status: scoreRow.status,
+        submittedAt: scoreRow.submitted_at,
+        takenAt: scoreRow.taken_at,
+        startDate: module?.start_date || '',
+        endDate: module?.end_date || '',
+        startTime: module?.start_time || '',
+        endTime: module?.end_time || '',
+        timeLimitMinutes: Number(module?.time_limit) || 0,
+        isShuffle: Boolean(module?.is_shuffle),
+        allowReview: Boolean(module?.allow_review),
+        warningAttempts: scoreRow.warning_attempts ?? 0,
+        questions: questionRecords.map((question) => {
+          const studentAnswer = studentAnswers[String(question.id)] || ''
+
+          return {
+            id: question.id,
+            question: question.question,
+            quizType: question.quizType,
+            choices: question.choices,
+            correctAnswers: question.correctAnswers,
+            studentAnswer,
+            isCorrect: isStudentAnswerCorrect(question, studentAnswer),
+          } satisfies StudentQuizReviewQuestion
+        }),
+      } satisfies StudentQuizReviewListItem
+    })
+  )
+
+  return reviewResults
 }

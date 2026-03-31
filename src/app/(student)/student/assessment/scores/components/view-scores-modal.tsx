@@ -1,0 +1,325 @@
+'use client'
+
+import type { ReactNode } from 'react'
+import { useState } from 'react'
+import { IconEye } from '@tabler/icons-react'
+
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Separator } from '@/components/ui/separator'
+
+import { ResultSummaryChart } from '@/app/(student)/student/assessment/take-quiz/result/components/result-summary-chart'
+import type { Score } from '../data/schema'
+
+interface ViewScoresModalProps {
+  score: Score
+  trigger?: ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+// getStatusClassName - build score status badge classes
+function getStatusClassName(status: 'passed' | 'failed') {
+  if (status === 'passed') {
+    return 'rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500'
+  }
+
+  return 'rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500'
+}
+
+// getReviewChoiceClassName - style reviewed answer rows
+function getReviewChoiceClassName(
+  shouldRevealCorrectAnswer: boolean,
+  isWrongStudentChoice: boolean,
+  isCorrectStudentChoice: boolean
+) {
+  if (isCorrectStudentChoice) {
+    return 'border-primary/30 bg-primary/10'
+  }
+
+  if (shouldRevealCorrectAnswer) {
+    return 'border-green-500/30 bg-green-500/10'
+  }
+
+  if (isWrongStudentChoice) {
+    return 'border-rose-500/30 bg-rose-500/10'
+  }
+
+  return 'border-border bg-muted/40'
+}
+
+// getReviewChoiceChipClassName - style reviewed answer chips
+function getReviewChoiceChipClassName(
+  shouldRevealCorrectAnswer: boolean,
+  isWrongStudentChoice: boolean,
+  isCorrectStudentChoice: boolean
+) {
+  if (isCorrectStudentChoice) {
+    return 'border-primary/30 bg-primary text-primary-foreground'
+  }
+
+  if (shouldRevealCorrectAnswer) {
+    return 'border-green-500/30 bg-green-500 text-white'
+  }
+
+  if (isWrongStudentChoice) {
+    return 'border-rose-500/30 bg-rose-500 text-white'
+  }
+
+  return 'border-border bg-card text-foreground'
+}
+
+// getReviewChoiceTextClassName - style reviewed answer text
+function getReviewChoiceTextClassName(
+  shouldRevealCorrectAnswer: boolean,
+  isWrongStudentChoice: boolean,
+  isCorrectStudentChoice: boolean
+) {
+  if (isCorrectStudentChoice) {
+    return 'text-foreground'
+  }
+
+  if (shouldRevealCorrectAnswer) {
+    return 'text-green-500'
+  }
+
+  if (isWrongStudentChoice) {
+    return 'text-rose-500'
+  }
+
+  return 'text-muted-foreground'
+}
+
+// getStudentAnswerLabel - format displayed student answer
+function getStudentAnswerLabel(score: Score, question: Score['questions'][number]) {
+  if (question.quizType === 'multiple_choice') {
+    const selectedChoice = question.choices.find((choice) => choice.value === question.studentAnswer)
+
+    if (!selectedChoice) {
+      return question.studentAnswer || 'No answer submitted'
+    }
+
+    return `${selectedChoice.key}. ${selectedChoice.value}`
+  }
+
+  if (!score.allowReview && !question.isCorrect) {
+    return question.studentAnswer || 'No answer submitted'
+  }
+
+  return question.studentAnswer || 'No answer submitted'
+}
+
+// ViewScoresModal - view completed score details and reviewed questions
+export function ViewScoresModal({
+  score,
+  trigger,
+  open,
+  onOpenChange,
+}: ViewScoresModalProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const dialogOpen = open ?? internalOpen
+  const setDialogOpen = onOpenChange ?? setInternalOpen
+  const correctAnswers = score.questions.filter((question) => question.isCorrect).length
+  const incorrectAnswers = score.questions.length - correctAnswers
+
+  return (
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {trigger ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : open === undefined ? (
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm" className="cursor-pointer">
+            <IconEye size={18} />
+            View Score
+          </Button>
+        </DialogTrigger>
+      ) : null}
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[980px]">
+        <DialogHeader className="px-6 pt-6 pb-4 text-left">
+          <div className="flex flex-wrap items-center gap-2">
+            <DialogTitle>{score.moduleCode}</DialogTitle>
+            <Badge className={getStatusClassName(score.status)}>{score.status}</Badge>
+          </div>
+          <DialogDescription>
+            {score.subjectName} - {score.sectionName} - {score.termName}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="max-h-[72vh] space-y-6 overflow-y-auto border-t border-b px-6 py-4">
+          <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+            <div className="rounded-lg border p-4">
+              <ResultSummaryChart
+                correctAnswers={correctAnswers}
+                incorrectAnswers={incorrectAnswers}
+                percentage={score.percentage}
+              />
+            </div>
+            <div className="space-y-5">
+              <div className="space-y-1">
+                <div className="text-lg font-semibold">Assessment Summary</div>
+                <div className="text-muted-foreground text-sm">
+                  Review your performance, submission details, and question-by-question result.
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className={getStatusClassName(score.status)}>{score.status}</Badge>
+                <div className="text-sm font-medium">{score.educatorName}</div>
+              </div>
+
+              <Separator />
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
+                    Score
+                  </div>
+                  <div className="text-3xl font-semibold tracking-tight">
+                    {score.score} / {score.totalQuestions}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
+                    Percentage
+                  </div>
+                  <div className="text-3xl font-semibold tracking-tight">{score.percentage}%</div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
+                    Submitted At
+                  </div>
+                  <div className="text-sm font-medium">{score.submittedAt || 'Not submitted'}</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
+                    Academic Term
+                  </div>
+                  <div className="text-sm font-medium">{score.termName}</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
+                    Time Limit
+                  </div>
+                  <div className="text-sm font-medium">{score.timeLimitMinutes} minutes</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
+                    Schedule
+                  </div>
+                  <div className="text-sm font-medium">
+                    {score.startDate} {score.startTime} - {score.endDate} {score.endTime}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {score.questions.map((question, index) => (
+              <div key={question.id} className="rounded-lg border">
+                <div className="border-b px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="font-semibold">Question #{index + 1}</div>
+                    <Badge
+                      className={
+                        question.isCorrect
+                          ? 'rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500'
+                          : 'rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500'
+                      }
+                    >
+                      {question.isCorrect ? 'Correct' : 'Incorrect'}
+                    </Badge>
+                  </div>
+                  <div className="text-muted-foreground mt-2 text-sm">{question.question}</div>
+                </div>
+
+                <div className="space-y-2 px-4 py-4">
+                  {question.quizType === 'multiple_choice' ? (
+                    <>
+                      {question.choices.map((choice) => {
+                        const isSelectedChoice = question.studentAnswer === choice.value
+                        const isWrongStudentChoice = isSelectedChoice && !question.isCorrect
+                        const isCorrectStudentChoice = isSelectedChoice && question.isCorrect
+                        const shouldRevealCorrectAnswer =
+                          question.correctAnswers.includes(choice.value) &&
+                          (score.allowReview || question.isCorrect)
+
+                        return (
+                          <div
+                            key={`${question.id}-${choice.key}`}
+                            className={`flex items-center gap-2 rounded-xl border px-2 py-1.5 ${getReviewChoiceClassName(
+                              shouldRevealCorrectAnswer,
+                              isWrongStudentChoice,
+                              isCorrectStudentChoice
+                            )}`}
+                          >
+                            <div
+                              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold ${getReviewChoiceChipClassName(
+                                shouldRevealCorrectAnswer,
+                                isWrongStudentChoice,
+                                isCorrectStudentChoice
+                              )}`}
+                            >
+                              {choice.key}
+                            </div>
+                            <div className="flex min-h-9 flex-1 items-center pr-1">
+                              <div
+                                className={`text-sm leading-4 ${getReviewChoiceTextClassName(
+                                  shouldRevealCorrectAnswer,
+                                  isWrongStudentChoice,
+                                  isCorrectStudentChoice
+                                )}`}
+                              >
+                                {choice.value}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </>
+                  ) : score.allowReview || question.isCorrect ? (
+                    <div className="rounded-lg border-0 bg-green-500/10 px-4 py-2.5 text-sm text-green-500">
+                      Correct Answer: {question.correctAnswers.join(', ')}
+                    </div>
+                  ) : null}
+
+                  <div
+                    className={`rounded-lg border-0 px-4 py-2.5 text-sm ${
+                      question.isCorrect ? 'bg-primary/10 text-primary' : 'bg-rose-500/10 text-rose-500'
+                    }`}
+                  >
+                    Your Answer: {getStudentAnswerLabel(score, question)}{' '}
+                    <span className="font-medium">{question.isCorrect ? 'Correct' : 'Incorrect'}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <DialogFooter className="px-6 py-4 sm:justify-start">
+          <DialogClose asChild>
+            <Button type="button" variant="outline" className="cursor-pointer">
+              Close
+            </Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
