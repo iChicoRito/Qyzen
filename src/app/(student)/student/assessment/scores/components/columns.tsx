@@ -31,7 +31,7 @@ export const columns: ColumnDef<Score>[] = [
     accessorKey: 'moduleCode',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Module" />,
     cell: ({ row }) => (
-      <div className="min-w-[120px] font-medium">{row.original.moduleCode}</div>
+      <div className="min-w-[120px] font-medium whitespace-normal">{row.original.moduleCode}</div>
     ),
     filterFn: (row, id, value) => row.getValue(id) === value,
   },
@@ -40,8 +40,8 @@ export const columns: ColumnDef<Score>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Subject" />,
     cell: ({ row }) => (
       <div className="min-w-[220px]">
-        <div className="font-medium uppercase">{row.original.subjectName}</div>
-        <div className="text-muted-foreground text-sm">{row.original.sectionName}</div>
+        <div className="font-medium uppercase whitespace-normal">{row.original.subjectName}</div>
+        <div className="text-muted-foreground text-sm whitespace-normal">{row.original.sectionName}</div>
       </div>
     ),
     filterFn: (row, id, value) => row.getValue(id) === value,
@@ -49,7 +49,7 @@ export const columns: ColumnDef<Score>[] = [
   {
     accessorKey: 'termName',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Academic Term" />,
-    cell: ({ row }) => <div className="min-w-[180px]">{row.original.termName}</div>,
+    cell: ({ row }) => <div className="min-w-[180px] whitespace-normal">{row.original.termName}</div>,
     filterFn: (row, id, value) => row.getValue(id) === value,
   },
   {
@@ -79,7 +79,7 @@ export const columns: ColumnDef<Score>[] = [
     accessorKey: 'submittedAt',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Submitted At" />,
     cell: ({ row }) => (
-      <div className="min-w-[190px] text-sm">{row.original.submittedAt || 'Not submitted'}</div>
+      <div className="min-w-[190px] text-sm whitespace-normal">{row.original.submittedAt || 'Not submitted'}</div>
     ),
   },
   {

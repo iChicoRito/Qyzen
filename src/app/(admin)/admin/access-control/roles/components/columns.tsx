@@ -47,14 +47,14 @@ export function getColumns({
   {
     accessorKey: 'roleName',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Role Name" />,
-    cell: ({ row }) => <div className="w-[180px] font-medium">{row.getValue('roleName')}</div>,
+    cell: ({ row }) => <div className="w-[180px] whitespace-normal font-medium">{row.getValue('roleName')}</div>,
     enableHiding: false,
   },
   {
     accessorKey: 'description',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Description" />,
     cell: ({ row }) => (
-      <div className="max-w-[320px] truncate text-muted-foreground">{row.getValue('description')}</div>
+      <div className="max-w-[320px] whitespace-normal text-muted-foreground">{row.getValue('description')}</div>
     ),
   },
   {

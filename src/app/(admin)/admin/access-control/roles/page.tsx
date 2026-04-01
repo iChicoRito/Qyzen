@@ -56,7 +56,7 @@ export default function RolesPage() {
 
   if (loading) {
     return (
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+      <div className="flex min-w-0 flex-1 flex-col space-y-6 px-4 md:px-6">
         <Card>
           <CardHeader>
             <Skeleton className="h-6 w-40" />
@@ -73,7 +73,7 @@ export default function RolesPage() {
 
   if (error) {
     return (
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+      <div className="flex min-w-0 flex-1 flex-col space-y-6 px-4 md:px-6">
         <Card>
           <CardHeader>
             <CardTitle>Roles Management</CardTitle>
@@ -96,18 +96,7 @@ export default function RolesPage() {
         <p className="text-muted-foreground">View and manage RBAC roles and permissions setup.</p>
       </div>
 
-      <div className="px-4 md:hidden md:px-6">
-        <div className="flex h-96 items-center justify-center rounded-lg border bg-muted/20">
-          <div className="p-8 text-center">
-            <h3 className="mb-2 text-lg font-semibold">Roles Management</h3>
-            <p className="text-muted-foreground">
-              Please use a larger screen to view the full roles management interface.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+      <div className="flex min-w-0 flex-1 flex-col space-y-6 px-4 md:px-6">
         <Card>
           <CardHeader>
             <CardTitle>Roles Management</CardTitle>

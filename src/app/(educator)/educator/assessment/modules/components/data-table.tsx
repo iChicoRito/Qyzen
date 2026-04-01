@@ -65,10 +65,10 @@ export function DataTable<TData, TValue>({
   })
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <DataTableToolbar table={table} onAddModules={onAddModules} permissions={permissions} />
-      <div className="rounded-md border">
-        <Table>
+      <div className="min-w-0 overflow-x-auto rounded-md border">
+        <Table className="min-w-[900px]">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

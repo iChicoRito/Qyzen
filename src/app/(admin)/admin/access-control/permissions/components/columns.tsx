@@ -44,14 +44,14 @@ export function getColumns({ onDeletePermission }: GetColumnsProps): ColumnDef<P
     accessorKey: 'permissionName',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Permission Name" />,
     cell: ({ row }) => (
-      <div className="w-[200px] font-medium">{row.getValue('permissionName')}</div>
+      <div className="w-[200px] whitespace-normal font-medium">{row.getValue('permissionName')}</div>
     ),
     enableHiding: false,
   },
   {
     accessorKey: 'permissionString',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Permission String" />,
-    cell: ({ row }) => <div className="w-[180px]">{row.getValue('permissionString')}</div>,
+    cell: ({ row }) => <div className="w-[180px] whitespace-normal">{row.getValue('permissionString')}</div>,
   },
   {
     accessorKey: 'action',

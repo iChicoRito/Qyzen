@@ -44,7 +44,7 @@ export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>)
   const statusFilter = table.getColumn('status')?.getFilterValue() as string | undefined
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Select
           value={moduleFilter || 'all'}
@@ -131,8 +131,8 @@ export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>)
         </Select>
       </div>
 
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex flex-1 items-center gap-2">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
           <Input
             placeholder="Search module or subject"
             value={(table.getColumn('search')?.getFilterValue() as string) ?? ''}
@@ -140,19 +140,21 @@ export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>)
               const nextValue = event.target.value
               table.getColumn('search')?.setFilterValue(nextValue || undefined)
             }}
-            className="w-[220px] cursor-text lg:w-[320px]"
+            className="w-full cursor-text sm:flex-1 lg:max-w-[320px]"
           />
           <Button
             variant="outline"
             onClick={() => table.resetColumnFilters()}
-            className="cursor-pointer"
+            className="w-full cursor-pointer sm:w-auto"
             disabled={!isFiltered}
           >
             <IconRefresh size={16} className="mr-2" />
             Reset Filters
           </Button>
         </div>
-        <DataTableViewOptions table={table} />
+        <div className="flex justify-end">
+          <DataTableViewOptions table={table} />
+        </div>
       </div>
     </div>
   )

@@ -56,14 +56,14 @@ export function getColumns({ permissions, onUpdateSubject, onDeleteSubject }: Co
       accessorKey: 'subjectCode',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Subject Code" />,
       cell: ({ row }) => (
-        <div className="max-w-[140px] truncate font-medium">{row.getValue('subjectCode')}</div>
+        <div className="max-w-[140px] whitespace-normal font-medium">{row.getValue('subjectCode')}</div>
       ),
     },
     {
       accessorKey: 'subjectName',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Subject Name" />,
       cell: ({ row }) => (
-        <div className="max-w-[240px] truncate font-medium">{row.getValue('subjectName')}</div>
+        <div className="max-w-[240px] whitespace-normal font-medium">{row.getValue('subjectName')}</div>
       ),
     },
     {

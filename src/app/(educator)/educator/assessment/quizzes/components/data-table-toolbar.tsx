@@ -115,10 +115,10 @@ export function DataTableToolbar<TData>({
   ).sort((left, right) => left.localeCompare(right))
 
   return (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-      <div className="flex flex-1 flex-wrap items-center gap-2">
+    <div className="min-w-0 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <Select value={moduleFilter || 'all'} onValueChange={handleModuleChange}>
-          <SelectTrigger className="w-[180px] cursor-pointer">
+          <SelectTrigger className="w-full cursor-pointer sm:w-[180px]">
             <SelectValue placeholder="Module" />
           </SelectTrigger>
           <SelectContent>
@@ -133,7 +133,7 @@ export function DataTableToolbar<TData>({
           </SelectContent>
         </Select>
         <Select value={termFilter?.[0] || 'all'} onValueChange={handleTermChange}>
-          <SelectTrigger className="w-[180px] cursor-pointer">
+          <SelectTrigger className="w-full cursor-pointer sm:w-[180px]">
             <SelectValue placeholder="Term" />
           </SelectTrigger>
           <SelectContent>
@@ -148,7 +148,7 @@ export function DataTableToolbar<TData>({
           </SelectContent>
         </Select>
         <Select value={subjectFilter || 'all'} onValueChange={handleSubjectChange}>
-          <SelectTrigger className="w-[180px] cursor-pointer">
+          <SelectTrigger className="w-full cursor-pointer sm:w-[180px]">
             <SelectValue placeholder="Subject" />
           </SelectTrigger>
           <SelectContent>
@@ -163,7 +163,7 @@ export function DataTableToolbar<TData>({
           </SelectContent>
         </Select>
         <Select value={sectionFilter || 'all'} onValueChange={handleSectionChange}>
-          <SelectTrigger className="w-[180px] cursor-pointer">
+          <SelectTrigger className="w-full cursor-pointer sm:w-[180px]">
             <SelectValue placeholder="Section" />
           </SelectTrigger>
           <SelectContent>
@@ -180,7 +180,7 @@ export function DataTableToolbar<TData>({
         <Button
           variant="outline"
           onClick={() => table.resetColumnFilters()}
-          className="cursor-pointer px-3"
+          className="w-full cursor-pointer px-3 sm:w-auto"
           disabled={!isFiltered}
         >
           <IconRefresh size={18} />

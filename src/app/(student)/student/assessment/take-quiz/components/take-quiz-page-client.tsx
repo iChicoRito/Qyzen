@@ -26,6 +26,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useIsMobile } from '@/hooks/use-mobile'
 import type { StudentQuizQuestion, StudentQuizSession } from '@/lib/supabase/student-quiz'
 import {
   studentQuizFormSchema,
@@ -44,6 +45,9 @@ interface TakeQuizPageClientProps {
 const TIMER_TOP_OFFSET = 96
 const TIMER_RIGHT_OFFSET = 24
 const TIMER_VIEWPORT_PADDING = 16
+const MOBILE_TIMER_TOP_OFFSET = 84
+const MOBILE_TIMER_RIGHT_OFFSET = 12
+const MOBILE_TIMER_VIEWPORT_PADDING = 12
 const QUIZ_HINT_MIN_DURATION = 3000
 
 // shuffleArray - randomize array order
@@ -157,6 +161,7 @@ function buildDraftPayload(values: StudentQuizFormInput | StudentQuizFormSchema)
 export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
   // ==================== SETUP ====================
   const router = useRouter()
+  const isMobile = useIsMobile()
   const orderedQuestionsRef = useRef(getOrderedQuestions(session))
   const lastSavedAnswersRef = useRef(JSON.stringify(session.existingAnswers || {}))
   const availableHintCount = session.allowHint ? Math.min(session.hintCount, session.hints.length) : 0
@@ -217,6 +222,9 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
     const answerValue = (watchedAnswers || {})[String(question.id)]
     return !answerValue?.trim()
   }).length
+  const timerTopOffset = isMobile ? MOBILE_TIMER_TOP_OFFSET : TIMER_TOP_OFFSET
+  const timerRightOffset = isMobile ? MOBILE_TIMER_RIGHT_OFFSET : TIMER_RIGHT_OFFSET
+  const timerViewportPadding = isMobile ? MOBILE_TIMER_VIEWPORT_PADDING : TIMER_VIEWPORT_PADDING
 
   // ==================== SHOW RANDOM HINT ====================
   const showRandomHint = useCallback(() => {
@@ -250,18 +258,18 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
       }
 
       const { width, height } = targetElement.getBoundingClientRect()
-      const baseLeft = window.innerWidth - TIMER_RIGHT_OFFSET - width
-      const minX = TIMER_VIEWPORT_PADDING - baseLeft
-      const maxX = TIMER_RIGHT_OFFSET - TIMER_VIEWPORT_PADDING
-      const minY = TIMER_VIEWPORT_PADDING - TIMER_TOP_OFFSET
-      const maxY = window.innerHeight - height - TIMER_VIEWPORT_PADDING - TIMER_TOP_OFFSET
+      const baseLeft = window.innerWidth - timerRightOffset - width
+      const minX = timerViewportPadding - baseLeft
+      const maxX = timerRightOffset - timerViewportPadding
+      const minY = timerViewportPadding - timerTopOffset
+      const maxY = window.innerHeight - height - timerViewportPadding - timerTopOffset
 
       return {
         x: Math.min(Math.max(nextPosition.x, minX), maxX),
         y: Math.min(Math.max(nextPosition.y, minY), Math.max(minY, maxY)),
       }
     },
-    []
+    [timerRightOffset, timerTopOffset, timerViewportPadding]
   )
 
   // ==================== SAVE ATTEMPT ====================
@@ -757,25 +765,27 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
       {isTimerVisible ? (
         <div
           ref={timerContainerRef}
-          className={`fixed top-24 right-6 z-40 w-[280px] ${isTimerDragging ? 'cursor-grabbing' : 'cursor-grab'} select-none`}
+          className={`fixed z-40 select-none ${isMobile ? 'top-[84px] right-3 w-[220px]' : 'top-24 right-6 w-[280px]'} ${isTimerDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{
             transform: `translate(${timerPosition.x}px, ${timerPosition.y}px)`,
             touchAction: 'none',
           }}
           onPointerDown={handleTimerPointerDown}
         >
-          <div className={`rounded-xl border bg-card p-4 shadow-lg ${shouldShakeTimer ? 'animate-[timer-shake_0.6s_ease-in-out_infinite]' : ''}`}>
+          <div className={`rounded-xl border bg-card shadow-lg ${isMobile ? 'p-3' : 'p-4'} ${shouldShakeTimer ? 'animate-[timer-shake_0.6s_ease-in-out_infinite]' : ''}`}>
             <div className="flex items-center justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <div className="text-sm font-semibold">Time Remaining</div>
-                <div className="text-muted-foreground text-xs">Drag this timer anywhere while you answer</div>
+                {!isMobile ? (
+                  <div className="text-muted-foreground text-xs">Drag this timer anywhere while you answer</div>
+                ) : null}
               </div>
               <div className="flex items-center gap-2">
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="cursor-pointer"
+                  className={`cursor-pointer ${isMobile ? 'h-8 w-8' : ''}`}
                   onClick={(event) => {
                     event.stopPropagation()
                     setIsTimerVisible(false)
@@ -784,15 +794,17 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
                   <IconEyeOff size={18} />
                   <span className="sr-only">Hide timer</span>
                 </Button>
-                <IconClock size={20} className="text-muted-foreground" />
+                <IconClock size={isMobile ? 18 : 20} className="text-muted-foreground" />
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-between">
+            <div className={`flex items-center justify-between ${isMobile ? 'mt-3' : 'mt-4'}`}>
               <Badge className={getTimerBadgeClassName(secondsLeft, totalSeconds)}>
                 {formatRemainingTime(secondsLeft)}
               </Badge>
               <span className="text-muted-foreground text-xs">
-                Warning left: {Math.max(session.cheatingAttempts - warningAttempts, 0)}
+                {isMobile
+                  ? `Warnings: ${remainingAttempts}`
+                  : `Warning left: ${Math.max(session.cheatingAttempts - warningAttempts, 0)}`}
               </span>
             </div>
           </div>
@@ -802,7 +814,7 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
           ref={showTimerButtonRef}
           type="button"
           variant="outline"
-          className={`fixed top-24 right-6 z-40 cursor-grab rounded-full border !bg-card shadow-lg select-none hover:!bg-card ${isTimerDragging ? 'cursor-grabbing' : ''}`}
+          className={`fixed z-40 cursor-grab border !bg-card shadow-lg select-none hover:!bg-card ${isMobile ? 'top-[84px] right-3 h-10 rounded-full px-3 text-xs' : 'top-24 right-6 rounded-full'} ${isTimerDragging ? 'cursor-grabbing' : ''}`}
           style={{
             transform: `translate(${timerPosition.x}px, ${timerPosition.y}px)`,
             touchAction: 'none',
@@ -810,8 +822,12 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
           onPointerDown={handleTimerPointerDown}
           onClick={() => setIsTimerVisible(true)}
         >
-          <IconEye size={18} className="mr-2" />
-          Show Timer
+          <IconEye size={18} className={isMobile ? '' : 'mr-2'} />
+          {isMobile ? (
+            <span className="ml-2">{formatRemainingTime(secondsLeft)}</span>
+          ) : (
+            'Show Timer'
+          )}
         </Button>
       )}
 

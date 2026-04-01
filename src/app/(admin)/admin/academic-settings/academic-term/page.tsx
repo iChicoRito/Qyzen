@@ -75,7 +75,7 @@ export default function AcademicTermPage() {
 
   if (loading) {
     return (
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+      <div className="flex min-w-0 flex-1 flex-col space-y-6 px-4 md:px-6">
         <Card>
           <CardHeader>
             <Skeleton className="h-6 w-56" />
@@ -92,7 +92,7 @@ export default function AcademicTermPage() {
 
   if (error) {
     return (
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+      <div className="flex min-w-0 flex-1 flex-col space-y-6 px-4 md:px-6">
         <Card>
           <CardHeader>
             <CardTitle>Academic Term Management</CardTitle>
@@ -110,18 +110,7 @@ export default function AcademicTermPage() {
 
   return (
     <>
-      <div className="px-4 md:hidden md:px-6">
-        <div className="flex h-96 items-center justify-center rounded-lg border bg-muted/20">
-          <div className="p-8 text-center">
-            <h3 className="mb-2 text-lg font-semibold">Academic Term Management</h3>
-            <p className="text-muted-foreground">
-              Please use a larger screen to view the full academic term interface.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+      <div className="flex min-w-0 flex-1 flex-col space-y-6 px-4 md:px-6">
         <Card>
           <CardHeader>
             <CardTitle>Academic Term Management</CardTitle>

@@ -49,13 +49,13 @@ export function getColumns({ onEnrollmentUpdated, onEnrollmentDeleted }: Columns
       id: 'studentName',
       accessorFn: (row) => row.student.fullName,
       header: ({ column }) => <DataTableColumnHeader column={column} title="Student Name" />,
-      cell: ({ row }) => <div className="max-w-[220px] truncate font-medium">{row.original.student.fullName}</div>,
+      cell: ({ row }) => <div className="max-w-[220px] whitespace-normal font-medium">{row.original.student.fullName}</div>,
     },
     {
       id: 'studentId',
       accessorFn: (row) => row.student.userId,
       header: ({ column }) => <DataTableColumnHeader column={column} title="Student ID" />,
-      cell: ({ row }) => <div className="max-w-[140px] truncate">{row.original.student.userId}</div>,
+      cell: ({ row }) => <div className="max-w-[140px] whitespace-normal">{row.original.student.userId}</div>,
     },
     {
       id: 'subjectName',
@@ -63,7 +63,7 @@ export function getColumns({ onEnrollmentUpdated, onEnrollmentDeleted }: Columns
       header: ({ column }) => <DataTableColumnHeader column={column} title="Subject" />,
       cell: ({ row }) => (
         <div className="space-y-1">
-          <p className="max-w-[240px] truncate font-medium">{row.original.subject.subjectName}</p>
+          <p className="max-w-[240px] whitespace-normal font-medium">{row.original.subject.subjectName}</p>
           <p className="text-xs text-muted-foreground">{row.original.subject.subjectCode}</p>
         </div>
       ),

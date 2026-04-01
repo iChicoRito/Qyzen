@@ -44,7 +44,7 @@ export function getColumns({ onDeleteAcademicTerm }: GetColumnsProps): ColumnDef
     accessorKey: 'academicTermName',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Academic Term Name" />,
     cell: ({ row }) => (
-      <div className="w-[180px] font-medium">{row.getValue('academicTermName')}</div>
+      <div className="w-[180px] whitespace-normal font-medium">{row.getValue('academicTermName')}</div>
     ),
     enableHiding: false,
   },

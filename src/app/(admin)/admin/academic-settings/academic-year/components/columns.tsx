@@ -43,7 +43,7 @@ export function getColumns({ onDeleteAcademicYear }: GetColumnsProps): ColumnDef
   {
     accessorKey: 'academicYear',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Academic Year" />,
-    cell: ({ row }) => <div className="w-[180px] font-medium">{row.getValue('academicYear')}</div>,
+    cell: ({ row }) => <div className="w-[180px] whitespace-normal font-medium">{row.getValue('academicYear')}</div>,
     enableHiding: false,
   },
   {

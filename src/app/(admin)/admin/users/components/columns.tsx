@@ -45,19 +45,19 @@ export const columns: ColumnDef<User>[] = [
     accessorKey: 'givenName',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Given Name" />,
     cell: ({ row }) => (
-      <div className="max-w-[180px] truncate font-medium">{row.getValue('givenName')}</div>
+      <div className="max-w-[180px] whitespace-normal font-medium">{row.getValue('givenName')}</div>
     ),
   },
   {
     accessorKey: 'surname',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Surname" />,
-    cell: ({ row }) => <div className="max-w-[180px] truncate">{row.getValue('surname')}</div>,
+    cell: ({ row }) => <div className="max-w-[180px] whitespace-normal">{row.getValue('surname')}</div>,
   },
   {
     accessorKey: 'email',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
     cell: ({ row }) => (
-      <div className="max-w-[240px] truncate text-muted-foreground">{row.getValue('email')}</div>
+      <div className="max-w-[240px] whitespace-normal text-muted-foreground">{row.getValue('email')}</div>
     ),
   },
   {

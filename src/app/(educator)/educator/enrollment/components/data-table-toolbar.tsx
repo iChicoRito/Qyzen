@@ -44,17 +44,17 @@ export function DataTableToolbar<TData>({ table, onAddEnrollment }: DataTableToo
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex flex-1 items-center gap-2">
+    <div className="min-w-0 space-y-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <Input
             placeholder="Search student"
             value={(table.getColumn('studentName')?.getFilterValue() as string) ?? ''}
             onChange={(event) => table.getColumn('studentName')?.setFilterValue(event.target.value)}
-            className="w-[200px] cursor-text lg:w-[300px]"
+            className="w-full cursor-text sm:flex-1 lg:max-w-[300px]"
           />
           <Select value={sectionFilter || 'all'} onValueChange={handleSectionChange}>
-            <SelectTrigger className="w-[180px] cursor-pointer">
+            <SelectTrigger className="w-full cursor-pointer sm:w-[180px]">
               <SelectValue placeholder="Section" />
             </SelectTrigger>
             <SelectContent>
@@ -67,7 +67,7 @@ export function DataTableToolbar<TData>({ table, onAddEnrollment }: DataTableToo
             </SelectContent>
           </Select>
           <Select value={statusFilter?.[0] || 'all'} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-[180px] cursor-pointer">
+            <SelectTrigger className="w-full cursor-pointer sm:w-[180px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -76,12 +76,12 @@ export function DataTableToolbar<TData>({ table, onAddEnrollment }: DataTableToo
               <SelectItem value="inactive" className="cursor-pointer">Inactive</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={() => table.resetColumnFilters()} className="cursor-pointer px-3" disabled={!isFiltered}>
+          <Button variant="outline" onClick={() => table.resetColumnFilters()} className="w-full cursor-pointer px-3 sm:w-auto" disabled={!isFiltered}>
             <IconRefresh size={18} />
             <span className="hidden lg:block">Reset Filters</span>
           </Button>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
           <DataTableViewOptions table={table} />
           <AddStudentModal onAddEnrollment={onAddEnrollment} />
         </div>

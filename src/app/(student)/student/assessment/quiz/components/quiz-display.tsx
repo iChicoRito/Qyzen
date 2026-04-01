@@ -29,31 +29,32 @@ import type { StudentAssessmentRecord } from "@/lib/supabase/student-assessments
 
 interface QuizDisplayProps {
   quiz: StudentAssessmentRecord | null;
+  isMobile?: boolean;
 }
 
 // ScheduleInfo - renders the assessment schedule details
 function ScheduleInfo({ quiz }: { quiz: StudentAssessmentRecord }) {
   return (
-    <div className="text-muted-foreground text-xs">{quiz.schedule}</div>
+    <div className="text-muted-foreground break-words text-xs">{quiz.schedule}</div>
   );
 }
 
 // AttachmentCard - renders the fake study material file
 function AttachmentCard({ quiz }: { quiz: StudentAssessmentRecord }) {
   return (
-    <div className="bg-card flex items-center justify-between rounded-lg border p-3">
-      <div className="flex items-center gap-3">
+    <div className="bg-card flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-center gap-3">
         <div className="rounded-md bg-rose-500/10 p-2 text-rose-500">
           <IconFileTypePpt size={20} />
         </div>
-        <div className="space-y-1">
-          <div className="text-sm font-medium">{quiz.attachmentName}</div>
-          <div className="text-muted-foreground text-xs">
+        <div className="min-w-0 space-y-1">
+          <div className="text-sm font-medium break-words">{quiz.attachmentName}</div>
+          <div className="text-muted-foreground break-words text-xs">
             {quiz.attachmentLabel} - {quiz.attachmentSize}
           </div>
         </div>
       </div>
-      <Button variant="outline" size="sm" className="cursor-pointer">
+      <Button variant="outline" size="sm" className="w-full cursor-pointer sm:w-auto">
         Download
       </Button>
     </div>
@@ -138,7 +139,7 @@ function TakeAssessmentDialog({
 }
 
 // QuizDisplay - renders the assessment details
-export function QuizDisplay({ quiz }: QuizDisplayProps) {
+export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
   const router = useRouter();
   const [takeDialogOpen, setTakeDialogOpen] = useState(false);
   const [isTaking, setIsTaking] = useState(false);
@@ -165,7 +166,7 @@ export function QuizDisplay({ quiz }: QuizDisplayProps) {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className={isMobile ? "flex flex-col" : "flex h-full min-h-0 flex-col"}>
       <div className="flex items-center justify-end p-2">
         <Separator orientation="vertical" className="mr-2 h-6" />
         <DropdownMenu>
@@ -185,10 +186,10 @@ export function QuizDisplay({ quiz }: QuizDisplayProps) {
       </div>
       <Separator />
       {quiz ? (
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className={isMobile ? "flex flex-col" : "flex min-h-0 flex-1 flex-col"}>
           {/* assessment header */}
-          <div className="flex items-start justify-between gap-4 p-4">
-            <div className="flex items-center gap-4 text-sm">
+          <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 items-center gap-4 text-sm">
               <Avatar className="cursor-pointer">
                 <AvatarImage alt={quiz.educatorName} />
                 <AvatarFallback>
@@ -198,18 +199,20 @@ export function QuizDisplay({ quiz }: QuizDisplayProps) {
                     .join("")}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex flex-col justify-center gap-1">
-                <div className="font-semibold">{quiz.educatorName}</div>
+              <div className="flex min-w-0 flex-col justify-center gap-1">
+                <div className="font-semibold break-words">{quiz.educatorName}</div>
                 <Badge variant="outline" className="w-fit">{quiz.educatorUserType}</Badge>
               </div>
             </div>
-            <ScheduleInfo quiz={quiz} />
+            <div className="w-full sm:w-auto sm:text-right">
+              <ScheduleInfo quiz={quiz} />
+            </div>
           </div>
           <Separator />
           {/* assessment body */}
-          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-24 text-sm whitespace-pre-wrap">
+          <div className={isMobile ? "p-4 text-sm whitespace-pre-wrap" : "min-h-0 flex-1 overflow-y-auto p-4 pb-24 text-sm whitespace-pre-wrap"}>
             <div className="mb-4 space-y-3 whitespace-normal">
-              <div className="text-base font-semibold">{quiz.subjectName}</div>
+              <div className="text-base font-semibold break-words">{quiz.subjectName}</div>
               <div className="space-y-3">
                 <div className="grid gap-3 md:grid-cols-2">
                   <div>
@@ -280,11 +283,11 @@ export function QuizDisplay({ quiz }: QuizDisplayProps) {
               <AttachmentCard quiz={quiz} />
             </div>
           </div>
-          <Separator className="mt-auto" />
+          <Separator className={!isMobile ? "mt-auto" : undefined} />
           {/* assessment action */}
-          <div className="bg-background/95 sticky bottom-0 flex justify-end gap-3 border-t p-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+          <div className="bg-background/95 sticky bottom-0 flex flex-col gap-3 border-t p-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:flex-row sm:justify-end">
             {quiz.isFinished && quiz.scoreId ? (
-              <Button variant="outline" className="cursor-pointer" disabled={isViewingResult} onClick={handleViewResult}>
+              <Button variant="outline" className="w-full cursor-pointer sm:w-auto" disabled={isViewingResult} onClick={handleViewResult}>
                 {isViewingResult ? (
                   <>
                     <Loader2 size={18} className="mr-2 animate-spin" />
@@ -299,7 +302,7 @@ export function QuizDisplay({ quiz }: QuizDisplayProps) {
             {!quiz.isFinished ? (
               <Button
                 type="button"
-                className="cursor-pointer"
+                className="w-full cursor-pointer sm:w-auto"
                 disabled={!quiz.canTake || isTaking}
                 onClick={() => setTakeDialogOpen(true)}
               >

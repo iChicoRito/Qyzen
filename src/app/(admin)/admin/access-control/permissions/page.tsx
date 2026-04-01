@@ -55,7 +55,7 @@ export default function PermissionsPage() {
 
   if (loading) {
     return (
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+      <div className="flex min-w-0 flex-1 flex-col space-y-6 px-4 md:px-6">
         <Card>
           <CardHeader>
             <Skeleton className="h-6 w-52" />
@@ -72,7 +72,7 @@ export default function PermissionsPage() {
 
   if (error) {
     return (
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+      <div className="flex min-w-0 flex-1 flex-col space-y-6 px-4 md:px-6">
         <Card>
           <CardHeader>
             <CardTitle>Permissions Management</CardTitle>
@@ -100,18 +100,7 @@ export default function PermissionsPage() {
         <p className="text-muted-foreground">View and manage RBAC permission records.</p>
       </div>
 
-      <div className="px-4 md:hidden md:px-6">
-        <div className="flex h-96 items-center justify-center rounded-lg border bg-muted/20">
-          <div className="p-8 text-center">
-            <h3 className="mb-2 text-lg font-semibold">Permissions Management</h3>
-            <p className="text-muted-foreground">
-              Please use a larger screen to view the full permissions management interface.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+      <div className="flex min-w-0 flex-1 flex-col space-y-6 px-4 md:px-6">
         <Card>
           <CardHeader>
             <CardTitle>Permissions Management</CardTitle>

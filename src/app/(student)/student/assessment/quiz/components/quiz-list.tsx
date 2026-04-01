@@ -10,20 +10,21 @@ import { useQuiz } from "../use-quiz"
 
 interface QuizListProps {
   items: StudentAssessmentRecord[];
+  isMobile?: boolean;
 }
 
 // QuizList - renders the assessment list
-export function QuizList({ items }: QuizListProps) {
+export function QuizList({ items, isMobile = false }: QuizListProps) {
   // selected assessment state
   const [quiz, setQuiz] = useQuiz();
 
   return (
-    <ScrollArea className="h-[calc(100vh-12rem)]">
-      <div className="flex flex-col gap-2 p-4 pt-0">{items.map((item) => (
+    <ScrollArea className={cn("min-h-0", !isMobile && "h-[calc(100vh-12rem)]")}>
+      <div className="flex flex-col gap-3 p-4">{items.map((item) => (
           <button
             key={item.id}
             className={cn(
-              "hover:bg-accent hover:text-accent-foreground flex flex-col items-start gap-2 rounded-lg border p-3 text-left text-sm transition-all cursor-pointer",
+              "hover:bg-accent hover:text-accent-foreground flex w-full flex-col items-start gap-3 rounded-lg border p-4 text-left text-sm transition-all cursor-pointer",
               quiz.selected === item.id && "bg-muted"
             )}
             onClick={() =>
@@ -33,22 +34,22 @@ export function QuizList({ items }: QuizListProps) {
               })
             }
           >
-            <div className="flex w-full flex-col gap-1">
-              <div className="flex items-center">
-                <div className="flex items-center gap-2">
-                  <div className="font-semibold">{item.subjectName}</div>
+            <div className="flex w-full flex-col gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+                <div className="flex min-w-0 items-center gap-2">
+                  <div className="min-w-0 break-words font-semibold">{item.subjectName}</div>
                   {!item.read && <span className="flex size-2 rounded-full bg-blue-600 cursor-pointer" />}
                 </div>
                 <div
                   className={cn(
-                    "ml-auto text-xs",
+                    "text-xs break-words sm:ml-auto",
                     quiz.selected === item.id ? "text-foreground" : "text-muted-foreground"
                   )}
                 >
                   {item.moduleCode}
                 </div>
               </div>
-              <div className="text-xs font-medium">
+              <div className="text-xs font-medium break-words">
                 {item.sectionName} - {item.termName}
               </div>
             </div>
@@ -58,7 +59,7 @@ export function QuizList({ items }: QuizListProps) {
               <span>{item.timeLimitMinutes} min</span>
             </div>
             {item.labels.length ? (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {item.labels.map((label) => (
                   <Badge key={label} variant={getBadgeVariantFromLabel(label)} className={cn("cursor-pointer border-0", getBadgeClassName(label))}>
                     {label}

@@ -154,106 +154,7 @@ export default async function TakeQuizResultPage({ searchParams }: TakeQuizResul
   // ==================== RENDER ====================
   return (
     <div className="@container/main flex flex-1 flex-col px-4 py-6 md:px-6">
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-6">
-          {result.questions.map((question, index) => (
-            <Card key={question.id}>
-              <CardHeader className="border-b pb-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <CardTitle>Question #{index + 1}</CardTitle>
-                  <Badge className={question.isCorrect
-                    ? 'rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500'
-                    : 'rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500'}>
-                    {question.isCorrect ? 'Correct' : 'Incorrect'}
-                  </Badge>
-                </div>
-                <CardDescription>{question.question}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2 pt-2">
-                {question.quizType === 'multiple_choice' ? (
-                  <div className="space-y-2">
-                    {question.choices.map((choice) => {
-                      const isCorrect = question.correctAnswers.includes(choice.value)
-                      const isSelectedChoice = question.studentAnswer === choice.value
-                      const isStudentChoice = isSelectedChoice && !question.isCorrect
-                      const isIncorrectChoice = Boolean(question.studentAnswer) && !question.isCorrect
-                      const isCorrectStudentChoice = isSelectedChoice && question.isCorrect
-                      const shouldRevealCorrectAnswer = isCorrect && (result.allowReview || question.isCorrect)
-
-                      return (
-                        <div
-                          key={`${question.id}-${choice.key}`}
-                          className={`flex items-center gap-2 rounded-xl border px-2 py-1.5 ${getChoiceClassName(
-                            shouldRevealCorrectAnswer,
-                            isStudentChoice,
-                            isIncorrectChoice,
-                            isCorrectStudentChoice
-                          )}`}
-                        >
-                          <div
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold ${getChoiceChipClassName(
-                              shouldRevealCorrectAnswer,
-                              isStudentChoice,
-                              isIncorrectChoice,
-                              isCorrectStudentChoice
-                            )}`}
-                          >
-                            {choice.key}
-                          </div>
-                          <div className="flex min-h-9 flex-1 items-center pr-1">
-                            <div
-                              className={`text-sm leading-4 ${getChoiceTextClassName(
-                                shouldRevealCorrectAnswer,
-                                isStudentChoice,
-                                isIncorrectChoice,
-                                isCorrectStudentChoice
-                              )}`}
-                            >
-                              {choice.value}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {result.allowReview || question.isCorrect ? (
-                      <div className="rounded-lg border-0 bg-primary/10 px-4 py-3 text-sm font-medium text-primary">
-                        Correct Answer: {question.correctAnswers.join(', ')}
-                      </div>
-                    ) : null}
-                  </div>
-                )}
-
-                {question.quizType === 'identification' && !question.isCorrect ? (
-                  <div className="rounded-lg border-0 bg-rose-500/10 px-4 py-2.5 text-sm text-rose-500">
-                    Your Answer: {getStudentAnswerLabel(question)} <span className="font-medium">Incorrect</span>
-                  </div>
-                ) : null}
-
-                {question.quizType === 'identification' && question.isCorrect ? (
-                  <div className="rounded-lg border-0 bg-primary/10 px-4 py-2.5 text-sm text-primary">
-                    Your Answer: {getStudentAnswerLabel(question)} <span className="font-medium">Correct</span>
-                  </div>
-                ) : null}
-
-                {!question.isCorrect ? (
-                  <div className="rounded-lg border-0 bg-rose-500/10 px-4 py-2.5 text-sm text-rose-500">
-                    Your Answer: {getStudentAnswerLabel(question)} <span className="font-medium">Incorrect</span>
-                  </div>
-                ) : null}
-
-                {question.isCorrect && question.quizType === 'multiple_choice' ? (
-                  <div className="rounded-lg border-0 bg-primary/10 px-4 py-2.5 text-sm text-primary">
-                    Your Answer: {getStudentAnswerLabel(question)} <span className="font-medium">Correct</span>
-                  </div>
-                ) : null}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
+      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
         <div className="space-y-6">
           <Card>
             <CardHeader className="border-b">
@@ -382,6 +283,105 @@ export default async function TakeQuizResultPage({ searchParams }: TakeQuizResul
               </Button>
             </CardContent>
           </Card>
+        </div>
+
+        <div className="space-y-6">
+          {result.questions.map((question, index) => (
+            <Card key={question.id}>
+              <CardHeader className="border-b pb-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <CardTitle>Question #{index + 1}</CardTitle>
+                  <Badge className={question.isCorrect
+                    ? 'rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500'
+                    : 'rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500'}>
+                    {question.isCorrect ? 'Correct' : 'Incorrect'}
+                  </Badge>
+                </div>
+                <CardDescription>{question.question}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 pt-2">
+                {question.quizType === 'multiple_choice' ? (
+                  <div className="space-y-2">
+                    {question.choices.map((choice) => {
+                      const isCorrect = question.correctAnswers.includes(choice.value)
+                      const isSelectedChoice = question.studentAnswer === choice.value
+                      const isStudentChoice = isSelectedChoice && !question.isCorrect
+                      const isIncorrectChoice = Boolean(question.studentAnswer) && !question.isCorrect
+                      const isCorrectStudentChoice = isSelectedChoice && question.isCorrect
+                      const shouldRevealCorrectAnswer = isCorrect && (result.allowReview || question.isCorrect)
+
+                      return (
+                        <div
+                          key={`${question.id}-${choice.key}`}
+                          className={`flex items-center gap-2 rounded-xl border px-2 py-1.5 ${getChoiceClassName(
+                            shouldRevealCorrectAnswer,
+                            isStudentChoice,
+                            isIncorrectChoice,
+                            isCorrectStudentChoice
+                          )}`}
+                        >
+                          <div
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold ${getChoiceChipClassName(
+                              shouldRevealCorrectAnswer,
+                              isStudentChoice,
+                              isIncorrectChoice,
+                              isCorrectStudentChoice
+                            )}`}
+                          >
+                            {choice.key}
+                          </div>
+                          <div className="flex min-h-9 flex-1 items-center pr-1">
+                            <div
+                              className={`text-sm leading-4 ${getChoiceTextClassName(
+                                shouldRevealCorrectAnswer,
+                                isStudentChoice,
+                                isIncorrectChoice,
+                                isCorrectStudentChoice
+                              )}`}
+                            >
+                              {choice.value}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {result.allowReview || question.isCorrect ? (
+                      <div className="rounded-lg border-0 bg-primary/10 px-4 py-3 text-sm font-medium text-primary">
+                        Correct Answer: {question.correctAnswers.join(', ')}
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+
+                {question.quizType === 'identification' && !question.isCorrect ? (
+                  <div className="rounded-lg border-0 bg-rose-500/10 px-4 py-2.5 text-sm text-rose-500">
+                    Your Answer: {getStudentAnswerLabel(question)} <span className="font-medium">Incorrect</span>
+                  </div>
+                ) : null}
+
+                {question.quizType === 'identification' && question.isCorrect ? (
+                  <div className="rounded-lg border-0 bg-primary/10 px-4 py-2.5 text-sm text-primary">
+                    Your Answer: {getStudentAnswerLabel(question)} <span className="font-medium">Correct</span>
+                  </div>
+                ) : null}
+
+                {!question.isCorrect ? (
+                  <div className="rounded-lg border-0 bg-rose-500/10 px-4 py-2.5 text-sm text-rose-500">
+                    Your Answer: {getStudentAnswerLabel(question)} <span className="font-medium">Incorrect</span>
+                  </div>
+                ) : null}
+
+                {question.isCorrect && question.quizType === 'multiple_choice' ? (
+                  <div className="rounded-lg border-0 bg-primary/10 px-4 py-2.5 text-sm text-primary">
+                    Your Answer: {getStudentAnswerLabel(question)} <span className="font-medium">Correct</span>
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     </div>

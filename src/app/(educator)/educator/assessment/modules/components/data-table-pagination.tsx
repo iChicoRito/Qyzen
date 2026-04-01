@@ -26,13 +26,13 @@ export function DataTablePagination<TData>({
   table,
 }: DataTablePaginationProps<TData>) {
   return (
-    <div className="flex items-center justify-between px-2">
-      <div className="flex-1 text-sm text-muted-foreground hidden lg:block">
+    <div className="flex flex-col gap-3 px-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="hidden flex-1 text-sm text-muted-foreground lg:block">
         {table.getFilteredSelectedRowModel().rows.length} of{" "}
         {table.getFilteredRowModel().rows.length} row(s) selected.
       </div>
-      <div className="flex items-center space-x-6 lg:space-x-8">
-        <div className="flex items-center space-x-2">
+      <div className="flex flex-col gap-3 sm:ml-auto sm:items-end">
+        <div className="flex items-center justify-between gap-2 sm:justify-end">
           <p className="text-sm font-medium">Rows per page</p>
           <Select
             value={`${table.getState().pagination.pageSize}`}
@@ -52,7 +52,7 @@ export function DataTablePagination<TData>({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center justify-between gap-2 sm:justify-end">
           <Button
             variant="outline"
             className="hidden h-8 w-8 p-0 lg:flex cursor-pointer disabled:cursor-not-allowed"
@@ -71,7 +71,7 @@ export function DataTablePagination<TData>({
             <span className="sr-only">Go to previous page</span>
             <IconChevronLeft size={18} />
           </Button>
-          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+          <div className="flex min-w-[100px] items-center justify-center text-sm font-medium">
             Page {table.getState().pagination.pageIndex + 1} of{" "}
             {table.getPageCount()}
           </div>

@@ -53,8 +53,8 @@ export default function UsersPage() {
 
   if (loading) {
     return (
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="flex min-w-0 flex-1 flex-col space-y-6 px-4 md:px-6">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
             <Card key={index}>
               <CardContent>
@@ -79,7 +79,7 @@ export default function UsersPage() {
 
   if (error) {
     return (
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
+      <div className="flex min-w-0 flex-1 flex-col space-y-6 px-4 md:px-6">
         <Card>
           <CardHeader>
             <CardTitle>User Management</CardTitle>
@@ -104,19 +104,8 @@ export default function UsersPage() {
         </p>
       </div>
 
-      <div className="px-4 md:hidden md:px-6">
-        <div className="flex h-96 items-center justify-center rounded-lg border bg-muted/20">
-          <div className="p-8 text-center">
-            <h3 className="mb-2 text-lg font-semibold">Users Dashboard</h3>
-            <p className="text-muted-foreground">
-              Please use a larger screen to view the full user management interface.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="hidden h-full flex-1 flex-col space-y-6 px-4 md:flex md:px-6">
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="flex min-w-0 flex-1 flex-col space-y-6 px-4 md:px-6">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Card>
             <CardContent>
               <div className="flex items-center justify-between">

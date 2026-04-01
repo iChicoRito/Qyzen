@@ -45,7 +45,7 @@ export function getColumns({ onDeleteQuiz, onUpdateQuiz }: ColumnsProps): Column
     accessorKey: 'moduleCode',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Module" />,
     cell: ({ row }) => (
-      <div className="min-w-[220px]">
+      <div className="min-w-[220px] whitespace-normal">
         <p className="font-medium">{row.original.moduleCode}</p>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <p className="text-sm text-muted-foreground">{row.original.subjectName}</p>
@@ -64,12 +64,12 @@ export function getColumns({ onDeleteQuiz, onUpdateQuiz }: ColumnsProps): Column
   {
     accessorKey: 'subjectName',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Subject" />,
-    cell: ({ row }) => <div className="min-w-[180px]">{row.getValue('subjectName')}</div>,
+    cell: ({ row }) => <div className="min-w-[180px] whitespace-normal">{row.getValue('subjectName')}</div>,
   },
   {
     accessorKey: 'sectionName',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Section" />,
-    cell: ({ row }) => <div className="min-w-[180px]">{row.getValue('sectionName')}</div>,
+    cell: ({ row }) => <div className="min-w-[180px] whitespace-normal">{row.getValue('sectionName')}</div>,
   },
   {
     accessorKey: 'question',

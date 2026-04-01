@@ -51,7 +51,7 @@ export function DataTableToolbar<TData>({
   const userTypeFilter = table.getColumn('userType')?.getFilterValue() as string | undefined
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <div className="space-y-3">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <Select
@@ -103,27 +103,27 @@ export function DataTableToolbar<TData>({
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex flex-1 items-center space-x-2">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
           <Input
             placeholder="Search email"
             value={(table.getColumn('email')?.getFilterValue() as string) ?? ''}
             onChange={(event) =>
               table.getColumn('email')?.setFilterValue(event.target.value)
             }
-            className="w-[200px] cursor-text lg:w-[300px]"
+            className="w-full cursor-text sm:flex-1 lg:max-w-[300px]"
           />
           <Button
             variant="outline"
             onClick={() => table.resetColumnFilters()}
-            className="cursor-pointer px-3"
+            className="w-full cursor-pointer px-3 sm:w-auto"
             disabled={!isFiltered}
           >
             <IconRefresh className="h-4 w-4" stroke={2} />
             <span className="hidden lg:block">Reset Filters</span>
           </Button>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
           <DataTableViewOptions table={table} />
           <AddUserModal onAddUser={onAddUser} />
         </div>
@@ -131,4 +131,3 @@ export function DataTableToolbar<TData>({
     </div>
   )
 }
-  

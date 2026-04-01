@@ -56,7 +56,7 @@ export function getColumns({ permissions, onUpdateSection, onDeleteSection }: Co
       accessorKey: 'sectionName',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Section Name" />,
       cell: ({ row }) => (
-        <div className="max-w-[220px] truncate font-medium">{row.getValue('sectionName')}</div>
+        <div className="max-w-[220px] whitespace-normal font-medium">{row.getValue('sectionName')}</div>
       ),
     },
     {

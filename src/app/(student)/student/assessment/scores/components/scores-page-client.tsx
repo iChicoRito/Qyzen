@@ -21,7 +21,7 @@ export function ScoresPageClient({ scores }: ScoresPageClientProps) {
     : 0
 
   return (
-    <div className="flex flex-1 flex-col gap-6 px-4 py-6 md:px-6">
+    <div className="flex min-w-0 flex-1 flex-col gap-6 px-4 py-6 md:px-6">
       <div className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight">Scores</h1>
         <p className="text-muted-foreground">
@@ -79,14 +79,14 @@ export function ScoresPageClient({ scores }: ScoresPageClientProps) {
         </Card>
       </div>
 
-      <Card>
+      <Card className="min-w-0 overflow-hidden">
         <CardHeader>
           <CardTitle>Student Scores</CardTitle>
           <CardDescription>
             Filter by module, subject, term, or status to review finished assessments.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0 px-3 pb-4 sm:px-6">
           <DataTable data={scores} columns={columns} />
         </CardContent>
       </Card>

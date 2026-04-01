@@ -11,7 +11,7 @@ export default async function QuizPage() {
   // ==================== RENDER ====================
   return (
     <div className="@container/main flex flex-1 flex-col">
-      <div className="h-[calc(100vh-4rem)] px-4 md:px-6">
+      <div className="min-h-[calc(100vh-4rem)] px-4 pb-4 md:h-[calc(100vh-4rem)] md:px-6 md:pb-0">
         <Quiz quizzes={quizzes} defaultLayout={[42, 58]} />
       </div>
     </div>
