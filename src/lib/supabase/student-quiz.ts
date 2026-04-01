@@ -486,9 +486,11 @@ function buildSessionRecord(
   const attemptHistory = buildAttemptHistory(submittedScores)
   const retakeState = getRetakeState(module, submittedScores, grantedRetakeCount)
 
-  if (!isEducatorUser(educator)) {
+  if (!educator || !isEducatorUser(educator)) {
     throw new Error('Module educator was not found.')
   }
+
+  const educatorRecord = educator
 
   return {
     moduleRowId: module.id,
@@ -499,7 +501,7 @@ function buildSessionRecord(
     sectionId: module.section_id,
     sectionName: section?.section_name || 'Unknown Section',
     educatorId: module.educator_id,
-    educatorName: `${educator.given_name} ${educator.surname}`.trim(),
+    educatorName: `${educatorRecord.given_name} ${educatorRecord.surname}`.trim(),
     educatorUserType: 'educator',
     termName: buildAcademicTermLabel(term),
     timeLimitMinutes: Number(module.time_limit) || 0,
