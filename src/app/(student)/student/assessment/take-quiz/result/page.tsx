@@ -6,6 +6,12 @@ import {
   fetchStudentQuizReviewResult,
   type StudentQuizReviewQuestion,
 } from '@/lib/supabase/student-quiz'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -48,6 +54,15 @@ function getChoiceClassName(
   }
 
   return 'border-border bg-muted/40'
+}
+
+// getAttemptBadgeClassName - style attempt history badges
+function getAttemptBadgeClassName(isBestScore: boolean) {
+  if (isBestScore) {
+    return 'border-blue-500/30 text-blue-500'
+  }
+
+  return 'border-border text-muted-foreground'
 }
 
 // getChoiceChipClassName - style reviewed option key chip
@@ -151,6 +166,11 @@ export default async function TakeQuizResultPage({ searchParams }: TakeQuizResul
     )
   }
 
+  const bestAttempt = result.attemptHistory.find((attempt) => attempt.isBestScore) || null
+  const summaryScore = bestAttempt?.score ?? result.score
+  const summaryPercentage = bestAttempt?.percentage ?? result.percentage
+  const summaryIncorrectAnswers = Math.max(result.totalQuestions - summaryScore, 0)
+
   // ==================== RENDER ====================
   return (
     <div className="@container/main flex flex-1 flex-col px-4 py-6 md:px-6">
@@ -165,9 +185,9 @@ export default async function TakeQuizResultPage({ searchParams }: TakeQuizResul
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
               <ResultSummaryChart
-                correctAnswers={result.score}
-                incorrectAnswers={Math.max(result.totalQuestions - result.score, 0)}
-                percentage={result.percentage}
+                correctAnswers={summaryScore}
+                incorrectAnswers={summaryIncorrectAnswers}
+                percentage={summaryPercentage}
               />
 
               <Separator />
@@ -191,21 +211,68 @@ export default async function TakeQuizResultPage({ searchParams }: TakeQuizResul
                 <div className="space-y-1">
                   <div className="text-foreground text-lg font-semibold">Score Snapshot</div>
                   <div className="text-muted-foreground text-sm">
-                    Your final score and percentage for this assessment.
+                    Your selected attempt and highest-score summary for this assessment.
                   </div>
                 </div>
                 <div className="mt-5 space-y-5">
                   <div>
                     <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">Score</div>
                     <div className="mt-3 text-3xl font-semibold tracking-tight">
-                      {result.score} / {result.totalQuestions}
+                      {summaryScore} / {result.totalQuestions}
                     </div>
                   </div>
                   <Separator />
                   <div>
                     <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">Percentage</div>
-                    <div className="mt-3 text-3xl font-semibold tracking-tight">{result.percentage}%</div>
+                    <div className="mt-3 text-3xl font-semibold tracking-tight">{summaryPercentage}%</div>
                   </div>
+                  <Separator />
+                  <div>
+                    <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">Best Score</div>
+                    <div className="mt-3 text-3xl font-semibold tracking-tight">
+                      {result.bestScore ?? result.score} / {result.totalQuestions}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <div className="text-sm font-semibold">Retake Details</div>
+                <div className="mt-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-muted-foreground text-xs">Allow Retake</div>
+                      <div className="mt-1 text-sm font-medium">{result.allowRetake ? 'Enabled' : 'Disabled'}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground text-xs">Allowed Retakes</div>
+                      <div className="mt-1 text-sm font-medium">{result.allowRetake ? result.retakeCount : 0}</div>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-muted-foreground text-xs">Attempts Used</div>
+                      <div className="mt-1 text-sm font-medium">{result.submittedAttemptCount}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground text-xs">Remaining Retakes</div>
+                      <div className="mt-1 text-sm font-medium">{result.remainingRetakes}</div>
+                    </div>
+                  </div>
+                  {result.bestScoreId !== result.scoreId ? (
+                    <>
+                      <Separator />
+                      <div>
+                        <div className="text-muted-foreground text-xs">Selected Attempt</div>
+                        <div className="mt-1 text-sm font-medium">
+                          You are reviewing a previous attempt. Your highest score is kept as the main result.
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               </div>
 
@@ -273,19 +340,91 @@ export default async function TakeQuizResultPage({ searchParams }: TakeQuizResul
                 <div className="text-sm font-semibold">Result Summary</div>
                 <div className="text-muted-foreground mt-2 text-sm">
                   {result.isPassed
-                    ? 'You passed this assessment. Review the questions on the left to confirm the correct answers.'
-                    : 'You did not reach the passing score yet. Review the questions on the left and focus on the incorrect answers.'}
+                    ? 'You passed this assessment. Review the questions on the right to confirm the correct answers.'
+                    : 'You did not reach the passing score yet. Review the questions on the right and focus on the incorrect answers.'}
                 </div>
               </div>
 
-              <Button asChild className="w-full cursor-pointer">
-                <Link href="/student/assessment/quiz">Back to Assessments</Link>
-              </Button>
+              <div className="flex flex-col gap-3">
+                {result.canRetake ? (
+                  <Button asChild className="w-full cursor-pointer">
+                    <Link href={`/student/assessment/take-quiz?moduleId=${result.moduleRowId}`}>Retake Assessment</Link>
+                  </Button>
+                ) : null}
+                <Button asChild variant="outline" className="w-full cursor-pointer">
+                  <Link href="/student/assessment/quiz">Back to Assessments</Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
 
         <div className="space-y-6">
+          <Card>
+            <CardHeader className="border-b pb-4">
+              <CardTitle>Attempt History</CardTitle>
+              <CardDescription>
+                Review each submitted attempt. The highest score stays as your primary result.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion
+                type="single"
+                collapsible
+                defaultValue={`attempt-${result.scoreId}`}
+                className="overflow-hidden rounded-xl border"
+              >
+                {result.attemptHistory.map((attempt) => (
+                  <AccordionItem
+                    key={attempt.scoreId}
+                    value={`attempt-${attempt.scoreId}`}
+                    className="border-b px-0 last:border-b-0"
+                  >
+                    <AccordionTrigger className="px-5 py-5 text-base font-semibold hover:no-underline">
+                      <div className="flex min-w-0 flex-1 flex-col gap-3 text-left sm:flex-row sm:items-center sm:justify-between">
+                        <div className="font-medium">Attempt #{attempt.attemptNumber}</div>
+                        <div className="flex flex-wrap items-center gap-2 pr-2">
+                          <Badge variant="outline" className={getAttemptBadgeClassName(attempt.isBestScore)}>
+                            {attempt.isBestScore ? 'Highest Score' : 'Attempt'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="border-t px-5 pb-5">
+                      <div className="grid gap-4 pt-4 text-sm sm:grid-cols-3">
+                        <div>
+                          <div className="text-muted-foreground text-xs">Score</div>
+                          <div className="mt-1 font-medium">
+                            {attempt.score} / {attempt.totalQuestions}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground text-xs">Percentage</div>
+                          <div className="mt-1 font-medium">{attempt.percentage}%</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground text-xs">Submitted</div>
+                          <div className="mt-1 font-medium">{attempt.submittedAt || 'Not submitted'}</div>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className={getAttemptBadgeClassName(attempt.isBestScore)}>
+                          {attempt.isBestScore ? 'Highest Score' : `Attempt #${attempt.attemptNumber}`}
+                        </Badge>
+                        <Badge className={getStatusClassName(attempt.status)}>{attempt.status}</Badge>
+                      </div>
+                      {attempt.scoreId !== result.scoreId ? (
+                        <Button asChild variant="outline" size="sm" className="mt-4 w-full cursor-pointer sm:w-auto">
+                          <Link href={`/student/assessment/take-quiz/result?scoreId=${attempt.scoreId}`}>View This Attempt</Link>
+                        </Button>
+                      ) : null}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </CardContent>
+          </Card>
+
           {result.questions.map((question, index) => (
             <Card key={question.id}>
               <CardHeader className="border-b pb-4">

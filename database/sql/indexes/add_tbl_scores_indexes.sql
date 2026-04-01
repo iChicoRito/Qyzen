@@ -3,7 +3,7 @@
 -- Created: 2026-03-30
 -- Purpose: Add indexes and uniqueness rules for student quiz scores.
 
-CREATE UNIQUE INDEX IF NOT EXISTS tbl_scores_unique_student_module
+CREATE INDEX IF NOT EXISTS idx_tbl_scores_student_module
   ON public.tbl_scores(student_id, module_id);
 
 CREATE INDEX IF NOT EXISTS idx_tbl_scores_student_id

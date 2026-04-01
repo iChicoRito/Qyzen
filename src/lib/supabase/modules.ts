@@ -34,6 +34,8 @@ export interface ModuleRecord {
   cheatingAttempts: number
   isShuffle: boolean
   allowReview: boolean
+  allowRetake: boolean
+  retakeCount: number
   allowHint: boolean
   hintCount: number
   status: 'active' | 'inactive'
@@ -51,6 +53,8 @@ export interface ModuleCreateInput {
   cheatingAttempts?: number
   isShuffle: boolean
   allowReview: boolean
+  allowRetake: boolean
+  retakeCount?: number
   allowHint: boolean
   hintCount?: number
   status: 'active' | 'inactive'
@@ -69,6 +73,8 @@ export interface ModuleUpdateInput {
   cheatingAttempts?: number
   isShuffle: boolean
   allowReview: boolean
+  allowRetake: boolean
+  retakeCount?: number
   allowHint: boolean
   hintCount?: number
   status: 'active' | 'inactive'
@@ -122,6 +128,8 @@ interface ModuleRow {
   cheating_attempts: number
   is_shuffle: boolean
   allow_review: boolean
+  allow_retake: boolean
+  retake_count: number
   allow_hint: boolean
   hint_count: number
   is_active: boolean
@@ -319,7 +327,7 @@ export async function fetchModules() {
   const { data, error } = await supabase
     .from('tbl_modules')
     .select(
-      'id,module_id,module_code,term,subject_id,section_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_hint,hint_count,is_active,start_date,end_date,start_time,end_time,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(id,section_name)'
+      'id,module_id,module_code,term,subject_id,section_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_retake,retake_count,allow_hint,hint_count,is_active,start_date,end_date,start_time,end_time,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(id,section_name)'
     )
     .eq('educator_id', educatorId)
     .order('created_at', { ascending: false })
@@ -348,6 +356,8 @@ export async function fetchModules() {
       cheatingAttempts: row.cheating_attempts,
       isShuffle: row.is_shuffle,
       allowReview: row.allow_review,
+      allowRetake: row.allow_retake,
+      retakeCount: row.retake_count,
       allowHint: row.allow_hint,
       hintCount: row.hint_count,
       status: row.is_active ? 'active' : 'inactive',
@@ -382,6 +392,8 @@ export async function createModules(input: ModuleCreateInput) {
     cheating_attempts: input.cheatingAttempts ?? 0,
     is_shuffle: input.isShuffle,
     allow_review: input.allowReview,
+    allow_retake: input.allowRetake,
+    retake_count: input.allowRetake ? input.retakeCount ?? 0 : 0,
     allow_hint: input.allowHint,
     hint_count: input.allowHint ? input.hintCount ?? 0 : 0,
     is_active: input.status === 'active',
@@ -395,7 +407,7 @@ export async function createModules(input: ModuleCreateInput) {
     .from('tbl_modules')
     .insert(rowsToInsert)
     .select(
-      'id,module_id,module_code,term,subject_id,section_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_hint,hint_count,is_active,start_date,end_date,start_time,end_time'
+      'id,module_id,module_code,term,subject_id,section_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_retake,retake_count,allow_hint,hint_count,is_active,start_date,end_date,start_time,end_time'
     )
 
   if (error) {
@@ -428,6 +440,8 @@ export async function createModules(input: ModuleCreateInput) {
       cheatingAttempts: row.cheating_attempts,
       isShuffle: row.is_shuffle,
       allowReview: row.allow_review,
+      allowRetake: row.allow_retake,
+      retakeCount: row.retake_count,
       allowHint: row.allow_hint,
       hintCount: row.hint_count,
       status: row.is_active ? 'active' : 'inactive',
@@ -464,6 +478,8 @@ export async function updateModule(input: ModuleUpdateInput) {
       cheating_attempts: input.cheatingAttempts ?? 0,
       is_shuffle: input.isShuffle,
       allow_review: input.allowReview,
+      allow_retake: input.allowRetake,
+      retake_count: input.allowRetake ? input.retakeCount ?? 0 : 0,
       allow_hint: input.allowHint,
       hint_count: input.allowHint ? input.hintCount ?? 0 : 0,
       is_active: input.status === 'active',
@@ -475,7 +491,7 @@ export async function updateModule(input: ModuleUpdateInput) {
     .eq('educator_id', educatorId)
     .eq('id', input.id)
     .select(
-      'id,module_id,module_code,term,subject_id,section_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_hint,hint_count,is_active,start_date,end_date,start_time,end_time'
+      'id,module_id,module_code,term,subject_id,section_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_retake,retake_count,allow_hint,hint_count,is_active,start_date,end_date,start_time,end_time'
     )
 
   if (error) {
@@ -503,6 +519,8 @@ export async function updateModule(input: ModuleUpdateInput) {
     cheatingAttempts: updatedRow.cheating_attempts,
     isShuffle: updatedRow.is_shuffle,
     allowReview: updatedRow.allow_review,
+    allowRetake: updatedRow.allow_retake,
+    retakeCount: updatedRow.retake_count,
     allowHint: updatedRow.allow_hint,
     hintCount: updatedRow.hint_count,
     status: updatedRow.is_active ? 'active' : 'inactive',

@@ -20,11 +20,6 @@ interface ScoreMutationRow {
   submitted_at: string | null
 }
 
-interface ScoreRecord {
-  id: number
-  taken_at: string | null
-}
-
 // getStudentApiContext - validate authenticated student session
 async function getStudentApiContext() {
   const supabase = await createClient()
@@ -47,24 +42,6 @@ async function getStudentApiContext() {
     supabase,
     context,
   }
-}
-
-// getExistingScoreRecord - load existing score record for module
-async function getExistingScoreRecord(studentId: number, moduleId: number) {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('tbl_scores')
-    .select('id,taken_at')
-    .eq('student_id', studentId)
-    .eq('module_id', moduleId)
-    .order('id', { ascending: false })
-    .limit(1)
-
-  if (error) {
-    throw new Error(error.message || 'Failed to load score record.')
-  }
-
-  return ((data || []) as ScoreRecord[])[0] || null
 }
 
 // normalizeAnswerValue - normalize answer text for score comparison
@@ -96,6 +73,27 @@ function calculateScore(
   }, 0)
 }
 
+// ensureAttemptAllowed - block retakes when policy is exhausted
+function ensureAttemptAllowed(gradingSession: Awaited<ReturnType<typeof fetchStudentQuizGradingSession>>) {
+  if (gradingSession.hasInProgressAttempt) {
+    return
+  }
+
+  if (gradingSession.canTake) {
+    return
+  }
+
+  if (gradingSession.submittedAttemptCount > 0 && !gradingSession.allowRetake) {
+    throw new Error('Retakes are disabled for this assessment.')
+  }
+
+  if (gradingSession.submittedAttemptCount > 0 && gradingSession.remainingRetakes <= 0) {
+    throw new Error('You have used all allowed retake attempts for this assessment.')
+  }
+
+  throw new Error('This assessment cannot be taken right now.')
+}
+
 // saveDraftScore - insert or update draft answers
 async function saveDraftScore(
   studentId: number,
@@ -103,8 +101,12 @@ async function saveDraftScore(
   answers: Record<string, string>,
   warningAttempts: number
 ) {
+  ensureAttemptAllowed(gradingSession)
+
   const supabase = await createClient()
-  const existingScore = await getExistingScoreRecord(studentId, gradingSession.moduleRowId)
+  const takenAt = gradingSession.hasInProgressAttempt
+    ? gradingSession.takenAt || new Date().toISOString()
+    : new Date().toISOString()
   const draftPayload = {
     student_id: studentId,
     educator_id: gradingSession.educatorId,
@@ -117,15 +119,15 @@ async function saveDraftScore(
     total_questions: gradingSession.questions.length,
     status: 'in_progress',
     is_passed: false,
-    taken_at: existingScore?.taken_at || new Date().toISOString(),
+    taken_at: takenAt,
     updated_at: new Date().toISOString(),
   }
 
-  if (existingScore) {
+  if (gradingSession.currentAttemptId) {
     const { data, error } = await supabase
       .from('tbl_scores')
       .update(draftPayload)
-      .eq('id', existingScore.id)
+      .eq('id', gradingSession.currentAttemptId)
       .select('id,taken_at,submitted_at')
       .single()
 
@@ -136,11 +138,12 @@ async function saveDraftScore(
     return data as ScoreMutationRow
   }
 
+  const createdAt = new Date().toISOString()
   const { data, error } = await supabase
     .from('tbl_scores')
     .insert({
       ...draftPayload,
-      created_at: new Date().toISOString(),
+      created_at: createdAt,
     })
     .select('id,taken_at,submitted_at')
     .single()
@@ -159,8 +162,9 @@ async function submitScore(
   answers: Record<string, string>,
   warningAttempts: number
 ) {
+  ensureAttemptAllowed(gradingSession)
+
   const supabase = await createClient()
-  const existingScore = await getExistingScoreRecord(studentId, gradingSession.moduleRowId)
   const score = calculateScore(answers, gradingSession.questions)
   const totalQuestions = gradingSession.questions.length
   const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0
@@ -178,16 +182,18 @@ async function submitScore(
     total_questions: totalQuestions,
     status: isPassed ? 'passed' : 'failed',
     is_passed: isPassed,
-    taken_at: existingScore?.taken_at || gradingSession.takenAt || submittedAt,
+    taken_at: gradingSession.hasInProgressAttempt
+      ? gradingSession.takenAt || submittedAt
+      : submittedAt,
     submitted_at: submittedAt,
     updated_at: submittedAt,
   }
 
-  if (existingScore) {
+  if (gradingSession.currentAttemptId) {
     const { data, error } = await supabase
       .from('tbl_scores')
       .update(submissionPayload)
-      .eq('id', existingScore.id)
+      .eq('id', gradingSession.currentAttemptId)
       .select('id,taken_at,submitted_at')
       .single()
 
@@ -249,13 +255,6 @@ export async function POST(request: Request, context: RouteContext) {
       authContext.context.profile.id,
       parsedModuleId
     )
-
-    if (gradingSession.submittedAt) {
-      return NextResponse.json(
-        { message: 'This assessment has already been submitted and cannot be retaken.' },
-        { status: 409 }
-      )
-    }
 
     if (payload.mode === 'draft') {
       const draftScore = await saveDraftScore(

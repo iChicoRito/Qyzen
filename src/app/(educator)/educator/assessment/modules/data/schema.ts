@@ -15,6 +15,8 @@ export const moduleSchema = z.object({
   cheatingAttempts: z.number(),
   isShuffle: z.boolean(),
   allowReview: z.boolean(),
+  allowRetake: z.boolean(),
+  retakeCount: z.number(),
   allowHint: z.boolean(),
   hintCount: z.number(),
   status: z.enum(['active', 'inactive']),

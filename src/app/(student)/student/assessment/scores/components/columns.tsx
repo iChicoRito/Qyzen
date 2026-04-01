@@ -57,8 +57,22 @@ export const columns: ColumnDef<Score>[] = [
     accessorFn: (row) => `${row.score}/${row.totalQuestions}`,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Score" />,
     cell: ({ row }) => (
-      <div className="min-w-[110px] font-medium">
-        {row.original.score} / {row.original.totalQuestions}
+      <div className="min-w-[140px] space-y-1 font-medium">
+        <div>
+          {row.original.score} / {row.original.totalQuestions}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          Best: {row.original.bestScore ?? row.original.score} / {row.original.totalQuestions}
+        </div>
+      </div>
+    ),
+  },
+  {
+    accessorKey: 'submittedAttemptCount',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Attempts" />,
+    cell: ({ row }) => (
+      <div className="min-w-[100px] whitespace-normal">
+        {row.original.submittedAttemptCount}
       </div>
     ),
   },

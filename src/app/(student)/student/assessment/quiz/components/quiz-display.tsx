@@ -247,6 +247,14 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
               <DetailInfoCard label="Quiz Type" value={quiz.quizTypeLabel} />
               <DetailInfoCard label="Time Limit" value={`${quiz.timeLimitMinutes} minutes`} />
               <DetailInfoCard label="Shuffle" value={quiz.isShuffle ? "Enabled" : "Disabled"} />
+              <DetailInfoCard
+                label="Retakes"
+                value={quiz.allowRetake ? `${quiz.remainingRetakes} remaining of ${quiz.retakeCount}` : "Disabled"}
+              />
+              <DetailInfoCard
+                label="Attempts Used"
+                value={`${quiz.submittedAttemptCount}`}
+              />
               <DetailInfoCard label="Schedule Start" value={`${quiz.startDate} ${quiz.startTime}`} />
               <DetailInfoCard label="Schedule End" value={`${quiz.endDate} ${quiz.endTime}`} />
             </div>
@@ -269,10 +277,14 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
               <div className="mt-6 rounded-lg border border-green-500/20 bg-green-500/10 p-4 text-sm text-green-500">
                 <div className="flex items-center gap-2 font-medium">
                   <IconCheck size={18} />
-                  This assessment is already finished.
+                  This assessment already has a submitted result.
                 </div>
                 <div className="mt-2 text-sm">
-                  Retakes are disabled. You can only review your submitted result.
+                  {quiz.canRetake
+                    ? `You can still retake this assessment. Remaining retakes: ${quiz.remainingRetakes}.`
+                    : quiz.allowRetake
+                      ? 'You have used all allowed retake attempts for this assessment.'
+                      : 'Retakes are disabled for this assessment.'}
                 </div>
               </div>
             ) : null}
@@ -311,8 +323,28 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
                     <IconLock size={18} className="mr-2" />
                     No Questions Yet
                   </>
+                ) : quiz.submittedAttemptCount > 0 ? (
+                  'Retake Assessment'
                 ) : (
                   "Take Assessment"
+                )}
+              </Button>
+            ) : null}
+
+            {quiz.isFinished && quiz.canRetake ? (
+              <Button
+                type="button"
+                className="w-full cursor-pointer sm:w-auto"
+                disabled={!quiz.canTake || isTaking}
+                onClick={() => setTakeDialogOpen(true)}
+              >
+                {isTaking ? (
+                  <>
+                    <Loader2 size={18} className="mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  'Retake Assessment'
                 )}
               </Button>
             ) : null}

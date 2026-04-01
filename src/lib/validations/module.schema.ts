@@ -21,6 +21,8 @@ export const moduleFormSchema = z
       .regex(/^\d+$/, 'Cheating attempts must contain numbers only.'),
     isShuffle: z.boolean(),
     allowReview: z.boolean(),
+    allowRetake: z.boolean(),
+    retakeCount: z.string().optional(),
     allowHint: z.boolean(),
     hintCount: z.string().optional(),
     status: z.enum(['active', 'inactive']),
@@ -65,6 +67,24 @@ export const moduleFormSchema = z
           code: z.ZodIssueCode.custom,
           message: 'Hint count must contain numbers only.',
           path: ['hintCount'],
+        })
+      }
+    }
+
+    if (values.allowRetake) {
+      const normalizedRetakeCount = values.retakeCount?.trim() || ''
+
+      if (!normalizedRetakeCount) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Retake count is required when Allow Retake is enabled.',
+          path: ['retakeCount'],
+        })
+      } else if (!/^\d+$/.test(normalizedRetakeCount)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Retake count must contain numbers only.',
+          path: ['retakeCount'],
         })
       }
     }

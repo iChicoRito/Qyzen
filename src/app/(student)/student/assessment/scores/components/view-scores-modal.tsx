@@ -37,6 +37,15 @@ function getStatusClassName(status: 'passed' | 'failed') {
   return 'rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500'
 }
 
+// getAttemptBadgeClassName - style attempt history badge classes
+function getAttemptBadgeClassName(isBestScore: boolean) {
+  if (isBestScore) {
+    return 'rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500'
+  }
+
+  return 'rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500'
+}
+
 // getReviewChoiceClassName - style reviewed answer rows
 function getReviewChoiceClassName(
   shouldRevealCorrectAnswer: boolean,
@@ -201,6 +210,25 @@ export function ViewScoresModal({
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="space-y-1">
                   <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
+                    Best Score
+                  </div>
+                  <div className="text-sm font-medium">
+                    {score.bestScore ?? score.score} / {score.totalQuestions}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
+                    Retakes Remaining
+                  </div>
+                  <div className="text-sm font-medium">{score.remainingRetakes}</div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
                     Submitted At
                   </div>
                   <div className="text-sm font-medium">{score.submittedAt || 'Not submitted'}</div>
@@ -225,8 +253,53 @@ export function ViewScoresModal({
                     {score.startDate} {score.startTime} - {score.endDate} {score.endTime}
                   </div>
                 </div>
+                <div className="space-y-1">
+                  <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
+                    Attempts Used
+                  </div>
+                  <div className="text-sm font-medium">{score.submittedAttemptCount}</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
+                    Allow Retake
+                  </div>
+                  <div className="text-sm font-medium">{score.allowRetake ? 'Enabled' : 'Disabled'}</div>
+                </div>
               </div>
             </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="text-lg font-semibold">Attempt History</div>
+            {score.attemptHistory.map((attempt) => (
+              <div key={attempt.scoreId} className="rounded-lg border px-4 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="font-medium">Attempt #{attempt.attemptNumber}</div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className={getAttemptBadgeClassName(attempt.isBestScore)}>
+                      {attempt.isBestScore ? 'Highest Score' : 'Attempt'}
+                    </Badge>
+                    <Badge className={getStatusClassName(attempt.status)}>{attempt.status}</Badge>
+                  </div>
+                </div>
+                <div className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
+                  <div>
+                    <div className="text-muted-foreground text-xs">Score</div>
+                    <div className="mt-1 font-medium">
+                      {attempt.score} / {attempt.totalQuestions}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs">Percentage</div>
+                    <div className="mt-1 font-medium">{attempt.percentage}%</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs">Submitted</div>
+                    <div className="mt-1 font-medium">{attempt.submittedAt || 'Not submitted'}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="space-y-4">

@@ -79,6 +79,8 @@ CREATE TABLE public.tbl_modules (
   cheating_attempts integer DEFAULT 0 NOT NULL,
   is_shuffle boolean DEFAULT false NOT NULL,
   allow_review boolean DEFAULT false NOT NULL,
+  allow_retake boolean DEFAULT false NOT NULL,
+  retake_count integer DEFAULT 0 NOT NULL,
   allow_hint boolean DEFAULT false NOT NULL,
   hint_count integer DEFAULT 0 NOT NULL,
   is_active boolean DEFAULT true NOT NULL,
@@ -252,7 +254,7 @@ CREATE UNIQUE INDEX tbl_enrolled_unique_student_subject_per_educator ON public.t
 CREATE INDEX idx_tbl_enrolled_educator_id ON public.tbl_enrolled USING btree (educator_id);
 CREATE INDEX idx_tbl_enrolled_student_id ON public.tbl_enrolled USING btree (student_id);
 CREATE INDEX idx_tbl_enrolled_subject_id ON public.tbl_enrolled USING btree (subject_id);
-CREATE UNIQUE INDEX tbl_scores_unique_student_module ON public.tbl_scores USING btree (student_id, module_id);
+CREATE INDEX idx_tbl_scores_student_module ON public.tbl_scores USING btree (student_id, module_id);
 CREATE INDEX idx_tbl_scores_student_id ON public.tbl_scores USING btree (student_id);
 CREATE INDEX idx_tbl_scores_module_id ON public.tbl_scores USING btree (module_id);
 CREATE INDEX idx_tbl_scores_subject_id ON public.tbl_scores USING btree (subject_id);

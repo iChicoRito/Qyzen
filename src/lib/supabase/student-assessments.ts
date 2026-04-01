@@ -1,5 +1,16 @@
 import { createClient } from './server'
 
+export interface StudentAssessmentAttemptItem {
+  scoreId: number
+  attemptNumber: number
+  score: number
+  totalQuestions: number
+  percentage: number
+  status: 'passed' | 'failed'
+  submittedAt: string | null
+  isBestScore: boolean
+}
+
 export interface StudentAssessmentRecord {
   id: string
   moduleRowId: number
@@ -19,6 +30,14 @@ export interface StudentAssessmentRecord {
   quizTypeLabel: string
   quizTypes: Array<'multiple_choice' | 'identification'>
   isShuffle: boolean
+  allowRetake: boolean
+  retakeCount: number
+  submittedAttemptCount: number
+  remainingRetakes: number
+  bestScore: number | null
+  bestScoreId: number | null
+  latestScoreId: number | null
+  canRetake: boolean
   hasQuestions: boolean
   canTake: boolean
   isFinished: boolean
@@ -30,6 +49,7 @@ export interface StudentAssessmentRecord {
   attachmentName: string
   attachmentSize: string
   attachmentLabel: string
+  attemptHistory: StudentAssessmentAttemptItem[]
 }
 
 interface EnrollmentRow {
@@ -70,6 +90,8 @@ interface ModuleRow {
   educator_id: number
   time_limit: string
   is_shuffle: boolean
+  allow_retake: boolean
+  retake_count: number
   start_date: string
   end_date: string
   start_time: string
@@ -89,7 +111,10 @@ interface QuizRow {
 interface ScoreRow {
   id: number
   module_id: number
+  score: number | null
+  total_questions: number | null
   submitted_at: string | null
+  status: 'in_progress' | 'submitted' | 'passed' | 'failed' | null
 }
 
 interface SupabaseErrorResponse {
@@ -171,12 +196,84 @@ function buildQuizTypeLabel(quizTypes: Array<'multiple_choice' | 'identification
   return 'Mixed'
 }
 
+// getScorePercentage - compute score percentage
+function getScorePercentage(score: Pick<ScoreRow, 'score' | 'total_questions'>) {
+  const totalQuestions = score.total_questions || 0
+
+  if (totalQuestions <= 0) {
+    return 0
+  }
+
+  return Math.round(((score.score || 0) / totalQuestions) * 100)
+}
+
+// getBestScore - resolve best submitted score row
+function getBestScore(scores: ScoreRow[]) {
+  return [...scores]
+    .filter((score) => Boolean(score.submitted_at))
+    .sort((leftScore, rightScore) => {
+      const leftValue = leftScore.score || 0
+      const rightValue = rightScore.score || 0
+
+      if (leftValue !== rightValue) {
+        return rightValue - leftValue
+      }
+
+      return rightScore.id - leftScore.id
+    })[0] || null
+}
+
+// buildAttemptHistory - map submitted attempts into summary rows
+function buildAttemptHistory(scores: ScoreRow[]) {
+  const submittedScores = [...scores]
+    .filter((score) => Boolean(score.submitted_at))
+    .sort((leftScore, rightScore) => {
+      const leftTime = new Date(leftScore.submitted_at || '').getTime()
+      const rightTime = new Date(rightScore.submitted_at || '').getTime()
+
+      if (leftTime !== rightTime) {
+        return leftTime - rightTime
+      }
+
+      return leftScore.id - rightScore.id
+    })
+  const bestScore = getBestScore(submittedScores)
+
+  return submittedScores.map((score, index) => ({
+    scoreId: score.id,
+    attemptNumber: index + 1,
+    score: score.score || 0,
+    totalQuestions: score.total_questions || 0,
+    percentage: getScorePercentage(score),
+    status: score.status === 'passed' ? 'passed' : 'failed',
+    submittedAt: score.submitted_at,
+    isBestScore: score.id === bestScore?.id,
+  })) satisfies StudentAssessmentAttemptItem[]
+}
+
+// getRetakeState - compute retake availability
+function getRetakeState(module: ModuleRow, scores: ScoreRow[]) {
+  const submittedScores = scores.filter((score) => Boolean(score.submitted_at))
+  const submittedAttemptCount = submittedScores.length
+  const maxAttempts = module.allow_retake ? module.retake_count + 1 : 1
+  const remainingRetakes = module.allow_retake
+    ? Math.max(maxAttempts - submittedAttemptCount, 0)
+    : 0
+  const canRetake = module.allow_retake && submittedAttemptCount > 0 && submittedAttemptCount < maxAttempts
+
+  return {
+    submittedAttemptCount,
+    remainingRetakes,
+    canRetake,
+  }
+}
+
 // mapModuleToStudentAssessment - convert module row into quiz ui data
 function mapModuleToStudentAssessment(
   module: ModuleRow,
   index: number,
   quizRows: QuizRow[],
-  score: ScoreRow | null
+  scores: ScoreRow[]
 ): StudentAssessmentRecord {
   const subject = getSingleRelation(module.subject)
   const section = getSingleRelation(module.section)
@@ -185,7 +282,11 @@ function mapModuleToStudentAssessment(
   const quizTypes = [...new Set(quizRows.map((quiz) => quiz.quiz_type))]
   const questionCount = quizRows.length
   const hasQuestions = questionCount > 0
-  const isFinished = Boolean(score?.submitted_at)
+  const submittedScores = scores.filter((score) => Boolean(score.submitted_at))
+  const bestScore = getBestScore(submittedScores)
+  const latestScore = [...submittedScores].sort((leftScore, rightScore) => rightScore.id - leftScore.id)[0] || null
+  const retakeState = getRetakeState(module, scores)
+  const isFinished = submittedScores.length > 0
   const statusLabel: StudentAssessmentRecord['statusLabel'] = isFinished ? 'finished' : 'pending'
 
   return {
@@ -207,10 +308,18 @@ function mapModuleToStudentAssessment(
     quizTypeLabel: buildQuizTypeLabel(quizTypes),
     quizTypes,
     isShuffle: module.is_shuffle,
+    allowRetake: module.allow_retake,
+    retakeCount: module.retake_count,
+    submittedAttemptCount: retakeState.submittedAttemptCount,
+    remainingRetakes: retakeState.remainingRetakes,
+    bestScore: bestScore?.score ?? null,
+    bestScoreId: bestScore?.id ?? null,
+    latestScoreId: latestScore?.id ?? null,
+    canRetake: retakeState.canRetake,
     hasQuestions,
-    canTake: hasQuestions && !isFinished,
+    canTake: hasQuestions && (submittedScores.length === 0 || retakeState.canRetake),
     isFinished,
-    scoreId: score?.id ?? null,
+    scoreId: bestScore?.id ?? null,
     text: STATIC_ASSESSMENT_TEXT,
     statusLabel,
     read: index === 0,
@@ -218,6 +327,7 @@ function mapModuleToStudentAssessment(
     attachmentName: 'Study material coming soon',
     attachmentSize: 'Static',
     attachmentLabel: 'Module Study Material',
+    attemptHistory: buildAttemptHistory(submittedScores),
   }
 }
 
@@ -266,7 +376,7 @@ export async function fetchStudentAssessments(studentId: number) {
   const { data: moduleData, error: moduleError } = await supabase
     .from('tbl_modules')
     .select(
-      'id,module_id,module_code,subject_id,section_id,educator_id,time_limit,is_shuffle,start_date,end_date,start_time,end_time,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester)'
+      'id,module_id,module_code,subject_id,section_id,educator_id,time_limit,is_shuffle,allow_retake,retake_count,start_date,end_date,start_time,end_time,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester)'
     )
     .in('subject_id', subjectIds)
     .in('section_id', sectionIds)
@@ -296,7 +406,7 @@ export async function fetchStudentAssessments(studentId: number) {
         .in('module_id', moduleIds),
       supabase
         .from('tbl_scores')
-        .select('id,module_id,submitted_at')
+        .select('id,module_id,score,total_questions,submitted_at,status')
         .eq('student_id', studentId)
         .in('module_id', moduleIds)
         .order('id', { ascending: false }),
@@ -316,18 +426,17 @@ export async function fetchStudentAssessments(studentId: number) {
     result.set(quiz.module_id, currentRows)
     return result
   }, new Map<number, QuizRow[]>())
-  const scoreMap = ((scoreData || []) as ScoreRow[]).reduce<Map<number, ScoreRow>>((result, score) => {
-    if (!result.has(score.module_id)) {
-      result.set(score.module_id, score)
-    }
-
+  const scoreMap = ((scoreData || []) as ScoreRow[]).reduce<Map<number, ScoreRow[]>>((result, score) => {
+    const currentRows = result.get(score.module_id) || []
+    currentRows.push(score)
+    result.set(score.module_id, currentRows)
     return result
-  }, new Map<number, ScoreRow>())
+  }, new Map<number, ScoreRow[]>())
   const sortedModules = [...enrolledModules].sort((leftModule, rightModule) => {
-    const leftScore = scoreMap.get(leftModule.id)
-    const rightScore = scoreMap.get(rightModule.id)
-    const leftFinished = Boolean(leftScore?.submitted_at)
-    const rightFinished = Boolean(rightScore?.submitted_at)
+    const leftScores = scoreMap.get(leftModule.id) || []
+    const rightScores = scoreMap.get(rightModule.id) || []
+    const leftFinished = leftScores.some((score) => Boolean(score.submitted_at))
+    const rightFinished = rightScores.some((score) => Boolean(score.submitted_at))
 
     if (leftFinished !== rightFinished) {
       return leftFinished ? 1 : -1
@@ -341,7 +450,7 @@ export async function fetchStudentAssessments(studentId: number) {
       module,
       index,
       quizMap.get(module.id) || [],
-      scoreMap.get(module.id) || null
+      scoreMap.get(module.id) || []
     )
   )
 }

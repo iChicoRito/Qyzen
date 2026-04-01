@@ -35,6 +35,15 @@ function getShuffleClassName(isShuffle: boolean) {
   return 'rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500'
 }
 
+// getRetakeClassName - build badge color by retake
+function getRetakeClassName(allowRetake: boolean) {
+  if (allowRetake) {
+    return 'rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500'
+  }
+
+  return 'rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500'
+}
+
 // getColumns - build module table columns
 export function getColumns({
   permissions,
@@ -108,6 +117,21 @@ export function getColumns({
           </Badge>
         )
       },
+      filterFn: (row, id, value) => value.includes(String(row.getValue(id))),
+    },
+    {
+      accessorKey: 'allowRetake',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Retakes" />,
+      cell: ({ row }) => (
+        <div className="min-w-[120px] space-y-2">
+          <Badge variant="outline" className={getRetakeClassName(row.original.allowRetake)}>
+            {row.original.allowRetake ? 'Enabled' : 'Disabled'}
+          </Badge>
+          <div className="text-xs text-muted-foreground">
+            Count: {row.original.allowRetake ? row.original.retakeCount : 0}
+          </div>
+        </div>
+      ),
       filterFn: (row, id, value) => value.includes(String(row.getValue(id))),
     },
     {

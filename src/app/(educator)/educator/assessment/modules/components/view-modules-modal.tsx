@@ -53,6 +53,10 @@ export function ViewModulesModal({
     ? 'rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500'
     : 'rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500'
 
+  const retakeClassName = module.allowRetake
+    ? 'rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500'
+    : 'rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500'
+
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       {trigger ? (
@@ -121,6 +125,18 @@ export function ViewModulesModal({
             <Badge variant="outline" className={hintClassName}>
               {module.allowHint ? 'Enabled' : 'Disabled'}
             </Badge>
+          </div>
+
+          <div className="space-y-3">
+            <p className="font-semibold">Allow Retake</p>
+            <Badge variant="outline" className={retakeClassName}>
+              {module.allowRetake ? 'Enabled' : 'Disabled'}
+            </Badge>
+          </div>
+
+          <div className="space-y-2">
+            <p className="font-semibold">Retake Count</p>
+            <p className="text-muted-foreground">{module.allowRetake ? module.retakeCount : 0}</p>
           </div>
 
           <div className="space-y-2">

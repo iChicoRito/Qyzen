@@ -90,6 +90,8 @@ function getDefaultFormValues(
     cheatingAttempts: String(module.cheatingAttempts),
     isShuffle: module.isShuffle,
     allowReview: module.allowReview,
+    allowRetake: module.allowRetake,
+    retakeCount: module.allowRetake ? String(module.retakeCount) : '',
     allowHint: module.allowHint,
     hintCount: module.allowHint ? String(module.hintCount) : '',
     status: module.status,
@@ -162,6 +164,8 @@ export function EditModulesModal({
       cheatingAttempts: String(module.cheatingAttempts),
       isShuffle: module.isShuffle,
       allowReview: module.allowReview,
+      allowRetake: module.allowRetake,
+      retakeCount: module.allowRetake ? String(module.retakeCount) : '',
       allowHint: module.allowHint,
       hintCount: module.allowHint ? String(module.hintCount) : '',
       status: module.status,
@@ -174,6 +178,7 @@ export function EditModulesModal({
 
   const selectedSubjectIds = form.watch('subjectIds')
   const moduleCodeMode = form.watch('moduleCodeMode')
+  const allowRetake = form.watch('allowRetake')
   const allowHint = form.watch('allowHint')
   const selectedSubjects = useMemo(
     () => subjectOptions.filter((option) => selectedSubjectIds.includes(option.subjectId)),
@@ -285,6 +290,8 @@ export function EditModulesModal({
         cheatingAttempts: Number(values.cheatingAttempts),
         isShuffle: values.isShuffle,
         allowReview: values.allowReview,
+        allowRetake: values.allowRetake,
+        retakeCount: values.allowRetake ? Number(values.retakeCount || '0') : 0,
         allowHint: values.allowHint,
         hintCount: values.allowHint ? Number(values.hintCount || '0') : 0,
         status: values.status,
@@ -604,6 +611,63 @@ export function EditModulesModal({
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="allowRetake"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-md border p-4">
+                      <div className="space-y-1">
+                        <FormLabel>Allow Retake</FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Allow students to submit additional assessment attempts.
+                        </p>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked)
+
+                            if (!checked) {
+                              form.setValue('retakeCount', '', {
+                                shouldDirty: true,
+                                shouldValidate: false,
+                              })
+                            }
+                          }}
+                          className="cursor-pointer"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {allowRetake ? (
+                  <FormField
+                    control={form.control}
+                    name="retakeCount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Retake Count</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="Enter number of allowed retakes"
+                            value={field.value ?? ''}
+                            onChange={(event) => {
+                              const nextValue = event.target.value.replace(/\D/g, '')
+                              field.onChange(nextValue)
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : null}
 
                 <FormField
                   control={form.control}

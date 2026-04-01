@@ -1,0 +1,28 @@
+Objective #1: Module Creation with Retake Features.
+
+    Path: src\app\(educator)\educator\assessment\modules
+
+    1). In the module creation, I wanted to add new field "Allow Retake" as switch like the others,
+        then when activated, it shows a field for how many student can retake the assessment.
+
+    2). Now add a new columns in the "tbl_modules" and must have (allow_retake and retake_count).
+
+Objective #2: Student Retake Features
+
+    Path: src\app\(student)\student\assessment
+
+    1). Now, after the student takes the assessment and got score, in the summary page, it shows the
+        retake button so the student can retake.
+
+    2). If the student first score got e.g 8/10 but the student wanted to perfect it, the student
+        will retake the quiz but unfortunately the student got 4/10 instead, so basically it will
+        record/store the highest score of that student on the assessment instead.
+
+    3). If the retake is not allowed, it's just normal, student can retake.
+
+    4). Don't forget to display in the summary the information of retake, how many student retake the
+        quiz, what is the score on first retake, on the second retake and other important information
+        that will display on the summary.
+
+Note: Before you proceed to the execution, give a summary of the process, what are the plans and what
+      codes will be modified or added and delete (risky) and wait for the "Go!" command.
