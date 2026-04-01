@@ -219,6 +219,7 @@ export function EditModulesModal({
     const currentAcademicTermId = form.getValues('academicTermId')
 
     if (
+      typeof currentAcademicTermId === 'number' &&
       currentAcademicTermId > 0 &&
       availableAcademicTerms.some((term) => term.id === currentAcademicTermId)
     ) {
