@@ -1,4 +1,5 @@
 import { createClient } from './server'
+import { fetchStudentModuleRetakeGrant, fetchStudentModuleRetakeGrantMap } from './student-retakes'
 
 export const QUIZ_RESULT_PASSING_PERCENTAGE = 75
 
@@ -51,6 +52,8 @@ export interface StudentQuizSession {
   allowReview: boolean
   allowRetake: boolean
   retakeCount: number
+  grantedRetakeCount: number
+  effectiveRetakeCount: number
   allowHint: boolean
   hintCount: number
   startDate: string
@@ -106,6 +109,8 @@ export interface StudentQuizResult {
   takenAt: string | null
   allowRetake: boolean
   retakeCount: number
+  grantedRetakeCount: number
+  effectiveRetakeCount: number
   submittedAttemptCount: number
   remainingRetakes: number
   bestScoreId: number | null
@@ -436,15 +441,26 @@ function getCurrentDraftScore(scores: ScoreRow[]) {
 }
 
 // getRetakeState - compute retake availability
-function getRetakeState(module: ModuleRow, submittedScores: ScoreRow[]) {
+function getRetakeState(
+  module: Pick<ModuleRow, 'allow_retake' | 'retake_count'>,
+  submittedScores: ScoreRow[],
+  grantedRetakeCount: number
+) {
   const submittedAttemptCount = submittedScores.length
-  const maxAttempts = module.allow_retake ? module.retake_count + 1 : 1
-  const remainingRetakes = module.allow_retake
-    ? Math.max(maxAttempts - submittedAttemptCount, 0)
-    : 0
-  const canRetake = module.allow_retake && submittedAttemptCount > 0 && submittedAttemptCount < maxAttempts
+  const moduleRetakeCount = module.allow_retake ? module.retake_count : 0
+  const effectiveRetakeCount = Math.max(moduleRetakeCount + grantedRetakeCount, 0)
+  const allowRetake = effectiveRetakeCount > 0
+  const maxAttempts = effectiveRetakeCount + 1
+  const remainingRetakes = Math.max(
+    effectiveRetakeCount - Math.max(submittedAttemptCount - 1, 0),
+    0
+  )
+  const canRetake = allowRetake && submittedAttemptCount > 0 && submittedAttemptCount < maxAttempts
 
   return {
+    allowRetake,
+    grantedRetakeCount,
+    effectiveRetakeCount,
     submittedAttemptCount,
     remainingRetakes,
     canRetake,
@@ -455,7 +471,8 @@ function getRetakeState(module: ModuleRow, submittedScores: ScoreRow[]) {
 function buildSessionRecord(
   module: ModuleRow,
   quizzes: QuizRow[],
-  scores: ScoreRow[]
+  scores: ScoreRow[],
+  grantedRetakeCount: number
 ): StudentQuizGradingSession {
   const questionRecords = quizzes.map(buildQuestionRecord)
   const subject = getSingleRelation(module.subject)
@@ -467,7 +484,7 @@ function buildSessionRecord(
   const latestSubmittedScore = [...submittedScores].sort((leftScore, rightScore) => rightScore.id - leftScore.id)[0] || null
   const currentDraftScore = getCurrentDraftScore(scores)
   const attemptHistory = buildAttemptHistory(submittedScores)
-  const retakeState = getRetakeState(module, submittedScores)
+  const retakeState = getRetakeState(module, submittedScores, grantedRetakeCount)
 
   if (!isEducatorUser(educator)) {
     throw new Error('Module educator was not found.')
@@ -489,8 +506,10 @@ function buildSessionRecord(
     cheatingAttempts: module.cheating_attempts,
     isShuffle: module.is_shuffle,
     allowReview: module.allow_review,
-    allowRetake: module.allow_retake,
-    retakeCount: module.retake_count,
+    allowRetake: retakeState.allowRetake,
+    retakeCount: retakeState.effectiveRetakeCount,
+    grantedRetakeCount: retakeState.grantedRetakeCount,
+    effectiveRetakeCount: retakeState.effectiveRetakeCount,
     allowHint: module.allow_hint,
     hintCount: module.hint_count,
     startDate: module.start_date,
@@ -612,16 +631,17 @@ async function fetchModuleScores(studentId: number, moduleId: number) {
 export async function fetchStudentQuizGradingSession(studentId: number, moduleId: number) {
   const module = await fetchModuleRow(moduleId)
   await ensureStudentModuleAccess(studentId, module)
-  const [quizzes, scores] = await Promise.all([
+  const [quizzes, scores, grantedRetakeCount] = await Promise.all([
     fetchModuleQuizzes(module.id),
     fetchModuleScores(studentId, module.id),
+    fetchStudentModuleRetakeGrant(studentId, module.id),
   ])
 
   if (quizzes.length === 0) {
     throw new Error('This assessment has no quiz questions yet.')
   }
 
-  return buildSessionRecord(module, quizzes, scores)
+  return buildSessionRecord(module, quizzes, scores, grantedRetakeCount)
 }
 
 // fetchStudentQuizSession - load quiz session without answer key
@@ -638,7 +658,8 @@ export async function fetchStudentQuizSession(studentId: number, moduleId: numbe
 function buildStudentQuizResult(
   targetScore: ScoreRow,
   module: ModuleResultRow,
-  submittedScores: ScoreRow[]
+  submittedScores: ScoreRow[],
+  grantedRetakeCount: number
 ): StudentQuizResult {
   const subject = getSingleRelation(module.subject)
   const section = getSingleRelation(module.section)
@@ -649,30 +670,11 @@ function buildStudentQuizResult(
   const latestSubmittedScore = [...submittedScores].sort((leftScore, rightScore) => rightScore.id - leftScore.id)[0] || null
   const retakeState = getRetakeState(
     {
-      id: targetScore.module_id,
-      module_id: '',
-      module_code: module.module_code,
-      subject_id: 0,
-      section_id: 0,
-      educator_id: 0,
-      time_limit: module.time_limit,
-      cheating_attempts: 0,
-      is_shuffle: module.is_shuffle,
-      allow_review: module.allow_review,
       allow_retake: module.allow_retake,
       retake_count: module.retake_count,
-      allow_hint: false,
-      hint_count: 0,
-      start_date: module.start_date,
-      end_date: module.end_date,
-      start_time: module.start_time,
-      end_time: module.end_time,
-      subject: module.subject,
-      section: module.section,
-      educator: module.educator,
-      academic_term: module.academic_term,
     },
-    submittedScores
+    submittedScores,
+    grantedRetakeCount
   )
 
   return {
@@ -690,8 +692,10 @@ function buildStudentQuizResult(
     status: targetScore.status === 'passed' ? 'passed' : 'failed',
     submittedAt: targetScore.submitted_at,
     takenAt: targetScore.taken_at,
-    allowRetake: module.allow_retake,
-    retakeCount: module.retake_count,
+    allowRetake: retakeState.allowRetake,
+    retakeCount: retakeState.effectiveRetakeCount,
+    grantedRetakeCount: retakeState.grantedRetakeCount,
+    effectiveRetakeCount: retakeState.effectiveRetakeCount,
     submittedAttemptCount: retakeState.submittedAttemptCount,
     remainingRetakes: retakeState.remainingRetakes,
     bestScoreId: bestScore?.id ?? null,
@@ -748,7 +752,14 @@ export async function fetchStudentScoreResult(studentId: number, scoreId?: numbe
     return null
   }
 
-  return buildStudentQuizResult(targetScore, module, (historyData || []) as ScoreRow[])
+  const grantedRetakeCount = await fetchStudentModuleRetakeGrant(studentId, targetScore.module_id)
+
+  return buildStudentQuizResult(
+    targetScore,
+    module,
+    (historyData || []) as ScoreRow[],
+    grantedRetakeCount
+  )
 }
 
 // isStudentAnswerCorrect - check if student answer matches accepted answers
@@ -847,6 +858,10 @@ export async function fetchStudentQuizReviewList(studentId: number) {
   }
 
   const scoreRows = (data || []) as ScoreReviewRow[]
+  const retakeGrantMap = await fetchStudentModuleRetakeGrantMap(
+    studentId,
+    [...new Set(scoreRows.map((scoreRow) => scoreRow.module_id))]
+  )
   const scoreHistoryMap = scoreRows.reduce<Map<number, ScoreRow[]>>((result, scoreRow) => {
     const currentRows = result.get(scoreRow.module_id) || []
     currentRows.push(scoreRow)
@@ -868,7 +883,8 @@ export async function fetchStudentQuizReviewList(studentId: number) {
       const baseResult = buildStudentQuizResult(
         scoreRow,
         module,
-        scoreHistoryMap.get(scoreRow.module_id) || []
+        scoreHistoryMap.get(scoreRow.module_id) || [],
+        retakeGrantMap.get(scoreRow.module_id) || 0
       )
 
       return {

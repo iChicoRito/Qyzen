@@ -1,4 +1,5 @@
 import { createClient } from './server'
+import { fetchStudentModuleRetakeGrantMap } from './student-retakes'
 
 export interface StudentAssessmentAttemptItem {
   scoreId: number
@@ -32,6 +33,8 @@ export interface StudentAssessmentRecord {
   isShuffle: boolean
   allowRetake: boolean
   retakeCount: number
+  grantedRetakeCount: number
+  effectiveRetakeCount: number
   submittedAttemptCount: number
   remainingRetakes: number
   bestScore: number | null
@@ -252,16 +255,23 @@ function buildAttemptHistory(scores: ScoreRow[]) {
 }
 
 // getRetakeState - compute retake availability
-function getRetakeState(module: ModuleRow, scores: ScoreRow[]) {
+function getRetakeState(module: ModuleRow, scores: ScoreRow[], grantedRetakeCount: number) {
   const submittedScores = scores.filter((score) => Boolean(score.submitted_at))
   const submittedAttemptCount = submittedScores.length
-  const maxAttempts = module.allow_retake ? module.retake_count + 1 : 1
-  const remainingRetakes = module.allow_retake
-    ? Math.max(maxAttempts - submittedAttemptCount, 0)
-    : 0
-  const canRetake = module.allow_retake && submittedAttemptCount > 0 && submittedAttemptCount < maxAttempts
+  const moduleRetakeCount = module.allow_retake ? module.retake_count : 0
+  const effectiveRetakeCount = Math.max(moduleRetakeCount + grantedRetakeCount, 0)
+  const allowRetake = effectiveRetakeCount > 0
+  const maxAttempts = effectiveRetakeCount + 1
+  const remainingRetakes = Math.max(
+    effectiveRetakeCount - Math.max(submittedAttemptCount - 1, 0),
+    0
+  )
+  const canRetake = allowRetake && submittedAttemptCount > 0 && submittedAttemptCount < maxAttempts
 
   return {
+    allowRetake,
+    grantedRetakeCount,
+    effectiveRetakeCount,
     submittedAttemptCount,
     remainingRetakes,
     canRetake,
@@ -273,7 +283,8 @@ function mapModuleToStudentAssessment(
   module: ModuleRow,
   index: number,
   quizRows: QuizRow[],
-  scores: ScoreRow[]
+  scores: ScoreRow[],
+  grantedRetakeCount: number
 ): StudentAssessmentRecord {
   const subject = getSingleRelation(module.subject)
   const section = getSingleRelation(module.section)
@@ -285,7 +296,7 @@ function mapModuleToStudentAssessment(
   const submittedScores = scores.filter((score) => Boolean(score.submitted_at))
   const bestScore = getBestScore(submittedScores)
   const latestScore = [...submittedScores].sort((leftScore, rightScore) => rightScore.id - leftScore.id)[0] || null
-  const retakeState = getRetakeState(module, scores)
+  const retakeState = getRetakeState(module, scores, grantedRetakeCount)
   const isFinished = submittedScores.length > 0
   const statusLabel: StudentAssessmentRecord['statusLabel'] = isFinished ? 'finished' : 'pending'
 
@@ -308,8 +319,10 @@ function mapModuleToStudentAssessment(
     quizTypeLabel: buildQuizTypeLabel(quizTypes),
     quizTypes,
     isShuffle: module.is_shuffle,
-    allowRetake: module.allow_retake,
-    retakeCount: module.retake_count,
+    allowRetake: retakeState.allowRetake,
+    retakeCount: retakeState.effectiveRetakeCount,
+    grantedRetakeCount: retakeState.grantedRetakeCount,
+    effectiveRetakeCount: retakeState.effectiveRetakeCount,
     submittedAttemptCount: retakeState.submittedAttemptCount,
     remainingRetakes: retakeState.remainingRetakes,
     bestScore: bestScore?.score ?? null,
@@ -398,6 +411,7 @@ export async function fetchStudentAssessments(studentId: number) {
   }
 
   const moduleIds = enrolledModules.map((module) => module.id)
+  const retakeGrantMap = await fetchStudentModuleRetakeGrantMap(studentId, moduleIds)
   const [{ data: quizData, error: quizError }, { data: scoreData, error: scoreError }] =
     await Promise.all([
       supabase
@@ -450,7 +464,8 @@ export async function fetchStudentAssessments(studentId: number) {
       module,
       index,
       quizMap.get(module.id) || [],
-      scoreMap.get(module.id) || []
+      scoreMap.get(module.id) || [],
+      retakeGrantMap.get(module.id) || 0
     )
   )
 }

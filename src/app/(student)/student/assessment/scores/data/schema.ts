@@ -46,6 +46,8 @@ export const scoreSchema = z.object({
   takenAt: z.string().nullable(),
   allowRetake: z.boolean(),
   retakeCount: z.number(),
+  grantedRetakeCount: z.number(),
+  effectiveRetakeCount: z.number(),
   submittedAttemptCount: z.number(),
   remainingRetakes: z.number(),
   bestScoreId: z.number().nullable(),
