@@ -170,6 +170,7 @@ export function AddModulesModal({ onAddModules, trigger }: AddModulesModalProps)
     const currentAcademicTermId = form.getValues('academicTermId')
 
     if (
+      typeof currentAcademicTermId === 'number' &&
       currentAcademicTermId > 0 &&
       availableAcademicTerms.some((term) => term.id === currentAcademicTermId)
     ) {
