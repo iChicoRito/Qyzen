@@ -15,19 +15,19 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 
-import type { Quiz } from '../data/schema'
+import type { QuizGroup } from '../data/schema'
 
 interface DeleteConfirmationModalProps {
-  quiz: Quiz
+  quizGroup: QuizGroup
   trigger?: React.ReactNode
   open?: boolean
   onOpenChange?: (open: boolean) => void
-  onQuizDeleted?: (quizId: number) => Promise<void> | void
+  onQuizDeleted?: (moduleRowId: number) => Promise<void> | void
 }
 
 // DeleteConfirmationModal - confirm quiz deletion
 export function DeleteConfirmationModal({
-  quiz,
+  quizGroup,
   trigger,
   open,
   onOpenChange,
@@ -43,8 +43,8 @@ export function DeleteConfirmationModal({
     try {
       setIsDeleting(true)
       await new Promise((resolve) => setTimeout(resolve, 200))
-      await onQuizDeleted?.(quiz.id)
-      toast.success('Quiz deleted successfully.')
+      await onQuizDeleted?.(quizGroup.moduleRowId)
+      toast.success('Module quiz set deleted successfully.')
       setDialogOpen(false)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to delete quiz.')
@@ -67,8 +67,7 @@ export function DeleteConfirmationModal({
               Are you absolutely sure you want to delete?
             </DialogTitle>
             <DialogDescription className="max-w-[34rem] text-center">
-              This will permanently delete the quiz for module {quiz.moduleCode}. This action
-              cannot be undone.
+              This will permanently delete all questions for module {quizGroup.moduleCode}. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
 

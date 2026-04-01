@@ -21,7 +21,7 @@ interface DataTableToolbarProps<TData> {
   onUploadQuizzes?: (quizzes: Quiz[]) => Promise<void> | void
 }
 
-// DataTableToolbar - filter and create quiz rows
+// DataTableToolbar - filter and create grouped quiz rows
 export function DataTableToolbar<TData>({
   table,
   onAddQuiz,

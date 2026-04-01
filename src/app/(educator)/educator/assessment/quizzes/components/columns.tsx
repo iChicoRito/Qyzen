@@ -5,17 +5,16 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 
-import type { Quiz } from '../data/schema'
+import type { QuizGroup } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
 
 interface ColumnsProps {
-  onDeleteQuiz?: (quizId: number) => Promise<void> | void
-  onUpdateQuiz?: (quiz: Quiz) => Promise<void> | void
+  onDeleteModuleQuizzes?: (moduleRowId: number) => Promise<void> | void
 }
 
 // getColumns - build quiz table columns
-export function getColumns({ onDeleteQuiz, onUpdateQuiz }: ColumnsProps): ColumnDef<Quiz>[] {
+export function getColumns({ onDeleteModuleQuizzes }: ColumnsProps): ColumnDef<QuizGroup>[] {
   return [
   {
     id: "select",
@@ -72,35 +71,34 @@ export function getColumns({ onDeleteQuiz, onUpdateQuiz }: ColumnsProps): Column
     cell: ({ row }) => <div className="min-w-[180px] whitespace-normal">{row.getValue('sectionName')}</div>,
   },
   {
-    accessorKey: 'question',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Question" />,
+    accessorKey: 'totalQuestions',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Questions" />,
     cell: ({ row }) => (
-      <div className="max-w-[420px] whitespace-normal font-medium">
-        {row.getValue('question')}
+      <div className="min-w-[140px] whitespace-normal font-medium">
+        {row.original.totalQuestions}
       </div>
     ),
   },
   {
-    accessorKey: 'quizType',
+    accessorKey: 'quizTypeLabel',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Quiz Type" />,
     cell: ({ row }) => {
-      const quizType = row.getValue('quizType') as 'multiple_choice' | 'identification'
-
       return (
         <Badge variant="outline">
-          {quizType === 'multiple_choice' ? 'Multiple Choice' : 'Identification'}
+          {row.original.quizTypeLabel}
         </Badge>
       )
     },
     filterFn: (row, id, value) => value.includes(row.getValue(id)),
   },
   {
-    id: 'answer',
-    accessorFn: (row) => row.correctAnswers.join(', '),
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Correct Answer" />,
+    id: 'typeCounts',
+    accessorFn: (row) => `${row.multipleChoiceCount} ${row.identificationCount}`,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Question Breakdown" />,
     cell: ({ row }) => (
       <div className="min-w-[220px] whitespace-normal text-sm">
-        {row.original.correctAnswers.join(', ')}
+        <div>Multiple Choice: {row.original.multipleChoiceCount}</div>
+        <div>Identification: {row.original.identificationCount}</div>
       </div>
     ),
   },
@@ -109,8 +107,7 @@ export function getColumns({ onDeleteQuiz, onUpdateQuiz }: ColumnsProps): Column
     cell: ({ row }) => (
       <DataTableRowActions
         row={row}
-        onDeleteQuiz={onDeleteQuiz}
-        onUpdateQuiz={onUpdateQuiz}
+        onDeleteModuleQuizzes={onDeleteModuleQuizzes}
       />
     ),
   },

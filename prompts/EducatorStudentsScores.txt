@@ -1,0 +1,36 @@
+Objective #1: Educator Monitor Scores
+
+    1). Path: src\app\(educator)\educator\scores
+        In the page, it's all tasks related and all static data but we're not gonna
+        use it. All file names that is related to tasks, rename it to scores.
+
+    2). Path: src\app\(student)\student\assessment\scores
+        In this page of the students, this is where the page where the student can see their own
+        scores only.
+
+    3). Now i wanted to mirror the same score monitoring of the student to the educator but with
+        strict rules, the educator can only see their own student that is enrolled on that educator.
+        If the student has a score but not enrolled on that educator, they cannot see the scores, unless
+        if enrolled.
+
+Objective #2: Educator Retake Chance to the student
+    
+    1). In that same page for score monitoring in the educator page, Add in the context menu 
+        "Allow Retake".
+
+        Context Menu:
+        - View Scores
+        - Allow Retake
+
+    2). This features gives the students a chance and consideration for educator that anyone
+        deserve chances. So when the educator clicks the allow retake, it shows a modal that shows
+        a field "Retake Count".
+
+    3). That means the educator can give a retake chance only on the selected students. I dont
+        know if that needs a new table in database. If it needed, make sure it has a prefix
+        "tbl_*****".
+
+    4). If the student has given a retake chance, the student now can take the quiz/assessment again.
+
+Note: Before you proceed to the execution, give a summary of the process, what are the plans and what codes will
+      be modified or added and delete (risky) and wait for the "Go!" command.

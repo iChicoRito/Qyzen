@@ -14,27 +14,23 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-import type { Quiz } from '../data/schema'
-import { quizSchema } from '../data/schema'
+import type { QuizGroup } from '../data/schema'
+import { quizGroupSchema } from '../data/schema'
 import { DeleteConfirmationModal } from './delete-confirmation-modal'
-import { EditQuizModal } from './edit-quiz-modal'
 import { ViewQuizModal } from './view-quiz-modal'
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
-  onDeleteQuiz?: (quizId: number) => Promise<void> | void
-  onUpdateQuiz?: (quiz: Quiz) => Promise<void> | void
+  onDeleteModuleQuizzes?: (moduleRowId: number) => Promise<void> | void
 }
 
 // DataTableRowActions - render quiz row actions
 export function DataTableRowActions<TData>({
   row,
-  onDeleteQuiz,
-  onUpdateQuiz,
+  onDeleteModuleQuizzes,
 }: DataTableRowActionsProps<TData>) {
-  const quiz = quizSchema.parse(row.original)
+  const quizGroup = quizGroupSchema.parse(row.original)
   const [isViewOpen, setIsViewOpen] = useState(false)
-  const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
 
   return (
@@ -51,10 +47,7 @@ export function DataTableRowActions<TData>({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[170px]">
           <DropdownMenuItem className="cursor-pointer" onClick={() => setIsViewOpen(true)}>
-            View Quiz
-          </DropdownMenuItem>
-          <DropdownMenuItem className="cursor-pointer" onClick={() => setIsEditOpen(true)}>
-            Edit Quiz
+            View Questions
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -62,31 +55,24 @@ export function DataTableRowActions<TData>({
             variant="destructive"
             onClick={() => setIsDeleteOpen(true)}
           >
-            Delete
+            Delete All
             <DropdownMenuShortcut className="text-destructive">Del</DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
       <ViewQuizModal
-        quiz={quiz}
+        quizGroup={quizGroup}
         trigger={null}
         open={isViewOpen}
         onOpenChange={setIsViewOpen}
       />
-      <EditQuizModal
-        quiz={quiz}
-        onUpdateQuiz={onUpdateQuiz}
-        trigger={null}
-        open={isEditOpen}
-        onOpenChange={setIsEditOpen}
-      />
       <DeleteConfirmationModal
-        quiz={quiz}
+        quizGroup={quizGroup}
         trigger={null}
         open={isDeleteOpen}
         onOpenChange={setIsDeleteOpen}
-        onQuizDeleted={onDeleteQuiz}
+        onQuizDeleted={onDeleteModuleQuizzes}
       />
     </>
   )

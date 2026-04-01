@@ -5,8 +5,8 @@ const choiceValueSchema = z.object({
   value: z.string(),
 })
 
-// quizSchema - validate quiz table values
-export const quizSchema = z.object({
+// quizQuestionSchema - validate a single quiz question row
+export const quizQuestionSchema = z.object({
   id: z.number(),
   moduleRowId: z.number(),
   moduleId: z.string(),
@@ -23,4 +23,22 @@ export const quizSchema = z.object({
   correctAnswers: z.array(z.string()),
 })
 
-export type Quiz = z.infer<typeof quizSchema>
+// quizGroupSchema - validate grouped module quiz table rows
+export const quizGroupSchema = z.object({
+  moduleRowId: z.number(),
+  moduleId: z.string(),
+  moduleCode: z.string(),
+  termName: z.string(),
+  subjectId: z.number(),
+  subjectName: z.string(),
+  sectionId: z.number(),
+  sectionName: z.string(),
+  totalQuestions: z.number(),
+  multipleChoiceCount: z.number(),
+  identificationCount: z.number(),
+  quizTypeLabel: z.string(),
+  questions: z.array(quizQuestionSchema),
+})
+
+export type Quiz = z.infer<typeof quizQuestionSchema>
+export type QuizGroup = z.infer<typeof quizGroupSchema>

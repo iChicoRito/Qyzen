@@ -166,9 +166,8 @@ export default async function TakeQuizResultPage({ searchParams }: TakeQuizResul
     )
   }
 
-  const bestAttempt = result.attemptHistory.find((attempt) => attempt.isBestScore) || null
-  const summaryScore = bestAttempt?.score ?? result.score
-  const summaryPercentage = bestAttempt?.percentage ?? result.percentage
+  const summaryScore = result.score
+  const summaryPercentage = result.percentage
   const summaryIncorrectAnswers = Math.max(result.totalQuestions - summaryScore, 0)
 
   // ==================== RENDER ====================
@@ -211,7 +210,7 @@ export default async function TakeQuizResultPage({ searchParams }: TakeQuizResul
                 <div className="space-y-1">
                   <div className="text-foreground text-lg font-semibold">Score Snapshot</div>
                   <div className="text-muted-foreground text-sm">
-                    Your selected attempt and highest-score summary for this assessment.
+                    The score summary for the attempt you are currently viewing.
                   </div>
                 </div>
                 <div className="mt-5 space-y-5">
@@ -268,7 +267,7 @@ export default async function TakeQuizResultPage({ searchParams }: TakeQuizResul
                       <div>
                         <div className="text-muted-foreground text-xs">Selected Attempt</div>
                         <div className="mt-1 text-sm font-medium">
-                          You are reviewing a previous attempt. Your highest score is kept as the main result.
+                          You are reviewing a previous attempt. The summary above now reflects this selected attempt.
                         </div>
                       </div>
                     </>

@@ -11,6 +11,7 @@ import {
   IconChalkboardTeacher,
   IconId,
   IconSubtitlesEdit,
+  IconUserSquareRounded,
 } from '@tabler/icons-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -142,6 +143,17 @@ function getNavigationGroupsByRole(role: AppRole): SidebarNavGroup[] {
         label: 'Management',
         items: [
           {
+            title: 'Students',
+            url: '#',
+            icon: IconUserSquareRounded,
+            items: [
+              {
+                title: 'Scores',
+                url: '/educator/scores',
+              },
+            ],
+          },
+          {
             title: 'Assessment',
             url: '#',
             icon: IconSubtitlesEdit,
@@ -207,7 +219,7 @@ function getNavigationGroupsByRole(role: AppRole): SidebarNavGroup[] {
           icon: IconSubtitlesEdit,
           items: [
             {
-              title: 'Take Assessment',
+              title: 'Quizzes',
               url: '/student/assessment/quiz',
             },
             {

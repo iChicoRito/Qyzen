@@ -33,6 +33,22 @@ export interface QuizRecord {
   correctAnswers: string[]
 }
 
+export interface QuizGroupRecord {
+  moduleRowId: number
+  moduleId: string
+  moduleCode: string
+  termName: string
+  subjectId: number
+  subjectName: string
+  sectionId: number
+  sectionName: string
+  totalQuestions: number
+  multipleChoiceCount: number
+  identificationCount: number
+  quizTypeLabel: string
+  questions: QuizRecord[]
+}
+
 interface UserRow {
   id: number
 }
@@ -214,6 +230,68 @@ function mapQuizRow(row: QuizRow): QuizRecord {
   }
 }
 
+// buildQuizTypeLabel - summarize grouped quiz types
+function buildQuizTypeLabel(questions: QuizRecord[]) {
+  const hasMultipleChoice = questions.some((question) => question.quizType === 'multiple_choice')
+  const hasIdentification = questions.some((question) => question.quizType === 'identification')
+
+  if (hasMultipleChoice && hasIdentification) {
+    return 'Mixed'
+  }
+
+  if (hasMultipleChoice) {
+    return 'Multiple Choice'
+  }
+
+  if (hasIdentification) {
+    return 'Identification'
+  }
+
+  return 'No Questions'
+}
+
+// groupQuizRows - group question rows into one module row
+function groupQuizRows(rows: QuizRecord[]) {
+  const groupedRows = rows.reduce<Map<number, QuizGroupRecord>>((result, row) => {
+    const currentGroup = result.get(row.moduleRowId)
+
+    if (!currentGroup) {
+      result.set(row.moduleRowId, {
+        moduleRowId: row.moduleRowId,
+        moduleId: row.moduleId,
+        moduleCode: row.moduleCode,
+        termName: row.termName,
+        subjectId: row.subjectId,
+        subjectName: row.subjectName,
+        sectionId: row.sectionId,
+        sectionName: row.sectionName,
+        totalQuestions: 1,
+        multipleChoiceCount: row.quizType === 'multiple_choice' ? 1 : 0,
+        identificationCount: row.quizType === 'identification' ? 1 : 0,
+        quizTypeLabel: buildQuizTypeLabel([row]),
+        questions: [row],
+      })
+      return result
+    }
+
+    const nextQuestions = [...currentGroup.questions, row]
+    result.set(row.moduleRowId, {
+      ...currentGroup,
+      totalQuestions: nextQuestions.length,
+      multipleChoiceCount:
+        currentGroup.multipleChoiceCount + (row.quizType === 'multiple_choice' ? 1 : 0),
+      identificationCount:
+        currentGroup.identificationCount + (row.quizType === 'identification' ? 1 : 0),
+      quizTypeLabel: buildQuizTypeLabel(nextQuestions),
+      questions: nextQuestions,
+    })
+
+    return result
+  }, new Map<number, QuizGroupRecord>())
+
+  return Array.from(groupedRows.values()).sort((leftRow, rightRow) => rightRow.moduleRowId - leftRow.moduleRowId)
+}
+
 // fetchQuizModuleOptions - load module options for the add quiz form
 export async function fetchQuizModuleOptions() {
   const educatorId = await getCurrentEducatorId()
@@ -264,7 +342,7 @@ export async function fetchQuizzes() {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to load quizzes.'))
   }
 
-  return ((data || []) as QuizRow[]).map(mapQuizRow)
+  return groupQuizRows(((data || []) as QuizRow[]).map(mapQuizRow))
 }
 
 // createQuiz - insert one quiz row
@@ -361,5 +439,20 @@ export async function deleteQuiz(quizId: number) {
 
   if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to delete quiz.'))
+  }
+}
+
+// deleteQuizzesByModule - delete all quiz rows in one module
+export async function deleteQuizzesByModule(moduleRowId: number) {
+  const educatorId = await getCurrentEducatorId()
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('tbl_quizzes')
+    .delete()
+    .eq('educator_id', educatorId)
+    .eq('module_id', moduleRowId)
+
+  if (error) {
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to delete quizzes for this module.'))
   }
 }
