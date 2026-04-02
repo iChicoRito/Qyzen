@@ -306,7 +306,7 @@ export function AddStudentModal({ onAddEnrollment, trigger }: AddStudentModalPro
                 <Button type="submit" className="w-full cursor-pointer" disabled={isSubmitting || isLoadingOptions}>
                   {isSubmitting ? (
                     <>
-                      <Loader2 size={18} className="mr-2 animate-spin" />
+                      <Loader2 size={18} className="mr-0 animate-spin" />
                       Saving...
                     </>
                   ) : (

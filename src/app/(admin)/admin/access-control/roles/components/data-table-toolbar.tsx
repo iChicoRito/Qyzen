@@ -65,7 +65,7 @@ export function DataTableToolbar<TData>({ table, onAddRole }: DataTableToolbarPr
               {statuses.map((status) => (
                 <SelectItem key={status.value} value={status.value} className="cursor-pointer">
                   <div className="flex items-center">
-                    {status.icon && <status.icon className="mr-2 h-4 w-4 text-muted-foreground" />}
+                    {status.icon && <status.icon className="mr-0 h-4 w-4 text-muted-foreground" />}
                     {status.label}
                   </div>
                 </SelectItem>

@@ -201,7 +201,7 @@ export function AddQuizModal({ onAddQuiz, onUploadQuizzes, trigger }: AddQuizMod
                     onUploadQuizzes={onUploadQuizzes}
                     trigger={
                       <Button type="button" variant="outline" className="cursor-pointer">
-                        <IconPlus size={18} className="mr-2" />
+                        <IconPlus size={18} className="mr-0" />
                         Upload File
                       </Button>
                     }
@@ -355,7 +355,7 @@ export function AddQuizModal({ onAddQuiz, onUploadQuizzes, trigger }: AddQuizMod
                         className="cursor-pointer"
                         onClick={() => identificationAnswers.append({ value: '' })}
                       >
-                        <IconCirclePlus size={18} className="mr-2" />
+                        <IconCirclePlus size={18} className="mr-0" />
                         Add Answer
                       </Button>
                     </div>
@@ -409,7 +409,7 @@ export function AddQuizModal({ onAddQuiz, onUploadQuizzes, trigger }: AddQuizMod
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 size={18} className="mr-2 animate-spin" />
+                      <Loader2 size={18} className="mr-0 animate-spin" />
                       Saving...
                     </>
                   ) : (

@@ -67,7 +67,7 @@ export function SubmitQuizDialog({
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 size={18} className="mr-2 animate-spin" />
+                  <Loader2 size={18} className="mr-0 animate-spin" />
                   Saving...
                 </>
               ) : (

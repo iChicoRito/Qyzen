@@ -1,0 +1,46 @@
+Objetive #1: Refractor Buttons with Icons for Educator
+
+    Path Target:
+    - src\app\(educator)\educator\assessment
+    - src\app\(educator)\educator\classroom
+    - src\app\(educator)\educator\dashboard
+    - src\app\(educator)\educator\enrollment
+    - src\app\(educator)\educator\scores
+
+    1). Map these paths and look for buttons that has icons. I noticed that there's a large gap
+        and mostly of the buttons use the className="mr-2", and i wanted to make it "mr-0" to all
+        the buttons of all target paths
+
+Objetive #2: Refractor Buttons with Icons for Student
+
+    Path Target:
+    - src\app\(student)\student\assessment\quiz
+    - src\app\(student)\student\assessment\scores
+    - src\app\(student)\student\assessment\take-quiz
+
+    1). Map these paths and look for buttons that has icons. I noticed that there's a large gap
+        and mostly of the buttons use the className="mr-2", and i wanted to make it "mr-0" to all
+        the buttons of all target paths
+
+Objetive #3: Refractor Buttons with Icons for Admin
+
+    Path Target:
+    - src\app\(admin)\admin\access-control\roles
+    - src\app\(admin)\admin\access-control\permissions
+    - src\app\(admin)\admin\academic-settings\academic-year
+    - src\app\(admin)\admin\academic-settings\academic-term
+
+    1). Map these paths and look for buttons that has icons. I noticed that there's a large gap
+        and mostly of the buttons use the className="mr-2", and i wanted to make it "mr-0" to all
+        the buttons of all target paths
+
+
+Objective #4: Icon consistency for filters in all Datatables
+
+    1). In all of the tables for Admin, Educator and Student. There's a button for View and Add ***
+
+    2). In the image I sent, as u can see some of the filter view button has different icons and not consistent on other
+        buttons. I wanted to use "IconFilter" icon for all view button for filter.
+
+Note: Before you proceed to the execution, give a summary of the process, what are the plans and what codes will
+      be modified or added and delete (risky) and wait for the "Go!" command.

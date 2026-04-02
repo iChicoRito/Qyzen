@@ -345,7 +345,7 @@ export function EditQuizModal({
                         className="cursor-pointer"
                         onClick={() => identificationAnswers.append({ value: '' })}
                       >
-                        <IconCirclePlus size={18} className="mr-2" />
+                        <IconCirclePlus size={18} className="mr-0" />
                         Add Answer
                       </Button>
                     </div>
@@ -399,12 +399,12 @@ export function EditQuizModal({
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 size={18} className="mr-2 animate-spin" />
+                      <Loader2 size={18} className="mr-0 animate-spin" />
                       Saving...
                     </>
                   ) : (
                     <>
-                      <IconEdit size={18} className="mr-2" />
+                      <IconEdit size={18} className="mr-0" />
                       Save Changes
                     </>
                   )}

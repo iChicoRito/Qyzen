@@ -640,7 +640,7 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
                 >
                   {isSavingDraft ? (
                     <>
-                      <Loader2 size={18} className="mr-2 animate-spin" />
+                      <Loader2 size={18} className="mr-0 animate-spin" />
                       Saving...
                     </>
                   ) : (
@@ -717,7 +717,7 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
                       >
                         {isSubmitting ? (
                           <>
-                            <Loader2 size={18} className="mr-2 animate-spin" />
+                            <Loader2 size={18} className="mr-0 animate-spin" />
                             Saving...
                           </>
                         ) : (
@@ -749,7 +749,7 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 size={18} className="mr-2 animate-spin" />
+                      <Loader2 size={18} className="mr-0 animate-spin" />
                       Saving...
                     </>
                   ) : (
@@ -822,7 +822,7 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
           onPointerDown={handleTimerPointerDown}
           onClick={() => setIsTimerVisible(true)}
         >
-          <IconEye size={18} className={isMobile ? '' : 'mr-2'} />
+          <IconEye size={18} className={isMobile ? '' : 'mr-0'} />
           {isMobile ? (
             <span className="ml-2">{formatRemainingTime(secondsLeft)}</span>
           ) : (

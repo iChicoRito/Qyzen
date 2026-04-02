@@ -39,7 +39,7 @@ export function DataTableRowActions<TData>({ row }: DataTableRowActionsProps<TDa
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[170px]">
           <DropdownMenuItem className="cursor-pointer" onSelect={() => setOpen(true)}>
-            <IconEye size={16} className="mr-2" />
+            <IconEye size={16} className="mr-0" />
             View Score
           </DropdownMenuItem>
         </DropdownMenuContent>

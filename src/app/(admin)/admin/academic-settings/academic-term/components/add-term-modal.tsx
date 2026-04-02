@@ -267,7 +267,7 @@ export function AddAcademicTermModal({
                         >
                           <div className="flex items-center">
                             {status.icon && (
-                              <status.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                              <status.icon className="mr-0 h-4 w-4 text-muted-foreground" />
                             )}
                             {status.label}
                           </div>
@@ -297,7 +297,7 @@ export function AddAcademicTermModal({
               className="w-full cursor-pointer"
               disabled={isSubmitting || academicYearOptions.length === 0}
             >
-              {isSubmitting ? <Spinner className="mr-2 h-4 w-4" /> : null}
+              {isSubmitting ? <Spinner className="mr-0 h-4 w-4" /> : null}
               Create Academic Term
             </Button>
               </CardFooter>

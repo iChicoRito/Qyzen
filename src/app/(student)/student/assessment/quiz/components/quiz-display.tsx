@@ -124,7 +124,7 @@ function TakeAssessmentDialog({
             <Button type="button" className="h-10 w-full cursor-pointer" disabled={isTaking} onClick={onTakeAssessment}>
               {isTaking ? (
                 <>
-                  <Loader2 size={18} className="mr-2 animate-spin" />
+                  <Loader2 size={18} className="mr-0 animate-spin" />
                   Loading...
                 </>
               ) : (
@@ -302,7 +302,7 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
               <Button variant="outline" className="w-full cursor-pointer sm:w-auto" disabled={isViewingResult} onClick={handleViewResult}>
                 {isViewingResult ? (
                   <>
-                    <Loader2 size={18} className="mr-2 animate-spin" />
+                    <Loader2 size={18} className="mr-0 animate-spin" />
                     Loading...
                   </>
                 ) : (
@@ -320,7 +320,7 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
               >
                 {!quiz.hasQuestions ? (
                   <>
-                    <IconLock size={18} className="mr-2" />
+                    <IconLock size={18} className="mr-0" />
                     No Questions Yet
                   </>
                 ) : quiz.submittedAttemptCount > 0 ? (
@@ -340,7 +340,7 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
               >
                 {isTaking ? (
                   <>
-                    <Loader2 size={18} className="mr-2 animate-spin" />
+                    <Loader2 size={18} className="mr-0 animate-spin" />
                     Loading...
                   </>
                 ) : (

@@ -48,11 +48,11 @@ export function DataTableRowActions<TData>({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[180px]">
           <DropdownMenuItem className="cursor-pointer" onSelect={() => setIsViewOpen(true)}>
-            <IconEye size={16} className="mr-2" />
+            <IconEye size={16} className="mr-0" />
             View Scores
           </DropdownMenuItem>
           <DropdownMenuItem className="cursor-pointer" onSelect={() => setIsRetakeOpen(true)}>
-            <IconReload size={16} className="mr-2" />
+            <IconReload size={16} className="mr-0" />
             Allow Retake
           </DropdownMenuItem>
         </DropdownMenuContent>

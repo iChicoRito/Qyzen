@@ -511,7 +511,7 @@ export function DownloadGradesModal({
               </div>
               {isLoadingPreview ? (
                 <div className="mt-4 flex items-center text-sm text-muted-foreground">
-                  <Loader2 size={18} className="mr-2 animate-spin" />
+                  <Loader2 size={18} className="mr-0 animate-spin" />
                   Loading selected grade summary...
                 </div>
               ) : previewData ? (
@@ -595,12 +595,12 @@ export function DownloadGradesModal({
               >
                 {isLoadingPreview ? (
                   <>
-                    <Loader2 size={18} className="mr-2 animate-spin" />
+                    <Loader2 size={18} className="mr-0 animate-spin" />
                     Loading...
                   </>
                 ) : (
                   <>
-                    <IconDownload size={18} className="mr-2" />
+                    <IconDownload size={18} className="mr-0" />
                     Download Grades
                   </>
                 )}

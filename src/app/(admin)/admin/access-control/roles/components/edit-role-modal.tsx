@@ -267,7 +267,7 @@ export function EditRoleModal({
                                 >
                                   <div className="flex items-center">
                                     {status.icon && (
-                                      <status.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                                      <status.icon className="mr-0 h-4 w-4 text-muted-foreground" />
                                     )}
                                     {status.label}
                                   </div>
@@ -381,9 +381,9 @@ export function EditRoleModal({
                   disabled={isSubmitting || isLoading}
                 >
                   {isSubmitting ? (
-                    <Spinner className="mr-2 h-4 w-4" />
+                    <Spinner className="mr-0 h-4 w-4" />
                   ) : (
-                    <IconEdit className="mr-2 h-4 w-4" stroke={2} />
+                    <IconEdit className="mr-0 h-4 w-4" stroke={2} />
                   )}
                   Save Changes
                 </Button>

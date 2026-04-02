@@ -148,7 +148,7 @@ export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>)
             className="w-full cursor-pointer sm:w-auto"
             disabled={!isFiltered}
           >
-            <IconRefresh size={16} className="mr-2" />
+            <IconRefresh size={16} className="mr-0" />
             Reset Filters
           </Button>
         </div>

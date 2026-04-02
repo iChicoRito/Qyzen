@@ -462,7 +462,7 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
                 </p>
               </div>
               <Button type="button" variant="outline" className="cursor-pointer" onClick={handleDownloadTemplate}>
-                <IconDownload size={18} className="mr-2" />
+                <IconDownload size={18} className="mr-0" />
                 Download Format
               </Button>
             </div>
@@ -562,12 +562,12 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
             >
               {isUploading ? (
                 <>
-                  <Loader2 size={18} className="mr-2 animate-spin" />
+                  <Loader2 size={18} className="mr-0 animate-spin" />
                   Uploading...
                 </>
               ) : (
                 <>
-                  <IconUpload size={18} className="mr-2" />
+                  <IconUpload size={18} className="mr-0" />
                   Upload File
                 </>
               )}

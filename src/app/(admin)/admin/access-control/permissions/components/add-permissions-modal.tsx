@@ -200,7 +200,7 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
                       className="cursor-pointer"
                       disabled={isSubmitting}
                     >
-                      <IconPlus className="mr-2 h-4 w-4" stroke={2} />
+                      <IconPlus className="mr-0 h-4 w-4" stroke={2} />
                       Add Another Permission
                     </Button>
                   </div>
@@ -327,7 +327,7 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
                                       >
                                         <div className="flex items-center">
                                           {status.icon && (
-                                            <status.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                                            <status.icon className="mr-0 h-4 w-4 text-muted-foreground" />
                                           )}
                                           {status.label}
                                         </div>
@@ -376,7 +376,7 @@ export function AddPermissionsModal({ onAddPermissions, trigger }: AddPermission
                   Cancel
                 </Button>
                 <Button type="submit" className="w-full cursor-pointer" disabled={isSubmitting}>
-                  {isSubmitting ? <Spinner className="mr-2 h-4 w-4" /> : null}
+                  {isSubmitting ? <Spinner className="mr-0 h-4 w-4" /> : null}
                   Create Permissions
                 </Button>
               </CardFooter>

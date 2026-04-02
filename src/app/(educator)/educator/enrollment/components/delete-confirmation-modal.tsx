@@ -62,7 +62,7 @@ export function DeleteConfirmationModal({ enrollment, trigger, open, onOpenChang
             <Button type="button" variant="destructive" onClick={handleDeleteClick} className="h-11 w-full cursor-pointer" disabled={isDeleting}>
               {isDeleting ? (
                 <>
-                  <Loader2 size={18} className="mr-2 animate-spin" />
+                  <Loader2 size={18} className="mr-0 animate-spin" />
                   Un-enrolling...
                 </>
               ) : (

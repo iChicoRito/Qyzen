@@ -178,7 +178,7 @@ export function DataTableToolbar<TData>({
             className="w-full cursor-pointer sm:w-auto"
             disabled={!isFiltered}
           >
-            <IconRefresh size={16} className="mr-2" />
+            <IconRefresh size={16} className="mr-0" />
             Reset Filters
           </Button>
         </div>
@@ -189,7 +189,7 @@ export function DataTableToolbar<TData>({
             className="w-full cursor-pointer sm:w-auto"
             disabled={!onDownloadGrades}
           >
-            <IconDownload size={16} className="mr-2" />
+            <IconDownload size={16} className="mr-0" />
             Download Grades
           </Button>
           <DataTableViewOptions table={table} />
