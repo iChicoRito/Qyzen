@@ -1,6 +1,6 @@
 "use client"
 
-import type { ComponentProps } from "react"
+import { useEffect, useState } from "react"
 
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -13,14 +13,111 @@ interface QuizListProps {
   isMobile?: boolean;
 }
 
+// buildScheduleDateTime - combine date and time for status updates
+function buildScheduleDateTime(date: string, time: string) {
+  return new Date(`${date}T${time}`);
+}
+
+// getAvailabilityStatusNow - resolve the live availability status
+function getAvailabilityStatusNow(item: StudentAssessmentRecord, now: Date) {
+  const startDateTime = buildScheduleDateTime(item.startDate, item.startTime);
+  const endDateTime = buildScheduleDateTime(item.endDate, item.endTime);
+
+  if (Number.isNaN(startDateTime.getTime()) || Number.isNaN(endDateTime.getTime())) {
+    return "invalid" as const;
+  }
+
+  if (now < startDateTime) {
+    return "upcoming" as const;
+  }
+
+  if (now > endDateTime && !item.isExpiredOverrideActive) {
+    return "expired" as const;
+  }
+
+  return "available" as const;
+}
+
+// getAvailabilityStatusLabel - format the availability badge text
+function getAvailabilityStatusLabel(
+  availabilityStatus: StudentAssessmentRecord["availabilityStatus"],
+  isExpiredOverrideActive: boolean,
+  isFinished: boolean
+) {
+  if (isFinished) {
+    return "finished";
+  }
+
+  if (availabilityStatus === "available") {
+    return isExpiredOverrideActive ? "reopened" : "available";
+  }
+
+  if (availabilityStatus === "upcoming") {
+    return "not started";
+  }
+
+  if (availabilityStatus === "expired") {
+    return "expired";
+  }
+
+  return "schedule issue";
+}
+
+// getAvailabilityStatusClassName - build the availability badge classes
+function getAvailabilityStatusClassName(
+  availabilityStatus: StudentAssessmentRecord["availabilityStatus"],
+  isExpiredOverrideActive: boolean,
+  isFinished: boolean
+) {
+  if (isFinished) {
+    return "rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500";
+  }
+
+  if (availabilityStatus === "available") {
+    return isExpiredOverrideActive
+      ? "rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500"
+      : "rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500";
+  }
+
+  if (availabilityStatus === "upcoming") {
+    return "rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500";
+  }
+
+  if (availabilityStatus === "expired") {
+    return "rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500";
+  }
+
+  return "rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500";
+}
+
 // QuizList - renders the assessment list
 export function QuizList({ items, isMobile = false }: QuizListProps) {
   // selected assessment state
   const [quiz, setQuiz] = useQuiz();
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+
+  // ==================== LIVE STATUS TIMER ====================
+  useEffect(() => {
+    const hasUpcomingItem = items.some((item) => getAvailabilityStatusNow(item, currentTime) === "upcoming");
+
+    if (!hasUpcomingItem) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [currentTime, items]);
 
   return (
     <ScrollArea className={cn("min-h-0", !isMobile && "h-[calc(100vh-12rem)]")}>
       <div className="flex flex-col gap-3 p-4">{items.map((item) => (
+          (() => {
+            const availabilityStatusNow = getAvailabilityStatusNow(item, currentTime);
+
+            return (
           <button
             key={item.id}
             className={cn(
@@ -60,39 +157,21 @@ export function QuizList({ items, isMobile = false }: QuizListProps) {
             </div>
             {item.labels.length ? (
               <div className="flex flex-wrap items-center gap-2">
-                {item.labels.map((label) => (
-                  <Badge key={label} variant={getBadgeVariantFromLabel(label)} className={cn("cursor-pointer border-0", getBadgeClassName(label))}>
-                    {label}
-                  </Badge>
-                ))}
+                <Badge className={cn("border-0 uppercase", getAvailabilityStatusClassName(availabilityStatusNow, item.isExpiredOverrideActive, item.isFinished))}>
+                  {getAvailabilityStatusLabel(availabilityStatusNow, item.isExpiredOverrideActive, item.isFinished)}
+                </Badge>
                 {!item.hasQuestions ? (
-                  <Badge className="rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500">
+                  <Badge className="rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500 uppercase">
                     no questions yet
                   </Badge>
                 ) : null}
               </div>
             ) : null}
           </button>
+            );
+          })()
         ))}
       </div>
     </ScrollArea>
   );
-}
-
-// getBadgeVariantFromLabel - returns the badge variant
-function getBadgeVariantFromLabel(label: string): ComponentProps<typeof Badge>["variant"] {
-  return "secondary";
-}
-
-// getBadgeClassName - returns the badge color classes
-function getBadgeClassName(label: string): string {
-  if (label.toLowerCase() === "pending") {
-    return "rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500";
-  }
-
-  if (label.toLowerCase() === "finished") {
-    return "rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500";
-  }
-
-  return "rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500";
 }

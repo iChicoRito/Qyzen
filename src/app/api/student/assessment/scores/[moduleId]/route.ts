@@ -79,6 +79,10 @@ function ensureAttemptAllowed(gradingSession: Awaited<ReturnType<typeof fetchStu
     return
   }
 
+  if (!gradingSession.isScheduleOpen) {
+    throw new Error(gradingSession.availabilityMessage)
+  }
+
   if (gradingSession.canTake) {
     return
   }

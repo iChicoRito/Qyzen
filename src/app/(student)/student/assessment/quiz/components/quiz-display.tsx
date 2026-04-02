@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   IconAlertCircle,
@@ -30,6 +30,109 @@ import type { StudentAssessmentRecord } from "@/lib/supabase/student-assessments
 interface QuizDisplayProps {
   quiz: StudentAssessmentRecord | null;
   isMobile?: boolean;
+}
+
+// buildScheduleDateTime - combine date and time for countdown checks
+function buildScheduleDateTime(date: string, time: string) {
+  return new Date(`${date}T${time}`);
+}
+
+// formatCountdownLabel - build the upcoming countdown text
+function formatCountdownLabel(targetDate: Date, now: Date) {
+  const difference = targetDate.getTime() - now.getTime();
+
+  if (difference <= 0) {
+    return "Opening...";
+  }
+
+  const totalSeconds = Math.floor(difference / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (days > 0) {
+    return `Starts in ${days}d ${hours}h`;
+  }
+
+  if (hours > 0) {
+    return `Starts in ${hours}h ${minutes}m`;
+  }
+
+  if (minutes > 0) {
+    return `Starts in ${minutes}m ${seconds}s`;
+  }
+
+  return `Starts in ${seconds}s`;
+}
+
+// getAvailabilityStatusLabel - format the module availability label
+function getAvailabilityStatusLabel(
+  availabilityStatus: StudentAssessmentRecord["availabilityStatus"],
+  isExpiredOverrideActive: boolean,
+  isFinished: boolean
+) {
+  if (isFinished) {
+    return "Finished";
+  }
+
+  if (availabilityStatus === "available") {
+    return isExpiredOverrideActive ? "Reopened" : "Available Now";
+  }
+
+  if (availabilityStatus === "upcoming") {
+    return "Not Started";
+  }
+
+  if (availabilityStatus === "expired") {
+    return "Expired";
+  }
+
+  return "Schedule Issue";
+}
+
+// getAvailabilityStatusClassName - build the module availability badge color
+function getAvailabilityStatusClassName(
+  availabilityStatus: StudentAssessmentRecord["availabilityStatus"],
+  isExpiredOverrideActive: boolean
+) {
+  if (availabilityStatus === "available") {
+    return isExpiredOverrideActive
+      ? "rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500"
+      : "rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500";
+  }
+
+  if (availabilityStatus === "upcoming") {
+    return "rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500";
+  }
+
+  if (availabilityStatus === "expired") {
+    return "rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500";
+  }
+
+  return "rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500";
+}
+
+// getAvailabilityMessage - build the current schedule message
+function getAvailabilityMessage(
+  availabilityStatus: StudentAssessmentRecord["availabilityStatus"],
+  isExpiredOverrideActive: boolean
+) {
+  if (availabilityStatus === "available") {
+    return isExpiredOverrideActive
+      ? "This assessment was reopened by your educator after the original schedule expired."
+      : "This assessment is available right now.";
+  }
+
+  if (availabilityStatus === "upcoming") {
+    return "This assessment is not available yet. Please wait for the scheduled start time.";
+  }
+
+  if (availabilityStatus === "expired") {
+    return "This assessment is already locked because the scheduled end time has passed.";
+  }
+
+  return "This assessment schedule is not available right now.";
 }
 
 // ScheduleInfo - renders the assessment schedule details
@@ -81,8 +184,8 @@ function DetailInfoCard({
 function StatusBadge({ quiz }: { quiz: StudentAssessmentRecord }) {
   return (
     <Badge className={quiz.statusLabel === "finished"
-      ? "rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500"
-      : "rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500"}>
+      ? "rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500 uppercase"
+      : "rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500 uppercase"}>
       {quiz.statusLabel}
     </Badge>
   );
@@ -128,7 +231,7 @@ function TakeAssessmentDialog({
                   Loading...
                 </>
               ) : (
-                "I’m ready"
+                "I'm ready"
               )}
             </Button>
           </DialogFooter>
@@ -144,6 +247,48 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
   const [takeDialogOpen, setTakeDialogOpen] = useState(false);
   const [isTaking, setIsTaking] = useState(false);
   const [isViewingResult, setIsViewingResult] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+  const startDateTime = quiz ? buildScheduleDateTime(quiz.startDate, quiz.startTime) : null;
+  const endDateTime = quiz ? buildScheduleDateTime(quiz.endDate, quiz.endTime) : null;
+  const isScheduleValid =
+    Boolean(startDateTime) &&
+    Boolean(endDateTime) &&
+    !Number.isNaN(startDateTime?.getTime() || Number.NaN) &&
+    !Number.isNaN(endDateTime?.getTime() || Number.NaN);
+  const availabilityStatusNow =
+    quiz && isScheduleValid
+      ? currentTime < (startDateTime as Date)
+        ? "upcoming"
+        : currentTime > (endDateTime as Date) && !quiz.isExpiredOverrideActive
+          ? "expired"
+          : "available"
+      : quiz?.availabilityStatus || "invalid";
+  const availabilityMessageNow = quiz
+    ? getAvailabilityMessage(availabilityStatusNow, quiz.isExpiredOverrideActive)
+    : "";
+  const isScheduleLockedNow = availabilityStatusNow !== "available";
+  const canTakeNow = quiz
+    ? quiz.hasQuestions &&
+      !isScheduleLockedNow &&
+      (quiz.submittedAttemptCount === 0 || quiz.canRetake)
+    : false;
+  const upcomingCountdownLabel =
+    quiz && startDateTime && !Number.isNaN(startDateTime.getTime()) && availabilityStatusNow === "upcoming"
+      ? formatCountdownLabel(startDateTime, currentTime)
+      : null;
+
+  // ==================== COUNTDOWN TIMER ====================
+  useEffect(() => {
+    if (!quiz || availabilityStatusNow !== "upcoming") {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [availabilityStatusNow, quiz]);
 
   // handleTakeAssessment - enter assessment with loading state
   const handleTakeAssessment = () => {
@@ -201,7 +346,7 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
               </Avatar>
               <div className="flex min-w-0 flex-col justify-center gap-1">
                 <div className="font-semibold break-words">{quiz.educatorName}</div>
-                <Badge variant="outline" className="w-fit">{quiz.educatorUserType}</Badge>
+                <Badge variant="outline" className="w-fit uppercase">{quiz.educatorUserType}</Badge>
               </div>
             </div>
             <div className="w-full sm:w-auto sm:text-right">
@@ -216,25 +361,24 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
               <div className="space-y-3">
                 <div className="grid gap-3 md:grid-cols-2">
                   <div>
-                    <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.16em]">
+                    <div className="text-muted-foreground text-[11px] font-medium">
                       Section
                     </div>
                     <div className="mt-1 text-sm font-medium">{quiz.sectionName}</div>
                   </div>
                   <div>
-                    <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.16em]">
+                    <div className="text-muted-foreground text-[11px] font-medium">
                       Academic Term
                     </div>
                     <div className="mt-1 text-sm font-medium">{quiz.termName}</div>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <Badge className="rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500">
+                  <Badge className="rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500 uppercase">
                     {quiz.moduleCode}
                   </Badge>
-                  <StatusBadge quiz={quiz} />
                   {!quiz.hasQuestions ? (
-                    <Badge className="rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500">
+                    <Badge className="rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500 uppercase">
                       no questions yet
                     </Badge>
                   ) : null}
@@ -243,6 +387,7 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
             </div>
 
             <div className="grid gap-3 whitespace-normal md:grid-cols-2">
+              <DetailInfoCard label="Status" value={getAvailabilityStatusLabel(availabilityStatusNow, quiz.isExpiredOverrideActive, quiz.isFinished)} />
               <DetailInfoCard label="Questions" value={`${quiz.questionCount}`} />
               <DetailInfoCard label="Quiz Type" value={quiz.quizTypeLabel} />
               <DetailInfoCard label="Time Limit" value={`${quiz.timeLimitMinutes} minutes`} />
@@ -270,6 +415,26 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
                 <div className="mt-2 text-sm">
                   The educator has not added quiz questions for this module yet.
                 </div>
+              </div>
+            ) : null}
+
+            {quiz.hasQuestions && isScheduleLockedNow ? (
+              <div className="mt-6 rounded-lg border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-500">
+                <div className="flex items-center gap-2 font-medium">
+                  <IconLock size={18} />
+                  {availabilityStatusNow === "upcoming" ? "This assessment is not available yet." : "This assessment is locked."}
+                </div>
+                <div className="mt-2 text-sm">{availabilityMessageNow}</div>
+              </div>
+            ) : null}
+
+            {quiz.isExpiredOverrideActive && availabilityStatusNow === "available" ? (
+              <div className="mt-6 rounded-lg border border-blue-500/20 bg-blue-500/10 p-4 text-sm text-blue-500">
+                <div className="flex items-center gap-2 font-medium">
+                  <IconCheck size={18} />
+                  This assessment was reopened for you.
+                </div>
+                <div className="mt-2 text-sm">{availabilityMessageNow}</div>
               </div>
             ) : null}
 
@@ -315,7 +480,7 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
               <Button
                 type="button"
                 className="w-full cursor-pointer sm:w-auto"
-                disabled={!quiz.canTake || isTaking}
+                disabled={!canTakeNow || isTaking}
                 onClick={() => setTakeDialogOpen(true)}
               >
                 {!quiz.hasQuestions ? (
@@ -323,8 +488,13 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
                     <IconLock size={18} className="mr-0" />
                     No Questions Yet
                   </>
+                ) : isScheduleLockedNow ? (
+                  <>
+                    <IconLock size={18} className="mr-0" />
+                    {availabilityStatusNow === "upcoming" ? upcomingCountdownLabel || "Not Yet Available" : "Assessment Locked"}
+                  </>
                 ) : quiz.submittedAttemptCount > 0 ? (
-                  'Retake Assessment'
+                  "Retake Assessment"
                 ) : (
                   "Take Assessment"
                 )}
@@ -335,7 +505,7 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
               <Button
                 type="button"
                 className="w-full cursor-pointer sm:w-auto"
-                disabled={!quiz.canTake || isTaking}
+                disabled={!canTakeNow || isTaking}
                 onClick={() => setTakeDialogOpen(true)}
               >
                 {isTaking ? (
@@ -343,8 +513,13 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
                     <Loader2 size={18} className="mr-0 animate-spin" />
                     Loading...
                   </>
+                ) : isScheduleLockedNow ? (
+                  <>
+                    <IconLock size={18} className="mr-0" />
+                    {availabilityStatusNow === "upcoming" ? upcomingCountdownLabel || "Not Yet Available" : "Assessment Locked"}
+                  </>
                 ) : (
-                  'Retake Assessment'
+                  "Retake Assessment"
                 )}
               </Button>
             ) : null}

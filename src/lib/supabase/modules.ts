@@ -150,6 +150,11 @@ interface SupabaseErrorResponse {
   message?: string
 }
 
+// normalizeModuleTimeValue - keep stored time values compatible with time inputs
+function normalizeModuleTimeValue(value: string) {
+  return value.length >= 5 ? value.slice(0, 5) : value
+}
+
 // getSupabaseErrorMessage - normalize api errors
 function getSupabaseErrorMessage(error: SupabaseErrorResponse | null, fallbackMessage: string) {
   return error?.message || fallbackMessage
@@ -363,8 +368,8 @@ export async function fetchModules() {
       status: row.is_active ? 'active' : 'inactive',
       startDate: row.start_date,
       endDate: row.end_date,
-      startTime: row.start_time,
-      endTime: row.end_time,
+      startTime: normalizeModuleTimeValue(row.start_time),
+      endTime: normalizeModuleTimeValue(row.end_time),
     } satisfies ModuleRecord
   })
 }
@@ -447,8 +452,8 @@ export async function createModules(input: ModuleCreateInput) {
       status: row.is_active ? 'active' : 'inactive',
       startDate: row.start_date,
       endDate: row.end_date,
-      startTime: row.start_time,
-      endTime: row.end_time,
+      startTime: normalizeModuleTimeValue(row.start_time),
+      endTime: normalizeModuleTimeValue(row.end_time),
     } satisfies ModuleRecord
   })
 }
@@ -526,8 +531,8 @@ export async function updateModule(input: ModuleUpdateInput) {
     status: updatedRow.is_active ? 'active' : 'inactive',
     startDate: updatedRow.start_date,
     endDate: updatedRow.end_date,
-    startTime: updatedRow.start_time,
-    endTime: updatedRow.end_time,
+    startTime: normalizeModuleTimeValue(updatedRow.start_time),
+    endTime: normalizeModuleTimeValue(updatedRow.end_time),
   } satisfies ModuleRecord
 }
 

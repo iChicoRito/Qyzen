@@ -1,4 +1,5 @@
 import { createClient } from './server'
+import { getAssessmentAvailability } from './assessment-availability'
 import { fetchStudentModuleRetakeGrantMap } from './student-retakes'
 
 export interface StudentAssessmentAttemptItem {
@@ -43,6 +44,11 @@ export interface StudentAssessmentRecord {
   canRetake: boolean
   hasQuestions: boolean
   canTake: boolean
+  availabilityStatus: 'upcoming' | 'available' | 'expired' | 'invalid'
+  availabilityMessage: string
+  isScheduleOpen: boolean
+  isScheduleLocked: boolean
+  isExpiredOverrideActive: boolean
   isFinished: boolean
   scoreId: number | null
   text: string
@@ -297,6 +303,15 @@ function mapModuleToStudentAssessment(
   const bestScore = getBestScore(submittedScores)
   const latestScore = [...submittedScores].sort((leftScore, rightScore) => rightScore.id - leftScore.id)[0] || null
   const retakeState = getRetakeState(module, scores, grantedRetakeCount)
+  const hasExpiredOverride = grantedRetakeCount > 0
+  const availability = getAssessmentAvailability({
+    startDate: module.start_date,
+    endDate: module.end_date,
+    startTime: module.start_time,
+    endTime: module.end_time,
+    hasExpiredOverride,
+  })
+  const canTakeWithoutRetake = submittedScores.length === 0
   const isFinished = submittedScores.length > 0
   const statusLabel: StudentAssessmentRecord['statusLabel'] = isFinished ? 'finished' : 'pending'
 
@@ -330,7 +345,12 @@ function mapModuleToStudentAssessment(
     latestScoreId: latestScore?.id ?? null,
     canRetake: retakeState.canRetake,
     hasQuestions,
-    canTake: hasQuestions && (submittedScores.length === 0 || retakeState.canRetake),
+    canTake: hasQuestions && availability.isScheduleOpen && (canTakeWithoutRetake || retakeState.canRetake),
+    availabilityStatus: availability.availabilityStatus,
+    availabilityMessage: availability.availabilityMessage,
+    isScheduleOpen: availability.isScheduleOpen,
+    isScheduleLocked: availability.isScheduleLocked,
+    isExpiredOverrideActive: availability.isExpiredOverrideActive,
     isFinished,
     scoreId: bestScore?.id ?? null,
     text: STATIC_ASSESSMENT_TEXT,

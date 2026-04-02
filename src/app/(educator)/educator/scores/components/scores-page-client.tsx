@@ -68,7 +68,7 @@ export function ScoresPageClient() {
   }
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col px-4 py-6 md:px-6">
+    <div className="flex min-w-0 flex-1 flex-col px-4 md:px-6">
       <Card className="min-w-0 overflow-hidden">
         <CardHeader>
           <CardTitle>Score Monitoring</CardTitle>

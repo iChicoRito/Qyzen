@@ -30,8 +30,12 @@ export default async function TakeQuizPage({ searchParams }: TakeQuizPageProps) 
     redirect('/student/assessment/quiz')
   }
 
-  if (!session.hasInProgressAttempt && !session.canTake && session.bestScoreId) {
-    redirect(`/student/assessment/take-quiz/result?scoreId=${session.bestScoreId}`)
+  if (!session.hasInProgressAttempt && !session.canTake) {
+    if (session.bestScoreId) {
+      redirect(`/student/assessment/take-quiz/result?scoreId=${session.bestScoreId}`)
+    }
+
+    redirect('/student/assessment/quiz')
   }
 
   // ==================== RENDER ====================

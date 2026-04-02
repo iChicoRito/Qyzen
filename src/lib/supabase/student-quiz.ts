@@ -1,4 +1,5 @@
 import { createClient } from './server'
+import { getAssessmentAvailability } from './assessment-availability'
 import { fetchStudentModuleRetakeGrant, fetchStudentModuleRetakeGrantMap } from './student-retakes'
 
 export const QUIZ_RESULT_PASSING_PERCENTAGE = 75
@@ -79,6 +80,11 @@ export interface StudentQuizSession {
   latestScoreId: number | null
   canRetake: boolean
   canTake: boolean
+  availabilityStatus: 'upcoming' | 'available' | 'expired' | 'invalid'
+  availabilityMessage: string
+  isScheduleOpen: boolean
+  isScheduleLocked: boolean
+  isExpiredOverrideActive: boolean
   hasInProgressAttempt: boolean
   attemptHistory: StudentQuizAttemptHistoryItem[]
 }
@@ -485,6 +491,15 @@ function buildSessionRecord(
   const currentDraftScore = getCurrentDraftScore(scores)
   const attemptHistory = buildAttemptHistory(submittedScores)
   const retakeState = getRetakeState(module, submittedScores, grantedRetakeCount)
+  const availability = getAssessmentAvailability({
+    startDate: module.start_date,
+    endDate: module.end_date,
+    startTime: module.start_time,
+    endTime: module.end_time,
+    hasExpiredOverride: grantedRetakeCount > 0,
+  })
+  const canTakeWithoutRetake = submittedScores.length === 0
+  const hasInProgressAttempt = Boolean(currentDraftScore)
 
   if (!educator || !isEducatorUser(educator)) {
     throw new Error('Module educator was not found.')
@@ -540,8 +555,15 @@ function buildSessionRecord(
     bestScore: bestSubmittedScore?.score ?? null,
     latestScoreId: latestSubmittedScore?.id ?? null,
     canRetake: retakeState.canRetake,
-    canTake: quizzes.length > 0 && (submittedScores.length === 0 || Boolean(currentDraftScore) || retakeState.canRetake),
-    hasInProgressAttempt: Boolean(currentDraftScore),
+    canTake:
+      quizzes.length > 0 &&
+      (hasInProgressAttempt || (availability.isScheduleOpen && (canTakeWithoutRetake || retakeState.canRetake))),
+    availabilityStatus: availability.availabilityStatus,
+    availabilityMessage: availability.availabilityMessage,
+    isScheduleOpen: availability.isScheduleOpen,
+    isScheduleLocked: availability.isScheduleLocked,
+    isExpiredOverrideActive: availability.isExpiredOverrideActive,
+    hasInProgressAttempt,
     attemptHistory,
   }
 }
