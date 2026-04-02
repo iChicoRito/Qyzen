@@ -12,6 +12,7 @@ import {
   IconId,
   IconSubtitlesEdit,
   IconUserSquareRounded,
+  IconScanEye,
 } from '@tabler/icons-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -35,6 +36,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   role?: AppRole
   roles?: AppRole[]
   user?: {
+    id: number
     name: string
     email: string
   }
@@ -196,6 +198,22 @@ function getNavigationGroupsByRole(role: AppRole): SidebarNavGroup[] {
           },
         ],
       },
+      {
+        label: 'Security',
+        items: [
+          {
+            title: 'Monitoring',
+            url: '#',
+            icon: IconScanEye,
+            items: [
+              {
+                title: 'Real-time Monitoring',
+                url: '/educator/realtime-monitoring',
+              },
+            ],
+          },
+        ],
+      },
     ]
   }
 
@@ -304,6 +322,7 @@ export function AppSidebar({ role = 'admin', roles, user, ...props }: AppSidebar
   const assignedRoles = roles?.length ? roles : [role]
   const navGroups = mergeNavigationGroups(assignedRoles)
   const sidebarUser = user || {
+    id: 0,
     name: 'Template User',
     email: 'template@example.com',
   }
@@ -351,6 +370,7 @@ export function AppSidebar({ role = 'admin', roles, user, ...props }: AppSidebar
           role={role}
           roles={assignedRoles}
           user={{
+            id: sidebarUser.id,
             name: sidebarUser.name,
             email: sidebarUser.email,
             avatar: '',

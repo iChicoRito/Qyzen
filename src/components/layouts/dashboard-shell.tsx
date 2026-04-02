@@ -15,6 +15,7 @@ interface DashboardShellProps {
   role: AppRole
   roles: AppRole[]
   user: {
+    id: number
     name: string
     email: string
   }

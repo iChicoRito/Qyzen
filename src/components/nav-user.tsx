@@ -27,9 +27,11 @@ import {
 } from '@/components/ui/sidebar'
 import { getRoleLabel, type AppRole } from '@/lib/auth/auth-context'
 import { createClient } from '@/lib/supabase/client'
+import { deleteStudentPresence } from '@/lib/supabase/student-presence'
 
 interface NavUserProps {
   user: {
+    id: number
     name: string
     email: string
     avatar: string
@@ -51,6 +53,12 @@ export function NavUser({ user, role, roles }: NavUserProps) {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true)
+
+      if (assignedRoles.includes('student') && user.id > 0) {
+        await deleteStudentPresence({
+          studentId: user.id,
+        })
+      }
 
       const { error } = await supabase.auth.signOut()
 
