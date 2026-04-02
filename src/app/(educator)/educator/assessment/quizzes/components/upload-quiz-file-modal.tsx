@@ -316,7 +316,7 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
       for (const file of files) {
         const rows = await parseFileRows(file)
 
-        rows.forEach((row, rowIndex) => {
+        rows.forEach((row: UploadRow, rowIndex: number) => {
           const moduleIdValue = normalizeValue(row.module_id)
           const moduleKey = buildModuleUploadKey(moduleIdValue)
           const matchedModule = moduleMap.get(moduleKey)

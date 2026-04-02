@@ -49,6 +49,12 @@ export interface EducatorScoreReviewItem {
   status: 'passed' | 'failed'
   submittedAt: string | null
   takenAt: string | null
+  latestScore: number
+  latestTotalQuestions: number
+  latestPercentage: number
+  latestStatus: 'passed' | 'failed'
+  latestSubmittedAt: string | null
+  latestTakenAt: string | null
   allowRetake: boolean
   retakeCount: number
   grantedRetakeCount: number
@@ -71,6 +77,56 @@ export interface EducatorScoreReviewItem {
   attemptHistory: EducatorScoreAttemptHistoryItem[]
 }
 
+export interface EducatorScoreExportOption {
+  moduleRowId: number
+  moduleId: string
+  moduleCode: string
+  termId: number
+  termName: string
+  subjectId: number
+  subjectName: string
+  sectionId: number
+  sectionName: string
+}
+
+export interface EducatorScoreExportRow {
+  studentId: number
+  studentUserId: string
+  studentName: string
+  subjectName: string
+  sectionName: string
+  moduleCode: string
+  termName: string
+  highestScore: number
+  totalQuestions: number
+  percentage: number
+  statusLabel: string
+  remark: string
+  highestSubmittedAt: string | null
+}
+
+export interface EducatorScoreExportSummary {
+  subjectName: string
+  sectionName: string
+  moduleCode: string
+  termName: string
+  totalEnrolled: number
+  studentsWithSubmission: number
+  studentsWithoutSubmission: number
+}
+
+export interface EducatorScoreExportResult {
+  summary: EducatorScoreExportSummary
+  rows: EducatorScoreExportRow[]
+}
+
+export interface FetchEducatorScoreExportInput {
+  subjectId: number
+  sectionId: number
+  moduleRowId: number
+  termId: number
+}
+
 export interface UpdateEducatorRetakeGrantInput {
   studentId: number
   moduleRowId: number
@@ -86,6 +142,10 @@ interface EnrollmentRow {
   student_id: number
   subject_id: number
   is_active: boolean
+}
+
+interface EnrollmentWithStudentRow extends EnrollmentRow {
+  student: StudentRow | StudentRow[] | null
 }
 
 interface StudentRow {
@@ -110,7 +170,10 @@ interface ModuleTermRow {
 }
 
 interface ModuleRow {
+  id?: number
+  module_id?: string
   module_code: string
+  term?: number
   subject_id: number
   section_id: number
   start_date: string
@@ -127,7 +190,7 @@ interface ModuleRow {
   academic_term: ModuleTermRow | ModuleTermRow[] | null
 }
 
-interface ScoreRow {
+interface ScoreSnapshot {
   id: number
   student_id: number
   module_id: number
@@ -141,6 +204,9 @@ interface ScoreRow {
   submitted_at: string | null
   status: 'in_progress' | 'submitted' | 'passed' | 'failed' | null
   is_passed: boolean | null
+}
+
+interface ScoreRow extends ScoreSnapshot {
   module: ModuleRow | ModuleRow[] | null
   student: StudentRow | StudentRow[] | null
 }
@@ -293,7 +359,7 @@ function isStudentAnswerCorrect(correctAnswers: string[], studentAnswer: string)
 }
 
 // getScorePercentage - compute score percentage
-function getScorePercentage(score: Pick<ScoreRow, 'score' | 'total_questions'>) {
+function getScorePercentage(score: Pick<ScoreSnapshot, 'score' | 'total_questions'>) {
   const totalQuestions = score.total_questions || 0
 
   if (totalQuestions <= 0) {
@@ -304,7 +370,7 @@ function getScorePercentage(score: Pick<ScoreRow, 'score' | 'total_questions'>) 
 }
 
 // getBestSubmittedScore - resolve best submitted attempt
-function getBestSubmittedScore(submittedScores: ScoreRow[]) {
+function getBestSubmittedScore<T extends Pick<ScoreSnapshot, 'id' | 'score' | 'total_questions'>>(submittedScores: T[]) {
   return [...submittedScores].sort((leftScore, rightScore) => {
     const leftValue = leftScore.score || 0
     const rightValue = rightScore.score || 0
@@ -324,8 +390,22 @@ function getBestSubmittedScore(submittedScores: ScoreRow[]) {
   })[0] || null
 }
 
+// getLatestSubmittedScore - resolve latest submitted attempt
+function getLatestSubmittedScore<T extends Pick<ScoreSnapshot, 'id' | 'submitted_at'>>(submittedScores: T[]) {
+  return [...submittedScores].sort((leftScore, rightScore) => {
+    const leftTime = new Date(leftScore.submitted_at || '').getTime()
+    const rightTime = new Date(rightScore.submitted_at || '').getTime()
+
+    if (leftTime !== rightTime) {
+      return rightTime - leftTime
+    }
+
+    return rightScore.id - leftScore.id
+  })[0] || null
+}
+
 // buildAttemptHistory - map submitted rows into attempt history
-function buildAttemptHistory(submittedScores: ScoreRow[]) {
+function buildAttemptHistory(submittedScores: ScoreSnapshot[]) {
   const orderedScores = [...submittedScores].sort((leftScore, rightScore) => {
     const leftTime = new Date(leftScore.submitted_at || '').getTime()
     const rightTime = new Date(rightScore.submitted_at || '').getTime()
@@ -373,6 +453,173 @@ function getRetakeState(module: ModuleRow, submittedScores: ScoreRow[], grantedR
     remainingRetakes,
     canRetake,
   }
+}
+
+// getModuleExportOptions - normalize module rows for export options
+function getModuleExportOptions(moduleRows: ModuleRow[]) {
+  return moduleRows.map((row) => {
+    const subject = getSingleRelation(row.subject)
+    const section = getSingleRelation(row.section)
+    const term = getSingleRelation(row.academic_term)
+
+    return {
+      moduleRowId: row.id || 0,
+      moduleId: row.module_id || 'Unknown Module',
+      moduleCode: row.module_code,
+      termId: row.term || 0,
+      termName: buildAcademicTermLabel(term),
+      subjectId: row.subject_id,
+      subjectName: subject?.subject_name || 'Unknown Subject',
+      sectionId: row.section_id,
+      sectionName: section?.section_name || 'Unknown Section',
+    } satisfies EducatorScoreExportOption
+  })
+}
+
+// fetchEducatorScoreExportOptions - load module options for download selections
+export async function fetchEducatorScoreExportOptions() {
+  const supabase = createClient()
+  const educatorId = await getCurrentEducatorId()
+  const { data, error } = await supabase
+    .from('tbl_modules')
+    .select(
+      'id,module_id,module_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
+    )
+    .eq('educator_id', educatorId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to load score export options.'))
+  }
+
+  return getModuleExportOptions((data || []) as ModuleRow[])
+}
+
+// fetchEducatorScoreExportData - load selected export summary and rows
+export async function fetchEducatorScoreExportData(input: FetchEducatorScoreExportInput) {
+  const supabase = createClient()
+  const educatorId = await getCurrentEducatorId()
+  const [{ data: moduleData, error: moduleError }, { data: enrollmentData, error: enrollmentError }, { data: scoreData, error: scoreError }, { data: quizData, error: quizError }] =
+    await Promise.all([
+      supabase
+        .from('tbl_modules')
+        .select(
+          'id,module_id,module_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
+        )
+        .eq('educator_id', educatorId)
+        .eq('id', input.moduleRowId)
+        .eq('subject_id', input.subjectId)
+        .eq('section_id', input.sectionId)
+        .eq('term', input.termId)
+        .limit(1),
+      supabase
+        .from('tbl_enrolled')
+        .select('student_id,subject_id,is_active,student:student_id(id,user_id,given_name,surname,is_active)')
+        .eq('educator_id', educatorId)
+        .eq('subject_id', input.subjectId)
+        .eq('is_active', true),
+      supabase
+        .from('tbl_scores')
+        .select('id,student_id,module_id,subject_id,section_id,score,total_questions,student_answer,warning_attempts,taken_at,submitted_at,status,is_passed')
+        .eq('educator_id', educatorId)
+        .eq('subject_id', input.subjectId)
+        .eq('module_id', input.moduleRowId)
+        .not('submitted_at', 'is', null),
+      supabase
+        .from('tbl_quizzes')
+        .select('id,module_id')
+        .eq('module_id', input.moduleRowId),
+    ])
+
+  if (moduleError) {
+    throw new Error(getSupabaseErrorMessage(moduleError, 'Failed to load export module details.'))
+  }
+
+  if (enrollmentError) {
+    throw new Error(getSupabaseErrorMessage(enrollmentError, 'Failed to load enrolled students.'))
+  }
+
+  if (scoreError) {
+    throw new Error(getSupabaseErrorMessage(scoreError, 'Failed to load score export rows.'))
+  }
+
+  if (quizError) {
+    throw new Error(getSupabaseErrorMessage(quizError, 'Failed to load module quiz details.'))
+  }
+
+  const moduleOption = getModuleExportOptions((moduleData || []) as ModuleRow[])[0]
+
+  if (!moduleOption) {
+    throw new Error('The selected score export option is no longer available.')
+  }
+
+  const enrolledStudents = ((enrollmentData || []) as EnrollmentWithStudentRow[])
+    .map((row) => getSingleRelation(row.student))
+    .filter((student): student is StudentRow => Boolean(student))
+    .sort((leftStudent, rightStudent) => {
+      const leftName = `${leftStudent.given_name} ${leftStudent.surname}`.trim()
+      const rightName = `${rightStudent.given_name} ${rightStudent.surname}`.trim()
+
+      return leftName.localeCompare(rightName)
+    })
+  const submittedScores = (scoreData || []) as ScoreSnapshot[]
+  const scoreMap = submittedScores.reduce<Map<number, ScoreSnapshot[]>>((result, score) => {
+    const currentRows = result.get(score.student_id) || []
+    currentRows.push(score)
+    result.set(score.student_id, currentRows)
+    return result
+  }, new Map<number, ScoreSnapshot[]>())
+  const totalQuestions = Array.isArray(quizData) ? quizData.length : 0
+  const rows = enrolledStudents.map((student) => {
+    const bestScore = getBestSubmittedScore(scoreMap.get(student.id) || [])
+
+    if (!bestScore) {
+      return {
+        studentId: student.id,
+        studentUserId: student.user_id,
+        studentName: `${student.given_name} ${student.surname}`.trim(),
+        subjectName: moduleOption.subjectName,
+        sectionName: moduleOption.sectionName,
+        moduleCode: moduleOption.moduleCode,
+        termName: moduleOption.termName,
+        highestScore: 0,
+        totalQuestions,
+        percentage: 0,
+        statusLabel: 'No Submission',
+        remark: 'No Submission',
+        highestSubmittedAt: null,
+      } satisfies EducatorScoreExportRow
+    }
+
+    return {
+      studentId: student.id,
+      studentUserId: student.user_id,
+      studentName: `${student.given_name} ${student.surname}`.trim(),
+      subjectName: moduleOption.subjectName,
+      sectionName: moduleOption.sectionName,
+      moduleCode: moduleOption.moduleCode,
+      termName: moduleOption.termName,
+      highestScore: bestScore.score || 0,
+      totalQuestions: bestScore.total_questions || totalQuestions,
+      percentage: getScorePercentage(bestScore),
+      statusLabel: bestScore.status === 'passed' ? 'Passed' : 'Failed',
+      remark: bestScore.status === 'passed' ? 'Highest Submitted Score' : 'Highest Submitted Score',
+      highestSubmittedAt: bestScore.submitted_at,
+    } satisfies EducatorScoreExportRow
+  })
+
+  return {
+    summary: {
+      subjectName: moduleOption.subjectName,
+      sectionName: moduleOption.sectionName,
+      moduleCode: moduleOption.moduleCode,
+      termName: moduleOption.termName,
+      totalEnrolled: rows.length,
+      studentsWithSubmission: rows.filter((row) => row.statusLabel !== 'No Submission').length,
+      studentsWithoutSubmission: rows.filter((row) => row.statusLabel === 'No Submission').length,
+    },
+    rows,
+  } satisfies EducatorScoreExportResult
 }
 
 // fetchEducatorScoreReviewList - load all visible score review rows for an educator
@@ -468,9 +715,18 @@ export async function fetchEducatorScoreReviewList() {
     new Map<string, number>()
   )
 
-  return visibleScores.map((score) => {
-    const module = getSingleRelation(score.module)
-    const student = getSingleRelation(score.student)
+  const groupedScoreMap = visibleScores.reduce<Map<string, ScoreRow[]>>((result, score) => {
+    const groupKey = `${score.student_id}:${score.module_id}`
+    const currentRows = result.get(groupKey) || []
+    currentRows.push(score)
+    result.set(groupKey, currentRows)
+    return result
+  }, new Map<string, ScoreRow[]>())
+
+  return Array.from(groupedScoreMap.values()).map((groupedScores) => {
+    const representativeScore = groupedScores[0]
+    const module = getSingleRelation(representativeScore.module)
+    const student = getSingleRelation(representativeScore.student)
 
     if (!module || !student) {
       throw new Error('Score details are incomplete.')
@@ -479,33 +735,40 @@ export async function fetchEducatorScoreReviewList() {
     const subject = getSingleRelation(module.subject)
     const section = getSingleRelation(module.section)
     const term = getSingleRelation(module.academic_term)
-    const historyKey = `${score.student_id}:${score.module_id}`
+    const historyKey = `${representativeScore.student_id}:${representativeScore.module_id}`
     const submittedScores = scoreHistoryMap.get(historyKey) || []
     const grantedRetakeCount = retakeGrantMap.get(historyKey) || 0
     const retakeState = getRetakeState(module, submittedScores, grantedRetakeCount)
     const bestScore = getBestSubmittedScore(submittedScores)
-    const latestScore = [...submittedScores].sort((leftScore, rightScore) => rightScore.id - leftScore.id)[0] || null
-    const studentAnswers = normalizeStoredAnswers(score.student_answer)
+    const latestScore = getLatestSubmittedScore(submittedScores)
+    const reviewSourceScore = latestScore || bestScore || representativeScore
+    const studentAnswers = normalizeStoredAnswers(reviewSourceScore.student_answer)
 
     return {
-      scoreId: score.id,
+      scoreId: reviewSourceScore.id,
       studentId: student.id,
       studentUserId: student.user_id,
       studentName: `${student.given_name} ${student.surname}`.trim(),
-      moduleRowId: score.module_id,
+      moduleRowId: representativeScore.module_id,
       moduleCode: module.module_code,
-      subjectId: score.subject_id,
+      subjectId: representativeScore.subject_id,
       subjectName: subject?.subject_name || 'Unknown Subject',
-      sectionId: score.section_id,
+      sectionId: representativeScore.section_id,
       sectionName: section?.section_name || 'Unknown Section',
       termName: buildAcademicTermLabel(term),
-      score: score.score || 0,
-      totalQuestions: score.total_questions || 0,
-      percentage: getScorePercentage(score),
-      isPassed: Boolean(score.is_passed),
-      status: score.status === 'passed' ? 'passed' : 'failed',
-      submittedAt: score.submitted_at,
-      takenAt: score.taken_at,
+      score: bestScore?.score || 0,
+      totalQuestions: bestScore?.total_questions || 0,
+      percentage: bestScore ? getScorePercentage(bestScore) : 0,
+      isPassed: Boolean(bestScore?.is_passed),
+      status: bestScore?.status === 'passed' ? 'passed' : 'failed',
+      submittedAt: bestScore?.submitted_at || null,
+      takenAt: bestScore?.taken_at || null,
+      latestScore: latestScore?.score || 0,
+      latestTotalQuestions: latestScore?.total_questions || 0,
+      latestPercentage: latestScore ? getScorePercentage(latestScore) : 0,
+      latestStatus: latestScore?.status === 'passed' ? 'passed' : 'failed',
+      latestSubmittedAt: latestScore?.submitted_at || null,
+      latestTakenAt: latestScore?.taken_at || null,
       allowRetake: retakeState.allowRetake,
       retakeCount: retakeState.effectiveRetakeCount,
       grantedRetakeCount: retakeState.grantedRetakeCount,
@@ -523,8 +786,8 @@ export async function fetchEducatorScoreReviewList() {
       timeLimitMinutes: Number(module.time_limit) || 0,
       isShuffle: module.is_shuffle,
       allowReview: module.allow_review,
-      warningAttempts: score.warning_attempts ?? 0,
-      questions: (quizMap.get(score.module_id) || []).map((quiz) => {
+      warningAttempts: reviewSourceScore.warning_attempts ?? 0,
+      questions: (quizMap.get(representativeScore.module_id) || []).map((quiz) => {
         const correctAnswers = normalizeCorrectAnswers(quiz.quiz_type, quiz.correct_answer)
         const studentAnswer = studentAnswers[String(quiz.id)] || ''
 

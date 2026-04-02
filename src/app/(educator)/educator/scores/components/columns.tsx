@@ -1,6 +1,7 @@
 'use client'
 
 import type { ColumnDef } from '@tanstack/react-table'
+import { IconArrowUpRight } from '@tabler/icons-react'
 
 import { Badge } from '@/components/ui/badge'
 
@@ -45,39 +46,57 @@ export function columns(onScoresChanged: () => Promise<void>): ColumnDef<Educato
       accessorKey: 'moduleCode',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Module" />,
       cell: ({ row }) => (
-        <div className="min-w-[120px] font-medium whitespace-normal">{row.original.moduleCode}</div>
-      ),
-      filterFn: (row, id, value) => row.getValue(id) === value,
-    },
-    {
-      accessorKey: 'subjectName',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Subject" />,
-      cell: ({ row }) => (
-        <div className="min-w-[220px]">
-          <div className="font-medium uppercase whitespace-normal">{row.original.subjectName}</div>
-          <div className="text-muted-foreground text-sm whitespace-normal">{row.original.sectionName}</div>
+        <div className="min-w-[180px] space-y-1">
+          <div className="font-medium whitespace-normal">{row.original.moduleCode}</div>
+          <div className="text-muted-foreground text-sm whitespace-normal">{row.original.subjectName}</div>
         </div>
       ),
       filterFn: (row, id, value) => row.getValue(id) === value,
     },
     {
-      accessorKey: 'termName',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Academic Term" />,
-      cell: ({ row }) => <div className="min-w-[180px] whitespace-normal">{row.original.termName}</div>,
+      accessorKey: 'subjectName',
+      header: () => null,
+      cell: () => null,
+      enableHiding: true,
+      filterFn: (row, id, value) => row.getValue(id) === value,
+    },
+    {
+      accessorKey: 'sectionName',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Section" />,
+      cell: ({ row }) => (
+        <div className="min-w-[180px]">
+          <div className="font-medium whitespace-normal">{row.original.sectionName}</div>
+          <div className="text-muted-foreground text-sm whitespace-normal">{row.original.termName}</div>
+        </div>
+      ),
       filterFn: (row, id, value) => row.getValue(id) === value,
     },
     {
       id: 'scoreSummary',
-      accessorFn: (row) => `${row.score}/${row.totalQuestions}`,
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Score" />,
+      accessorFn: (row) => `${row.score}/${row.totalQuestions} ${row.percentage}`,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Highest Score" />,
       cell: ({ row }) => (
-        <div className="min-w-[140px] space-y-1 font-medium">
+        <div className="min-w-[170px] space-y-1">
           <div>
             {row.original.score} / {row.original.totalQuestions}
           </div>
-          <div className="text-xs text-muted-foreground">
-            Best: {row.original.bestScore ?? row.original.score} / {row.original.totalQuestions}
+          <div className="text-muted-foreground text-xs">{row.original.percentage}% highest score</div>
+        </div>
+      ),
+    },
+    {
+      id: 'latestAttempt',
+      accessorFn: (row) => `${row.latestScore}/${row.latestTotalQuestions} ${row.latestPercentage}`,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Latest Attempt" />,
+      cell: ({ row }) => (
+        <div className="min-w-[170px] space-y-1">
+          <div className="flex items-center gap-2 font-medium">
+            <span>
+              {row.original.latestScore} / {row.original.latestTotalQuestions}
+            </span>
+            <IconArrowUpRight size={14} className="text-muted-foreground" />
           </div>
+          <div className="text-muted-foreground text-xs">{row.original.latestPercentage}% latest score</div>
         </div>
       ),
     },
@@ -85,32 +104,37 @@ export function columns(onScoresChanged: () => Promise<void>): ColumnDef<Educato
       accessorKey: 'submittedAttemptCount',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Attempts" />,
       cell: ({ row }) => (
-        <div className="min-w-[120px] whitespace-normal">
-          <div>{row.original.submittedAttemptCount}</div>
+        <div className="min-w-[130px] space-y-1 whitespace-normal">
+          <div className="font-medium">{row.original.submittedAttemptCount}</div>
           <div className="text-muted-foreground text-xs">
-            Extra: {row.original.grantedRetakeCount}
+            Remaining: {row.original.remainingRetakes}
           </div>
         </div>
       ),
     },
     {
-      accessorKey: 'percentage',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Percentage" />,
-      cell: ({ row }) => <div className="min-w-[110px]">{row.original.percentage}%</div>,
-    },
-    {
       accessorKey: 'status',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
       cell: ({ row }) => (
-        <Badge className={getStatusClassName(row.original.status)}>{row.original.status}</Badge>
+        <div className="min-w-[140px] space-y-1">
+          <Badge className={getStatusClassName(row.original.status)}>{row.original.status}</Badge>
+          <div className="text-muted-foreground text-xs">
+            Latest: {row.original.latestStatus}
+          </div>
+        </div>
       ),
       filterFn: (row, id, value) => row.getValue(id) === value,
     },
     {
-      accessorKey: 'submittedAt',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Submitted At" />,
+      accessorKey: 'latestSubmittedAt',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Last Submitted" />,
       cell: ({ row }) => (
-        <div className="min-w-[190px] text-sm whitespace-normal">{row.original.submittedAt || 'Not submitted'}</div>
+        <div className="min-w-[190px] space-y-1 text-sm whitespace-normal">
+          <div>{row.original.latestSubmittedAt || 'Not submitted'}</div>
+          <div className="text-muted-foreground text-xs">
+            Extra retakes: {row.original.grantedRetakeCount}
+          </div>
+        </div>
       ),
     },
     {

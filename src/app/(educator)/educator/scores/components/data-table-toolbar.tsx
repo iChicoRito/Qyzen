@@ -1,7 +1,7 @@
 'use client'
 
 import type { Table } from '@tanstack/react-table'
-import { IconRefresh } from '@tabler/icons-react'
+import { IconDownload, IconRefresh } from '@tabler/icons-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,12 +18,13 @@ import { DataTableViewOptions } from './data-table-view-options'
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
+  onDownloadGrades?: () => void
 }
 
 // getSelectOptions - build unique select options from table rows
 function getSelectOptions<TData>(
   table: Table<TData>,
-  key: 'studentName' | 'moduleCode' | 'subjectName' | 'termName'
+  key: 'studentName' | 'moduleCode' | 'subjectName' | 'sectionName'
 ) {
   const rows = table.getCoreRowModel().rows
   const values = rows
@@ -36,16 +37,19 @@ function getSelectOptions<TData>(
 }
 
 // DataTableToolbar - render educator score filters and actions
-export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>) {
+export function DataTableToolbar<TData>({
+  table,
+  onDownloadGrades,
+}: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0
   const studentOptions = getSelectOptions(table, 'studentName')
   const moduleOptions = getSelectOptions(table, 'moduleCode')
   const subjectOptions = getSelectOptions(table, 'subjectName')
-  const termOptions = getSelectOptions(table, 'termName')
+  const sectionOptions = getSelectOptions(table, 'sectionName')
   const studentFilter = table.getColumn('studentName')?.getFilterValue() as string | undefined
   const moduleFilter = table.getColumn('moduleCode')?.getFilterValue() as string | undefined
   const subjectFilter = table.getColumn('subjectName')?.getFilterValue() as string | undefined
-  const termFilter = table.getColumn('termName')?.getFilterValue() as string | undefined
+  const sectionFilter = table.getColumn('sectionName')?.getFilterValue() as string | undefined
   const statusFilter = table.getColumn('status')?.getFilterValue() as string | undefined
 
   return (
@@ -115,19 +119,19 @@ export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>)
         </Select>
 
         <Select
-          value={termFilter || 'all'}
+          value={sectionFilter || 'all'}
           onValueChange={(value) =>
-            table.getColumn('termName')?.setFilterValue(value === 'all' ? undefined : value)
+            table.getColumn('sectionName')?.setFilterValue(value === 'all' ? undefined : value)
           }
         >
           <SelectTrigger className="w-full cursor-pointer">
-            <SelectValue placeholder="Academic Term" />
+            <SelectValue placeholder="Section" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all" className="cursor-pointer">
-              All Terms
+              All Sections
             </SelectItem>
-            {termOptions.map((option) => (
+            {sectionOptions.map((option) => (
               <SelectItem key={option} value={option} className="cursor-pointer">
                 {option}
               </SelectItem>
@@ -178,7 +182,16 @@ export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>)
             Reset Filters
           </Button>
         </div>
-        <div className="flex justify-end">
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <Button
+            variant="outline"
+            onClick={onDownloadGrades}
+            className="w-full cursor-pointer sm:w-auto"
+            disabled={!onDownloadGrades}
+          >
+            <IconDownload size={16} className="mr-2" />
+            Download Grades
+          </Button>
           <DataTableViewOptions table={table} />
         </div>
       </div>

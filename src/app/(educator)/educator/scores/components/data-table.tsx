@@ -31,13 +31,18 @@ import { DataTableToolbar } from './data-table-toolbar'
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  onDownloadGrades?: () => void
 }
 
 // DataTable - render the educator scores table
-export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
+export function DataTable<TData, TValue>({
+  columns,
+  data,
+  onDownloadGrades,
+}: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({ search: false })
+    React.useState<VisibilityState>({ search: false, subjectName: false })
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [sorting, setSorting] = React.useState<SortingState>([])
 
@@ -65,7 +70,10 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   return (
     <div className="min-w-0 space-y-4">
-      <DataTableToolbar table={table} />
+      <DataTableToolbar
+        table={table}
+        onDownloadGrades={onDownloadGrades}
+      />
       <div className="min-w-0 overflow-x-auto rounded-md border">
         <Table className="min-w-[1100px]">
           <TableHeader>

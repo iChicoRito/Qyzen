@@ -177,7 +177,7 @@ export function ViewScoresModal({
               <div className="space-y-1">
                 <div className="text-lg font-semibold">Assessment Summary</div>
                 <div className="text-muted-foreground text-sm">
-                  Review the submitted score, current retake allowance, and the answered questions for this attempt.
+                  Review the highest score summary, latest attempt, retake allowance, and answered questions.
                 </div>
               </div>
 
@@ -191,7 +191,7 @@ export function ViewScoresModal({
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="space-y-1">
                   <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
-                    Score
+                    Highest Score
                   </div>
                   <div className="text-3xl font-semibold tracking-tight">
                     {score.score} / {score.totalQuestions}
@@ -199,7 +199,7 @@ export function ViewScoresModal({
                 </div>
                 <div className="space-y-1">
                   <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
-                    Percentage
+                    Highest Percentage
                   </div>
                   <div className="text-3xl font-semibold tracking-tight">{score.percentage}%</div>
                 </div>
@@ -210,11 +210,28 @@ export function ViewScoresModal({
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="space-y-1">
                   <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
-                    Best Score
+                    Latest Attempt
                   </div>
                   <div className="text-sm font-medium">
-                    {score.bestScore ?? score.score} / {score.totalQuestions}
+                    {score.latestScore} / {score.latestTotalQuestions}
                   </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
+                    Latest Percentage
+                  </div>
+                  <div className="text-sm font-medium">{score.latestPercentage}%</div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
+                    Highest Attempt ID
+                  </div>
+                  <div className="text-sm font-medium">{score.bestScoreId ?? 'N/A'}</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
@@ -229,10 +246,21 @@ export function ViewScoresModal({
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="space-y-1">
                   <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
-                    Submitted At
+                    Highest Submitted At
                   </div>
                   <div className="text-sm font-medium">{score.submittedAt || 'Not submitted'}</div>
                 </div>
+                <div className="space-y-1">
+                  <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
+                    Latest Submitted At
+                  </div>
+                  <div className="text-sm font-medium">{score.latestSubmittedAt || 'Not submitted'}</div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="grid gap-5 sm:grid-cols-2">
                 <div className="space-y-1">
                   <div className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.18em]">
                     Academic Term
