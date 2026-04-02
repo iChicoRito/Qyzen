@@ -19,6 +19,7 @@ import { fetchEducatorRealtimeMonitoringList } from '@/lib/supabase/educator-rea
 
 import { columns } from './columns'
 import { DataTable } from './data-table'
+import { ViewStudentsModal } from './view-students-modal'
 import {
   educatorRealtimeMonitoringRowSchema,
   type EducatorRealtimeMonitoringRow,
@@ -31,6 +32,8 @@ export function RealtimeMonitoringPageClient() {
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedModuleRowId, setSelectedModuleRowId] = useState<number | null>(null)
+  const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false)
   const loadRowsRef = useRef<(mode?: 'initial' | 'refresh' | 'background') => Promise<void>>(async () => {})
 
   // ==================== LOAD ROWS ====================
@@ -153,6 +156,22 @@ export function RealtimeMonitoringPageClient() {
   const totalAnsweringCount = rows.reduce((total, row) => total + row.answeringCount, 0)
   const totalOnlineCount = rows.reduce((total, row) => total + row.onlineCount, 0)
   const totalFinishedCount = rows.reduce((total, row) => total + row.finishedCount, 0)
+  const selectedRow =
+    rows.find((row) => row.moduleRowId === selectedModuleRowId) || null
+
+  // ==================== MODAL ACTIONS ====================
+  const handleMonitorStudents = (moduleRowId: number) => {
+    setSelectedModuleRowId(moduleRowId)
+    setIsStudentsModalOpen(true)
+  }
+
+  const handleStudentsModalOpenChange = (open: boolean) => {
+    setIsStudentsModalOpen(open)
+
+    if (!open) {
+      setSelectedModuleRowId(null)
+    }
+  }
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-6 px-4 md:px-6">
@@ -255,12 +274,20 @@ export function RealtimeMonitoringPageClient() {
         <CardContent className="min-w-0 px-3 pb-4 sm:px-6">
           <DataTable
             data={rows}
-            columns={columns()}
+            columns={columns(handleMonitorStudents)}
             onRefresh={() => void loadRowsRef.current('refresh')}
             isRefreshing={isRefreshing}
           />
         </CardContent>
       </Card>
+
+      {selectedRow ? (
+        <ViewStudentsModal
+          row={selectedRow}
+          open={isStudentsModalOpen}
+          onOpenChange={handleStudentsModalOpenChange}
+        />
+      ) : null}
     </div>
   )
 }

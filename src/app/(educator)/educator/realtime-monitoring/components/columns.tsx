@@ -15,7 +15,9 @@ import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
 
 // columns - build the monitoring table columns
-export function columns(): ColumnDef<EducatorRealtimeMonitoringRow>[] {
+export function columns(
+  onMonitorStudents: (moduleRowId: number) => void
+): ColumnDef<EducatorRealtimeMonitoringRow>[] {
   return [
     {
       id: 'search',
@@ -126,7 +128,7 @@ export function columns(): ColumnDef<EducatorRealtimeMonitoringRow>[] {
       id: 'actions',
       enableSorting: false,
       enableHiding: false,
-      cell: ({ row }) => <DataTableRowActions row={row} />,
+      cell: ({ row }) => <DataTableRowActions row={row} onMonitorStudents={onMonitorStudents} />,
     },
   ]
 }
