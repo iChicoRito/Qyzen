@@ -1,11 +1,7 @@
-import { GroupChatsPageClient } from '@/components/group-chats/group-chats-page-client'
-import { requireServerAuthContext } from '@/lib/auth/server'
+import { redirect } from 'next/navigation'
 
-// EducatorGroupChatsPage - protect and render the educator group chat screen
+// EducatorClassroomGroupChatsRedirectPage - redirect old classroom chat route to the new educator chat route
 export default async function EducatorGroupChatsPage() {
-  // ==================== LOAD CONTEXT ====================
-  const context = await requireServerAuthContext('educator')
-
-  // ==================== RENDER ====================
-  return <GroupChatsPageClient currentUserId={context.profile.id} role="educator" />
+  // ==================== REDIRECT ====================
+  redirect('/educator/group-chats')
 }

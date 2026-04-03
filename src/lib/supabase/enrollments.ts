@@ -2,7 +2,6 @@
 
 import type { NotificationInsertInput } from '@/types/notification'
 
-import { ensureGroupChatsForSubjectIds } from './group-chats'
 import { insertNotifications } from './notifications'
 import { createClient } from './client'
 
@@ -370,10 +369,6 @@ export async function createEnrollments(input: CreateEnrollmentInput) {
   const educatorId = await getCurrentEducatorId()
   await ensureEnrollmentUniqueness(educatorId, input.studentIds, input.subjectIds)
 
-  if (input.status === 'active') {
-    await ensureGroupChatsForSubjectIds(educatorId, input.subjectIds)
-  }
-
   const supabase = createClient()
   const rowsToInsert = input.studentIds.flatMap((studentId) =>
     input.subjectIds.map((subjectId) => ({
@@ -408,10 +403,6 @@ export async function createEnrollments(input: CreateEnrollmentInput) {
 export async function updateEnrollment(input: UpdateEnrollmentInput) {
   const educatorId = await getCurrentEducatorId()
   await ensureEnrollmentUniqueness(educatorId, [input.studentId], [input.subjectId], input.id)
-
-  if (input.status === 'active') {
-    await ensureGroupChatsForSubjectIds(educatorId, [input.subjectId])
-  }
 
   const supabase = createClient()
   const { data, error } = await supabase

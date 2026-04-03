@@ -687,6 +687,9 @@ CREATE POLICY "Educator group chat create access" ON public.tbl_group_chats AS P
    FROM tbl_subjects subject_row
   WHERE ((subject_row.id = tbl_group_chats.subject_id) AND (subject_row.educator_id = get_current_tbl_user_id()) AND (subject_row.sections_id = tbl_group_chats.section_id))))));
 
+CREATE POLICY "Educator group chat delete access" ON public.tbl_group_chats AS PERMISSIVE FOR DELETE TO authenticated
+  USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
+
 CREATE POLICY "Student group chat view access" ON public.tbl_group_chats AS PERMISSIVE FOR SELECT TO authenticated
   USING ((has_role('student'::text) AND (EXISTS ( SELECT 1
    FROM tbl_enrolled enrolled

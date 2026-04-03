@@ -16,6 +16,7 @@ import {
   markGroupChatAsRead,
   sendGroupChatMessage,
 } from '@/lib/supabase/group-chats'
+import { cn } from '@/lib/utils'
 import type { GroupChatListItem, GroupChatMessage } from '@/types/group-chat'
 
 import { GroupChatConversationList } from './group-chat-conversation-list'
@@ -44,6 +45,7 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
   const [messages, setMessages] = useState<GroupChatMessage[]>([])
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [isConversationRailCollapsed, setIsConversationRailCollapsed] = useState(false)
   const [isLoadingChats, setIsLoadingChats] = useState(true)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [isSendingMessage, setIsSendingMessage] = useState(false)
@@ -293,7 +295,7 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
 
   if (isLoadingChats) {
     return (
-      <div className="flex flex-1 px-4 md:px-6">
+      <div className="flex min-h-0 flex-1 px-4 md:px-6">
         <div className="grid min-h-[36rem] w-full gap-4 md:grid-cols-[20rem_minmax(0,1fr)]">
           <Card className="overflow-hidden">
             <CardContent className="space-y-3 p-4">
@@ -321,7 +323,7 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
 
   if (error) {
     return (
-      <div className="flex flex-1 px-4 md:px-6">
+      <div className="flex min-h-0 flex-1 px-4 md:px-6">
         <Card className="w-full">
           <CardHeader>
             <CardTitle>Group Chats</CardTitle>
@@ -338,10 +340,18 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
   }
 
   const showListOnlyOnMobile = isMobile && !selectedChatId
+  const conversationRailWidthClass = isConversationRailCollapsed
+    ? 'md:grid-cols-[4.5rem_minmax(0,1fr)]'
+    : 'md:grid-cols-[minmax(19rem,22rem)_minmax(0,1fr)]'
 
   return (
-    <div className="flex flex-1 px-4 md:px-6">
-      <div className="min-h-[36rem] w-full overflow-hidden rounded-lg border bg-background md:grid md:grid-cols-[20rem_minmax(0,1fr)]">
+    <div className="flex min-h-0 flex-1 px-4 md:px-6">
+      <div
+        className={cn(
+          'h-[calc(100dvh-8rem)] min-h-[36rem] w-full overflow-hidden rounded-lg border bg-background md:grid',
+          conversationRailWidthClass
+        )}
+      >
         {!isMobile || showListOnlyOnMobile ? (
           <GroupChatConversationList
             chats={filteredChats}
@@ -349,11 +359,15 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
             onSelectChat={setSelectedChatId}
+            isCollapsed={!isMobile && isConversationRailCollapsed}
+            onToggleCollapsed={
+              !isMobile ? () => setIsConversationRailCollapsed((currentValue) => !currentValue) : undefined
+            }
           />
         ) : null}
 
         {!showListOnlyOnMobile ? (
-          <div className="flex min-h-[36rem] flex-col">
+          <div className="flex min-h-0 flex-col overflow-hidden">
             <GroupChatHeader
               chat={selectedChat}
               showBackButton={isMobile}
@@ -375,7 +389,7 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
                 />
               </>
             ) : (
-              <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
                 <IconMessageCircleOff size={28} className="text-muted-foreground" />
                 <p className="font-medium">No group chat selected</p>
                 <p className="text-sm text-muted-foreground">

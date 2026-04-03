@@ -37,3 +37,15 @@ export interface SendGroupChatMessageInput {
   senderUserId: number
   content: string
 }
+
+export interface EducatorManagedGroupChat {
+  id: number
+  subjectId: number
+  sectionId: number
+  educatorId: number
+  subjectName: string
+  sectionName: string
+  studentCount: number
+  onlineStudentCount: number
+  createdAt: string
+}

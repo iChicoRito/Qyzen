@@ -1,11 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type {
+  EducatorManagedGroupChat,
   GroupChatListItem,
   GroupChatMessage,
   GroupChatSenderRole,
   SendGroupChatMessageInput,
 } from '@/types/group-chat'
+import { STUDENT_PRESENCE_FRESHNESS_MS } from '@/lib/supabase/student-presence'
 
 interface GroupChatListRow {
   group_chat_id: number
@@ -36,12 +38,79 @@ interface GroupChatMessageRow {
 interface SubjectGroupChatRow {
   id: number
   educator_id: number
+  subject_code?: string
+  subject_name?: string
+  is_active?: boolean
   sections_id: number
+  section?: {
+    id: number
+    section_name: string
+    is_active: boolean
+  } | Array<{
+    id: number
+    section_name: string
+    is_active: boolean
+  }> | null
 }
 
 interface ExistingGroupChatRow {
+  id: number
   subject_id: number
   section_id: number
+}
+
+interface UserLookupRow {
+  id: number
+}
+
+interface GroupChatSectionRow {
+  id: number
+  section_name: string
+  is_active: boolean
+}
+
+interface ManagedGroupChatRow {
+  id: number
+  educator_id: number
+  subject_id: number
+  section_id: number
+  created_at: string
+  subject: {
+    subject_name: string
+  } | Array<{
+    subject_name: string
+  }> | null
+  section: {
+    section_name: string
+  } | Array<{
+    section_name: string
+  }> | null
+}
+
+interface EnrollmentCountRow {
+  subject_id: number
+  student_id: number
+}
+
+interface PresenceRow {
+  student_id: number
+  last_seen_at: string
+}
+
+export interface EducatorGroupChatSubjectOption {
+  id: number
+  subjectCode: string
+  subjectName: string
+  status: 'active' | 'inactive'
+  section: {
+    id: number
+    name: string
+    status: 'active' | 'inactive'
+  }
+}
+
+export interface CreateEducatorGroupChatInput {
+  subjectId: number
 }
 
 interface SupabaseErrorResponse {
@@ -56,6 +125,27 @@ function getSupabaseErrorMessage(error: SupabaseErrorResponse | null, fallbackMe
 // normalizeSenderRole - keep sender roles inside the app role union
 function normalizeSenderRole(role: string): GroupChatSenderRole {
   return role === 'educator' ? 'educator' : 'student'
+}
+
+// mapGroupChatSubjectOption - convert one educator subject row into a creator option
+function mapGroupChatSubjectOption(row: SubjectGroupChatRow): EducatorGroupChatSubjectOption | null {
+  const section = Array.isArray(row.section) ? row.section[0] : row.section
+
+  if (!section || !row.subject_code || !row.subject_name) {
+    return null
+  }
+
+  return {
+    id: row.id,
+    subjectCode: row.subject_code,
+    subjectName: row.subject_name,
+    status: row.is_active ? 'active' : 'inactive',
+    section: {
+      id: section.id,
+      name: section.section_name,
+      status: section.is_active ? 'active' : 'inactive',
+    },
+  }
 }
 
 // mapGroupChatListItem - convert rpc rows into chat list items
@@ -91,6 +181,79 @@ function mapGroupChatMessage(row: GroupChatMessageRow): GroupChatMessage {
     senderRole: normalizeSenderRole(row.sender_role),
     content: row.content,
     createdAt: row.created_at,
+  }
+}
+
+// mapEducatorManagedGroupChat - convert one educator-owned row and summary counts into a management row
+function mapEducatorManagedGroupChat(
+  row: ManagedGroupChatRow,
+  studentCount: number,
+  onlineStudentCount: number
+): EducatorManagedGroupChat | null {
+  const subject = Array.isArray(row.subject) ? row.subject[0] : row.subject
+  const section = Array.isArray(row.section) ? row.section[0] : row.section
+
+  if (!subject || !section) {
+    return null
+  }
+
+  return {
+    id: row.id,
+    subjectId: row.subject_id,
+    sectionId: row.section_id,
+    educatorId: row.educator_id,
+    subjectName: subject.subject_name,
+    sectionName: section.section_name,
+    studentCount,
+    onlineStudentCount,
+    createdAt: row.created_at,
+  }
+}
+
+// buildSubjectParticipantSummaryWithClient - compute classroom member counts for one subject
+async function buildSubjectParticipantSummaryWithClient(
+  supabase: SupabaseClient,
+  educatorId: number,
+  subjectId: number
+) {
+  const { data: enrollmentData, error: enrollmentError } = await supabase
+    .from('tbl_enrolled')
+    .select('subject_id,student_id')
+    .eq('educator_id', educatorId)
+    .eq('subject_id', subjectId)
+    .eq('is_active', true)
+
+  if (enrollmentError) {
+    throw new Error(getSupabaseErrorMessage(enrollmentError, 'Failed to load group chat member counts.'))
+  }
+
+  const enrollmentRows = (enrollmentData || []) as EnrollmentCountRow[]
+  const studentIds = Array.from(new Set(enrollmentRows.map((row) => row.student_id)))
+  const onlineCutoff = Date.now() - STUDENT_PRESENCE_FRESHNESS_MS
+  const onlineStudentIds = new Set<number>()
+
+  if (studentIds.length > 0) {
+    const { data: presenceData, error: presenceError } = await supabase
+      .from('tbl_student_presence')
+      .select('student_id,last_seen_at')
+      .in('student_id', studentIds)
+
+    if (presenceError) {
+      throw new Error(getSupabaseErrorMessage(presenceError, 'Failed to load group chat online counts.'))
+    }
+
+    for (const row of (presenceData || []) as PresenceRow[]) {
+      const lastSeenAt = new Date(row.last_seen_at).getTime()
+
+      if (!Number.isNaN(lastSeenAt) && lastSeenAt >= onlineCutoff) {
+        onlineStudentIds.add(row.student_id)
+      }
+    }
+  }
+
+  return {
+    studentCount: studentIds.length,
+    onlineStudentCount: studentIds.filter((studentId) => onlineStudentIds.has(studentId)).length,
   }
 }
 
@@ -170,69 +333,226 @@ export async function markGroupChatAsReadWithClient(
   }
 }
 
-// ensureGroupChatsForSubjectIdsWithClient - create missing chat rows for the educator subjects
-export async function ensureGroupChatsForSubjectIdsWithClient(
-  supabase: SupabaseClient,
-  educatorId: number,
-  subjectIds: number[]
-) {
-  const uniqueSubjectIds = Array.from(new Set(subjectIds))
+// getCurrentEducatorIdWithClient - resolve the current educator profile id
+async function getCurrentEducatorIdWithClient(supabase: SupabaseClient) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
 
-  if (uniqueSubjectIds.length === 0) {
-    return
+  if (userError || !user?.email) {
+    throw new Error('Authenticated educator was not found.')
   }
+
+  const { data, error } = await supabase
+    .from('tbl_users')
+    .select('id')
+    .eq('email', user.email)
+    .is('deleted_at', null)
+    .limit(1)
+
+  if (error) {
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to load educator profile.'))
+  }
+
+  const rows = (data || []) as UserLookupRow[]
+
+  if (!rows[0]) {
+    throw new Error('Educator profile was not found.')
+  }
+
+  return rows[0].id
+}
+
+// fetchEducatorGroupChatSubjectOptionsWithClient - load owned subject and section options for manual chat creation
+export async function fetchEducatorGroupChatSubjectOptionsWithClient(supabase: SupabaseClient) {
+  const educatorId = await getCurrentEducatorIdWithClient(supabase)
+  const { data, error } = await supabase
+    .from('tbl_subjects')
+    .select('id,educator_id,subject_code,subject_name,is_active,sections_id,section:sections_id(id,section_name,is_active)')
+    .eq('educator_id', educatorId)
+    .order('subject_name', { ascending: true })
+
+  if (error) {
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to load educator group chat subjects.'))
+  }
+
+  return ((data || []) as SubjectGroupChatRow[])
+    .map(mapGroupChatSubjectOption)
+    .filter((option): option is EducatorGroupChatSubjectOption => Boolean(option))
+}
+
+// fetchEducatorManagedGroupChatsWithClient - load educator-owned group chats for the management table
+export async function fetchEducatorManagedGroupChatsWithClient(supabase: SupabaseClient) {
+  const educatorId = await getCurrentEducatorIdWithClient(supabase)
+  const { data, error } = await supabase
+    .from('tbl_group_chats')
+    .select(
+      'id,educator_id,subject_id,section_id,created_at,subject:subject_id(subject_name),section:section_id(section_name)'
+    )
+    .eq('educator_id', educatorId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to load educator group chats.'))
+  }
+
+  const chatRows = (data || []) as ManagedGroupChatRow[]
+  const subjectIds = Array.from(new Set(chatRows.map((row) => row.subject_id)))
+
+  if (chatRows.length === 0 || subjectIds.length === 0) {
+    return [] as EducatorManagedGroupChat[]
+  }
+
+  const { data: enrollmentData, error: enrollmentError } = await supabase
+    .from('tbl_enrolled')
+    .select('subject_id,student_id')
+    .eq('educator_id', educatorId)
+    .eq('is_active', true)
+    .in('subject_id', subjectIds)
+
+  if (enrollmentError) {
+    throw new Error(getSupabaseErrorMessage(enrollmentError, 'Failed to load group chat member counts.'))
+  }
+
+  const enrollmentRows = (enrollmentData || []) as EnrollmentCountRow[]
+  const studentIds = Array.from(new Set(enrollmentRows.map((row) => row.student_id)))
+  const onlineCutoff = Date.now() - STUDENT_PRESENCE_FRESHNESS_MS
+  const onlineStudentIds = new Set<number>()
+
+  if (studentIds.length > 0) {
+    const { data: presenceData, error: presenceError } = await supabase
+      .from('tbl_student_presence')
+      .select('student_id,last_seen_at')
+      .in('student_id', studentIds)
+
+    if (presenceError) {
+      throw new Error(getSupabaseErrorMessage(presenceError, 'Failed to load group chat online counts.'))
+    }
+
+    for (const row of (presenceData || []) as PresenceRow[]) {
+      const lastSeenAt = new Date(row.last_seen_at).getTime()
+
+      if (!Number.isNaN(lastSeenAt) && lastSeenAt >= onlineCutoff) {
+        onlineStudentIds.add(row.student_id)
+      }
+    }
+  }
+
+  const subjectStudentIdsMap = enrollmentRows.reduce<Map<number, Set<number>>>((map, row) => {
+    const nextSet = map.get(row.subject_id) || new Set<number>()
+    nextSet.add(row.student_id)
+    map.set(row.subject_id, nextSet)
+    return map
+  }, new Map<number, Set<number>>())
+
+  return chatRows
+    .map((row) => {
+      const subjectStudentIds = subjectStudentIdsMap.get(row.subject_id) || new Set<number>()
+      const onlineStudentCount = Array.from(subjectStudentIds).filter((studentId) =>
+        onlineStudentIds.has(studentId)
+      ).length
+
+      return mapEducatorManagedGroupChat(row, subjectStudentIds.size, onlineStudentCount)
+    })
+    .filter((row): row is EducatorManagedGroupChat => Boolean(row))
+}
+
+// createEducatorGroupChatWithClient - insert one educator-owned group chat row
+export async function createEducatorGroupChatWithClient(
+  supabase: SupabaseClient,
+  input: CreateEducatorGroupChatInput
+) {
+  const educatorId = await getCurrentEducatorIdWithClient(supabase)
 
   const { data: subjectData, error: subjectError } = await supabase
     .from('tbl_subjects')
-    .select('id,educator_id,sections_id')
+    .select('id,educator_id,subject_code,subject_name,is_active,sections_id,section:sections_id(id,section_name,is_active)')
     .eq('educator_id', educatorId)
-    .in('id', uniqueSubjectIds)
+    .eq('id', input.subjectId)
+    .limit(1)
 
   if (subjectError) {
-    throw new Error(getSupabaseErrorMessage(subjectError, 'Failed to load group chat subjects.'))
+    throw new Error(getSupabaseErrorMessage(subjectError, 'Failed to load the selected subject.'))
   }
 
   const subjectRows = (subjectData || []) as SubjectGroupChatRow[]
 
-  if (subjectRows.length === 0) {
-    return
+  if (!subjectRows[0]) {
+    throw new Error('The selected subject was not found.')
   }
+
+  const subjectRow = subjectRows[0]
 
   const { data: existingData, error: existingError } = await supabase
     .from('tbl_group_chats')
-    .select('subject_id,section_id')
+    .select('id,subject_id,section_id')
     .eq('educator_id', educatorId)
-    .in(
-      'subject_id',
-      subjectRows.map((row) => row.id)
-    )
+    .eq('subject_id', subjectRow.id)
+    .eq('section_id', subjectRow.sections_id)
+    .limit(1)
 
   if (existingError) {
-    throw new Error(getSupabaseErrorMessage(existingError, 'Failed to load existing group chats.'))
+    throw new Error(getSupabaseErrorMessage(existingError, 'Failed to validate the existing group chat.'))
   }
 
-  const existingPairs = new Set(
-    ((existingData || []) as ExistingGroupChatRow[]).map((row) => `${row.subject_id}:${row.section_id}`)
-  )
+  const existingRows = (existingData || []) as ExistingGroupChatRow[]
+
+  if (existingRows[0]) {
+    throw new Error('A group chat already exists for the selected subject and section.')
+  }
 
   const timestamp = new Date().toISOString()
-  const rowsToInsert = subjectRows
-    .filter((row) => !existingPairs.has(`${row.id}:${row.sections_id}`))
-    .map((row) => ({
-      educator_id: row.educator_id,
-      subject_id: row.id,
-      section_id: row.sections_id,
+  const { data: insertData, error: insertError } = await supabase
+    .from('tbl_group_chats')
+    .insert({
+      educator_id: subjectRow.educator_id,
+      subject_id: subjectRow.id,
+      section_id: subjectRow.sections_id,
       created_at: timestamp,
       updated_at: timestamp,
-    }))
-
-  if (rowsToInsert.length === 0) {
-    return
-  }
-
-  const { error: insertError } = await supabase.from('tbl_group_chats').insert(rowsToInsert)
+    })
+    .select(
+      'id,educator_id,subject_id,section_id,created_at,subject:subject_id(subject_name),section:section_id(section_name)'
+    )
+    .single()
 
   if (insertError) {
     throw new Error(getSupabaseErrorMessage(insertError, 'Failed to create the subject group chat.'))
+  }
+
+  const createdRow = mapEducatorManagedGroupChat(insertData as ManagedGroupChatRow, 0, 0)
+
+  if (!createdRow) {
+    throw new Error('Created group chat details were not found.')
+  }
+
+  const participantSummary = await buildSubjectParticipantSummaryWithClient(
+    supabase,
+    educatorId,
+    subjectRow.id
+  )
+
+  return {
+    ...createdRow,
+    studentCount: participantSummary.studentCount,
+    onlineStudentCount: participantSummary.onlineStudentCount,
+  }
+}
+
+// deleteEducatorGroupChatWithClient - delete one educator-owned group chat row
+export async function deleteEducatorGroupChatWithClient(
+  supabase: SupabaseClient,
+  groupChatId: number
+) {
+  const educatorId = await getCurrentEducatorIdWithClient(supabase)
+  const { error } = await supabase
+    .from('tbl_group_chats')
+    .delete()
+    .eq('id', groupChatId)
+    .eq('educator_id', educatorId)
+
+  if (error) {
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to delete the group chat.'))
   }
 }

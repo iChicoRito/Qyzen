@@ -20,3 +20,15 @@ Objective #1: Real-time Group Chats for Students with their Educator
     3). For visual instructions, I provide an image that has indicator that needs changes on the UI and informations for this objective.
 
     4). Ensure that all of the layout is accurately responsive for both Desktop and Mobile View.
+
+Objective #2: Educator Group Chat Creation Minor Revisions
+
+    1). In the src\app\(educator)\educator\group-chats, Make the creation page is like the other creation page, with datatables, modal, deletion, view and other.
+
+    2). In the page it shows the dashboard cards of the group chats and data table.
+    
+    3). Use the add-groupchat-modal.tsx for adding the group chats, view-groupchat-modal.tsx for viewing the group chat information created.
+
+    4). Then the rest like delete-confirmation-modal, the layout should be like the others.
+
+    5). I wanted that it most likely the others page.

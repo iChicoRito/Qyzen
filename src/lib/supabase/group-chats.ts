@@ -3,13 +3,20 @@
 import type { SendGroupChatMessageInput } from '@/types/group-chat'
 
 import {
-  ensureGroupChatsForSubjectIdsWithClient,
+  createEducatorGroupChatWithClient,
+  deleteEducatorGroupChatWithClient,
+  fetchEducatorManagedGroupChatsWithClient,
+  fetchEducatorGroupChatSubjectOptionsWithClient,
   fetchGroupChatListWithClient,
   fetchGroupChatMessagesWithClient,
   markGroupChatAsReadWithClient,
   sendGroupChatMessageWithClient,
+  type EducatorGroupChatSubjectOption,
+  type CreateEducatorGroupChatInput,
 } from './group-chat-shared'
 import { createClient } from './client'
+
+export type { EducatorGroupChatSubjectOption, CreateEducatorGroupChatInput }
 
 // fetchGroupChatList - load current user chat rooms
 export async function fetchGroupChatList() {
@@ -35,8 +42,26 @@ export async function markGroupChatAsRead(groupChatId: number, userId: number) {
   return markGroupChatAsReadWithClient(supabase, groupChatId, userId)
 }
 
-// ensureGroupChatsForSubjectIds - create missing chat rows for active educator subjects
-export async function ensureGroupChatsForSubjectIds(educatorId: number, subjectIds: number[]) {
+// fetchEducatorGroupChatSubjectOptions - load educator subject options for manual chat creation
+export async function fetchEducatorGroupChatSubjectOptions() {
   const supabase = createClient()
-  return ensureGroupChatsForSubjectIdsWithClient(supabase, educatorId, subjectIds)
+  return fetchEducatorGroupChatSubjectOptionsWithClient(supabase)
+}
+
+// fetchEducatorManagedGroupChats - load educator-owned group chats for the management page
+export async function fetchEducatorManagedGroupChats() {
+  const supabase = createClient()
+  return fetchEducatorManagedGroupChatsWithClient(supabase)
+}
+
+// createEducatorGroupChat - create one educator-owned subject group chat manually
+export async function createEducatorGroupChat(input: CreateEducatorGroupChatInput) {
+  const supabase = createClient()
+  return createEducatorGroupChatWithClient(supabase, input)
+}
+
+// deleteEducatorGroupChat - remove one educator-owned group chat manually
+export async function deleteEducatorGroupChat(groupChatId: number) {
+  const supabase = createClient()
+  return deleteEducatorGroupChatWithClient(supabase, groupChatId)
 }

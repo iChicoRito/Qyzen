@@ -186,3 +186,27 @@ html {
     transform: translate(-2px, 0);
   }
 }
+
+@keyframes educator-bubble-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.educator-message-bubble {
+  background: linear-gradient(135deg, #6cdac9 0%, #f0f38e 50%, #fd9492 100%);
+  background-size: 200% 200%;
+  color: #111827;
+  box-shadow: 0 10px 24px rgba(108, 218, 201, 0.18);
+  animation: educator-bubble-gradient 7s ease infinite;
+}
+
+.educator-message-meta {
+  color: rgba(17, 24, 39, 0.72);
+}

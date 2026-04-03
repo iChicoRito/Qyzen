@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { format, isToday, isYesterday } from 'date-fns'
 import { IconChecks, IconUserScreen } from '@tabler/icons-react'
 
+import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import type { GroupChatMessage } from '@/types/group-chat'
@@ -73,7 +74,7 @@ export function GroupChatMessageList({
 
   if (isLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+      <div className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">
         Loading messages...
       </div>
     )
@@ -81,7 +82,7 @@ export function GroupChatMessageList({
 
   if (messages.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center px-4 text-center text-sm text-muted-foreground">
+      <div className="flex min-h-0 flex-1 items-center justify-center px-4 text-center text-sm text-muted-foreground">
         No messages yet. Start the conversation with your educator and classmates.
       </div>
     )
@@ -90,7 +91,7 @@ export function GroupChatMessageList({
   const groupedMessages = groupMessagesByDay(messages)
 
   return (
-    <ScrollArea className="flex-1">
+    <ScrollArea className="min-h-0 flex-1">
       <div className="space-y-4 px-4 py-4">
         {groupedMessages.map((group) => (
           <div key={group.date}>
@@ -125,13 +126,27 @@ export function GroupChatMessageList({
                       )}
                     >
                       {showSender ? (
-                        <p className="mb-1 text-sm font-medium">{message.senderDisplayName}</p>
+                        <div className="mb-3 flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium">{message.senderDisplayName}</p>
+                          {message.senderRole === 'educator' ? (
+                            <Badge
+                              variant="outline"
+                              className="border-yellow-500/30 bg-yellow-500/10 text-[11px] tracking-wide text-yellow-500"
+                            >
+                              EDUCATOR
+                            </Badge>
+                          ) : null}
+                        </div>
                       ) : null}
 
                       <div
                         className={cn(
                           'rounded-lg px-3 py-2 text-sm',
-                          isOwnMessage ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                          isOwnMessage
+                            ? 'bg-primary text-primary-foreground'
+                            : message.senderRole === 'educator'
+                              ? 'educator-message-bubble'
+                              : 'bg-muted text-foreground'
                         )}
                       >
                         <p className="whitespace-pre-wrap break-words">{message.content}</p>
@@ -139,7 +154,11 @@ export function GroupChatMessageList({
                         <div
                           className={cn(
                             'mt-2 flex items-center gap-1 text-xs',
-                            isOwnMessage ? 'justify-end text-primary-foreground/80' : 'text-muted-foreground'
+                            isOwnMessage
+                              ? 'justify-end text-primary-foreground/80'
+                              : message.senderRole === 'educator'
+                                ? 'educator-message-meta'
+                                : 'text-muted-foreground'
                           )}
                         >
                           <span>{formatMessageTimestamp(message.createdAt)}</span>

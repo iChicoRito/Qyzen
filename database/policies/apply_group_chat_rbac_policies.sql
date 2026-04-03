@@ -6,6 +6,7 @@
 DROP POLICY IF EXISTS "Admin full access on tbl_group_chats" ON public.tbl_group_chats;
 DROP POLICY IF EXISTS "Educator group chat view access" ON public.tbl_group_chats;
 DROP POLICY IF EXISTS "Educator group chat create access" ON public.tbl_group_chats;
+DROP POLICY IF EXISTS "Educator group chat delete access" ON public.tbl_group_chats;
 DROP POLICY IF EXISTS "Student group chat view access" ON public.tbl_group_chats;
 
 DROP POLICY IF EXISTS "Admin full access on tbl_group_chat_messages" ON public.tbl_group_chat_messages;
@@ -46,6 +47,13 @@ CREATE POLICY "Educator group chat create access" ON public.tbl_group_chats
         AND subject_row.educator_id = public.get_current_tbl_user_id()
         AND subject_row.sections_id = public.tbl_group_chats.section_id
     )
+  );
+
+CREATE POLICY "Educator group chat delete access" ON public.tbl_group_chats
+  AS PERMISSIVE FOR DELETE TO authenticated
+  USING (
+    public.has_role('educator')
+    AND educator_id = public.get_current_tbl_user_id()
   );
 
 CREATE POLICY "Student group chat view access" ON public.tbl_group_chats

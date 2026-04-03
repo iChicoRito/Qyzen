@@ -5,6 +5,7 @@ import {
   IconBook2,
   IconChecklist,
   IconLayoutDashboard,
+  IconMessageCircleUser,
   IconSchool,
   IconShieldCheck,
   IconUser,
@@ -183,9 +184,20 @@ function getNavigationGroupsByRole(role: AppRole): SidebarNavGroup[] {
                 title: 'Sections',
                 url: '/educator/classroom/sections',
               },
+            ],
+          },
+          {
+            title: 'Chats',
+            url: '#',
+            icon: IconMessageCircleUser,
+            items: [
               {
                 title: 'Group Chats',
-                url: '/educator/classroom/group-chats',
+                url: '/educator/group-chats',
+              },
+              {
+                title: 'Create Group Chat',
+                url: '/educator/group-chats/create',
               },
             ],
           },
