@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { format, isToday, isYesterday } from 'date-fns'
 import { IconChecks, IconUserScreen } from '@tabler/icons-react'
 
@@ -66,10 +66,43 @@ export function GroupChatMessageList({
   messages,
   isLoading = false,
 }: GroupChatMessageListProps) {
-  const bottomRef = useRef<HTMLDivElement | null>(null)
+  const scrollAreaRef = useRef<HTMLDivElement | null>(null)
+  const lastScrollTopRef = useRef(0)
+  const shouldPreserveScrollRef = useRef(false)
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const viewport = scrollAreaRef.current?.querySelector<HTMLElement>('[data-slot="scroll-area-viewport"]')
+
+    if (!viewport) {
+      return
+    }
+
+    const handleScroll = () => {
+      const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight
+      lastScrollTopRef.current = viewport.scrollTop
+      shouldPreserveScrollRef.current = distanceFromBottom > 96
+    }
+
+    handleScroll()
+    viewport.addEventListener('scroll', handleScroll, { passive: true })
+
+    return () => {
+      viewport.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
+
+  useLayoutEffect(() => {
+    if (!shouldPreserveScrollRef.current) {
+      return
+    }
+
+    const viewport = scrollAreaRef.current?.querySelector<HTMLElement>('[data-slot="scroll-area-viewport"]')
+
+    if (!viewport) {
+      return
+    }
+
+    viewport.scrollTop = lastScrollTopRef.current
   }, [messages])
 
   if (isLoading) {
@@ -91,7 +124,7 @@ export function GroupChatMessageList({
   const groupedMessages = groupMessagesByDay(messages)
 
   return (
-    <ScrollArea className="min-h-0 flex-1">
+    <ScrollArea ref={scrollAreaRef} className="min-h-0 flex-1 overflow-hidden">
       <div className="space-y-4 px-4 py-4">
         {groupedMessages.map((group) => (
           <div key={group.date}>
@@ -173,7 +206,6 @@ export function GroupChatMessageList({
           </div>
         ))}
 
-        <div ref={bottomRef} />
       </div>
     </ScrollArea>
   )

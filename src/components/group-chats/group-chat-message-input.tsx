@@ -37,7 +37,7 @@ export function GroupChatMessageInput({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="shrink-0 border-t px-4 py-3">
+    <form onSubmit={handleSubmit} className="shrink-0 border-t bg-background px-4 py-3">
       <div className="flex items-center gap-2">
         <Input
           value={message}

@@ -16,14 +16,14 @@ interface GroupChatHeaderProps {
 export function GroupChatHeader({ chat, showBackButton = false, onBack }: GroupChatHeaderProps) {
   if (!chat) {
     return (
-      <div className="flex h-16 shrink-0 items-center justify-center border-b px-4 text-sm text-muted-foreground">
+      <div className="flex h-16 shrink-0 items-center justify-center border-b bg-background px-4 text-sm text-muted-foreground">
         Select a group chat to start messaging.
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-16 shrink-0 items-center gap-3 border-b px-4 py-3">
+    <div className="flex min-h-16 shrink-0 items-center gap-3 border-b bg-background px-4 py-3">
       {showBackButton ? (
         <Button type="button" variant="ghost" size="icon" className="h-8 w-8 md:hidden" onClick={onBack}>
           <IconArrowLeft size={18} />

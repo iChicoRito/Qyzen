@@ -295,8 +295,8 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
 
   if (isLoadingChats) {
     return (
-      <div className="flex min-h-0 flex-1 px-4 md:px-6">
-        <div className="grid min-h-[36rem] w-full gap-4 md:grid-cols-[20rem_minmax(0,1fr)]">
+      <div className="flex min-h-0 flex-1 px-0 md:px-6">
+        <div className="grid min-h-0 w-full gap-4 md:min-h-[36rem] md:grid-cols-[20rem_minmax(0,1fr)]">
           <Card className="overflow-hidden">
             <CardContent className="space-y-3 p-4">
               <Skeleton className="h-6 w-32" />
@@ -323,7 +323,7 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
 
   if (error) {
     return (
-      <div className="flex min-h-0 flex-1 px-4 md:px-6">
+      <div className="flex min-h-0 flex-1 px-0 md:px-6">
         <Card className="w-full">
           <CardHeader>
             <CardTitle>Group Chats</CardTitle>
@@ -345,10 +345,10 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
     : 'md:grid-cols-[minmax(19rem,22rem)_minmax(0,1fr)]'
 
   return (
-    <div className="flex min-h-0 flex-1 px-4 md:px-6">
+    <div className="flex min-h-0 flex-1 px-0 md:px-6">
       <div
         className={cn(
-          'h-[calc(100dvh-8rem)] min-h-[36rem] w-full overflow-hidden rounded-lg border bg-background md:grid',
+          'h-[calc(100svh-4rem)] max-h-[calc(100svh-4rem)] min-h-0 w-full overflow-hidden border-y bg-background md:h-[calc(100dvh-8rem)] md:max-h-[calc(100dvh-8rem)] md:min-h-[36rem] md:rounded-lg md:border md:grid',
           conversationRailWidthClass
         )}
       >
@@ -367,7 +367,7 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
         ) : null}
 
         {!showListOnlyOnMobile ? (
-          <div className="flex min-h-0 flex-col overflow-hidden">
+          <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden">
             <GroupChatHeader
               chat={selectedChat}
               showBackButton={isMobile}

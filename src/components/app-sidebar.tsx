@@ -263,7 +263,7 @@ function getNavigationGroupsByRole(role: AppRole): SidebarNavGroup[] {
           ],
         },
         {
-          title: 'Classrom',
+          title: 'Classroom',
           url: '#',
           icon: IconChalkboardTeacher,
           items: [
