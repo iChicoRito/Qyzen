@@ -6,8 +6,16 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { CommandSearch, SearchTrigger } from "@/components/command-search"
 import { ModeToggle } from "@/components/mode-toggle"
+import { NotificationBell } from "@/components/notification-bell"
+import type { AppRole } from "@/lib/auth/auth-context"
 
-export function SiteHeader() {
+interface SiteHeaderProps {
+  role?: AppRole
+  userId?: number
+}
+
+// SiteHeader - render the shared dashboard header actions
+export function SiteHeader({ role, userId }: SiteHeaderProps) {
   const [searchOpen, setSearchOpen] = React.useState(false)
 
   React.useEffect(() => {
@@ -65,6 +73,7 @@ export function SiteHeader() {
                 GitHub
               </a>
             </Button>
+            <NotificationBell role={role} userId={userId} />
             <ModeToggle />
           </div>
         </div>

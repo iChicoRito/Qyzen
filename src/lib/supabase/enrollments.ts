@@ -1,5 +1,8 @@
 'use client'
 
+import type { NotificationInsertInput } from '@/types/notification'
+
+import { insertNotifications } from './notifications'
 import { createClient } from './client'
 
 export interface EnrollmentStudentOption {
@@ -80,6 +83,41 @@ interface SupabaseErrorResponse {
   message?: string
 }
 
+// buildEnrollmentNotificationTitle - create a short enrollment notification title
+function buildEnrollmentNotificationTitle(action: 'created' | 'updated' | 'deleted') {
+  if (action === 'created') {
+    return 'New enrollment assigned'
+  }
+
+  if (action === 'updated') {
+    return 'Enrollment updated'
+  }
+
+  return 'Enrollment removed'
+}
+
+// buildEnrollmentNotificationMessage - create the enrollment notification message body
+function buildEnrollmentNotificationMessage(
+  action: 'created' | 'updated' | 'deleted',
+  enrollment: EnrollmentRecord
+) {
+  const subjectLabel = `${enrollment.subject.subjectCode} - ${enrollment.subject.subjectName}`
+
+  if (action === 'created') {
+    return `You have been enrolled in ${subjectLabel}.`
+  }
+
+  if (action === 'updated' && enrollment.status === 'inactive') {
+    return `Your enrollment in ${subjectLabel} is now inactive.`
+  }
+
+  if (action === 'updated') {
+    return `Your enrollment in ${subjectLabel} has been updated.`
+  }
+
+  return `Your enrollment in ${subjectLabel} has been removed.`
+}
+
 // getSupabaseErrorMessage - normalize api errors
 function getSupabaseErrorMessage(error: SupabaseErrorResponse | null, fallbackMessage: string) {
   return error?.message || fallbackMessage
@@ -143,6 +181,65 @@ function mapEnrollmentRecord(row: EnrollmentRow): EnrollmentRecord | null {
     educator: mapStudentOption(educator),
     subject: mappedSubject,
     status: row.is_active ? 'active' : 'inactive',
+  }
+}
+
+// fetchEnrollmentNotificationContext - load one enrollment row before destructive actions
+async function fetchEnrollmentNotificationContext(educatorId: number, enrollmentId: number) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('tbl_enrolled')
+    .select(
+      'id,is_active,student:student_id(id,user_id,given_name,surname,is_active),educator:educator_id(id,user_id,given_name,surname,is_active),subject:subject_id(id,subject_code,subject_name,is_active,section:sections_id(id,section_name,is_active))'
+    )
+    .eq('id', enrollmentId)
+    .eq('educator_id', educatorId)
+    .single()
+
+  if (error) {
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to load enrollment notification details.'))
+  }
+
+  const enrollment = mapEnrollmentRecord(data as EnrollmentRow)
+
+  if (!enrollment) {
+    throw new Error('Enrollment notification details were not found.')
+  }
+
+  return enrollment
+}
+
+// notifyStudentAboutEnrollmentChange - save best-effort enrollment notifications
+async function notifyStudentAboutEnrollmentChange(
+  educatorId: number,
+  action: 'created' | 'updated' | 'deleted',
+  enrollments: EnrollmentRecord[]
+) {
+  try {
+    const notificationRows: NotificationInsertInput[] = enrollments.map((enrollment) => ({
+      recipientUserId: enrollment.student.id,
+      actorUserId: educatorId,
+      eventType:
+        action === 'created'
+          ? 'enrollment_created'
+          : action === 'updated'
+            ? 'enrollment_updated'
+            : 'enrollment_deleted',
+      title: buildEnrollmentNotificationTitle(action),
+      message: buildEnrollmentNotificationMessage(action, enrollment),
+      linkPath: '/student/assessment/quiz',
+      subjectId: enrollment.subject.id,
+      sectionId: enrollment.subject.section.id,
+      metadata: {
+        subjectName: enrollment.subject.subjectName,
+        sectionName: enrollment.subject.section.name,
+        enrollmentStatus: enrollment.status,
+      },
+    }))
+
+    await insertNotifications(notificationRows)
+  } catch (error) {
+    console.error('Failed to save enrollment notifications.', error)
   }
 }
 
@@ -293,9 +390,13 @@ export async function createEnrollments(input: CreateEnrollmentInput) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to create enrollments.'))
   }
 
-  return ((data || []) as EnrollmentRow[])
+  const createdEnrollments = ((data || []) as EnrollmentRow[])
     .map(mapEnrollmentRecord)
     .filter((enrollment): enrollment is EnrollmentRecord => Boolean(enrollment))
+
+  await notifyStudentAboutEnrollmentChange(educatorId, 'created', createdEnrollments)
+
+  return createdEnrollments
 }
 
 // updateEnrollment - update a single enrollment row
@@ -328,12 +429,15 @@ export async function updateEnrollment(input: UpdateEnrollmentInput) {
     throw new Error('Updated enrollment was not found.')
   }
 
+  await notifyStudentAboutEnrollmentChange(educatorId, 'updated', [enrollment])
+
   return enrollment
 }
 
 // deleteEnrollment - remove a single enrollment row
 export async function deleteEnrollment(id: number) {
   const educatorId = await getCurrentEducatorId()
+  const notificationContext = await fetchEnrollmentNotificationContext(educatorId, id)
   const supabase = createClient()
   const { error } = await supabase
     .from('tbl_enrolled')
@@ -344,4 +448,6 @@ export async function deleteEnrollment(id: number) {
   if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to delete enrollment.'))
   }
+
+  await notifyStudentAboutEnrollmentChange(educatorId, 'deleted', [notificationContext])
 }

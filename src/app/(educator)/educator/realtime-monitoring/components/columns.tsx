@@ -104,20 +104,20 @@ export function columns(
         `${row.offlineCount}-${row.onlineCount}-${row.answeringCount}-${row.finishedCount}`,
       header: ({ column }) => <DataTableColumnHeader column={column} title="Status Counts" />,
       cell: ({ row }) => (
-        <div className="min-w-[240px] space-y-2">
-          <div className="flex flex-wrap gap-2">
-            <Badge className="rounded-md border-0 bg-zinc-500/10 px-2.5 py-0.5 text-zinc-500">
+        <div className="min-w-[220px] space-y-1.5">
+          <div className="flex flex-wrap gap-1.5">
+            <Badge className="rounded-md border-0 bg-zinc-500/10 px-2 py-0.5 text-xs text-zinc-500">
               OFFLINE {row.original.offlineCount}
             </Badge>
-            <Badge className="rounded-md border-0 bg-green-500/10 px-2.5 py-0.5 text-green-500">
+            <Badge className="rounded-md border-0 bg-green-500/10 px-2 py-0.5 text-xs text-green-500">
               ONLINE {row.original.onlineCount}
             </Badge>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge className="rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500">
+          <div className="flex flex-wrap gap-1.5">
+            <Badge className="rounded-md border-0 bg-yellow-500/10 px-2 py-0.5 text-xs text-yellow-500">
               ANSWERING {row.original.answeringCount}
             </Badge>
-            <Badge className="rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500">
+            <Badge className="rounded-md border-0 bg-blue-500/10 px-2 py-0.5 text-xs text-blue-500">
               FINISHED {row.original.finishedCount}
             </Badge>
           </div>

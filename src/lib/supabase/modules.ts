@@ -1,5 +1,8 @@
 'use client'
 
+import type { NotificationInsertInput } from '@/types/notification'
+
+import { fetchActiveStudentRecipientIds, insertNotifications } from './notifications'
 import { createClient } from './client'
 
 export interface ModuleSubjectOption {
@@ -146,6 +149,15 @@ interface SubjectNameRow {
   subject_name: string
 }
 
+interface ModuleNotificationContext {
+  id: number
+  moduleCode: string
+  subjectId: number
+  subjectName: string
+  sectionId: number
+  sectionName: string
+}
+
 interface SupabaseErrorResponse {
   message?: string
 }
@@ -163,6 +175,124 @@ function getSupabaseErrorMessage(error: SupabaseErrorResponse | null, fallbackMe
 // buildAcademicTermLabel - format academic term label
 function buildAcademicTermLabel(term: TermRow) {
   return `${term.term_name} - ${term.semester}`
+}
+
+// getModuleNotificationEventType - map module actions into notification events
+function getModuleNotificationEventType(action: 'created' | 'updated' | 'deleted') {
+  if (action === 'created') {
+    return 'module_created' as const
+  }
+
+  if (action === 'updated') {
+    return 'module_updated' as const
+  }
+
+  return 'module_deleted' as const
+}
+
+// buildModuleNotificationTitle - create a short notification title
+function buildModuleNotificationTitle(action: 'created' | 'updated' | 'deleted') {
+  if (action === 'created') {
+    return 'New module available'
+  }
+
+  if (action === 'updated') {
+    return 'Module updated'
+  }
+
+  return 'Module removed'
+}
+
+// buildModuleNotificationMessage - create the module notification message body
+function buildModuleNotificationMessage(
+  action: 'created' | 'updated' | 'deleted',
+  context: ModuleNotificationContext
+) {
+  if (action === 'created') {
+    return `${context.moduleCode} for ${context.subjectName} in ${context.sectionName} is now available.`
+  }
+
+  if (action === 'updated') {
+    return `${context.moduleCode} for ${context.subjectName} in ${context.sectionName} has been updated.`
+  }
+
+  return `${context.moduleCode} for ${context.subjectName} in ${context.sectionName} is no longer available.`
+}
+
+// fetchModuleNotificationContext - load one module context for notification messages
+async function fetchModuleNotificationContext(moduleId: number, educatorId: number) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('tbl_modules')
+    .select('id,module_code,subject_id,section_id,subject:subject_id(subject_name),section:section_id(section_name)')
+    .eq('educator_id', educatorId)
+    .eq('id', moduleId)
+    .single()
+
+  if (error) {
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to load module notification details.'))
+  }
+
+  const row = data as ModuleRow
+  const subject = Array.isArray(row.subject) ? row.subject[0] : row.subject
+  const section = Array.isArray(row.section) ? row.section[0] : row.section
+
+  return {
+    id: row.id,
+    moduleCode: row.module_code,
+    subjectId: row.subject_id,
+    subjectName: subject?.subject_name || 'Unknown Subject',
+    sectionId: row.section_id,
+    sectionName: section?.section_name || 'Unknown Section',
+  } satisfies ModuleNotificationContext
+}
+
+// createModuleNotificationInputs - build notification rows for active enrolled students
+async function createModuleNotificationInputs(
+  educatorId: number,
+  action: 'created' | 'updated' | 'deleted',
+  contexts: ModuleNotificationContext[]
+) {
+  const notificationRows: NotificationInsertInput[] = []
+
+  for (const context of contexts) {
+    const recipientUserIds = await fetchActiveStudentRecipientIds(educatorId, context.subjectId)
+
+    recipientUserIds.forEach((recipientUserId) => {
+      notificationRows.push({
+        recipientUserId,
+        actorUserId: educatorId,
+        eventType: getModuleNotificationEventType(action),
+        title: buildModuleNotificationTitle(action),
+        message: buildModuleNotificationMessage(action, context),
+        linkPath: '/student/assessment/quiz',
+        moduleId: action === 'deleted' ? null : context.id,
+        subjectId: context.subjectId,
+        sectionId: context.sectionId,
+        metadata: {
+          moduleCode: context.moduleCode,
+          subjectName: context.subjectName,
+          sectionName: context.sectionName,
+        },
+      })
+    })
+  }
+
+  return notificationRows
+}
+
+// notifyStudentsAboutModuleChange - save best-effort module notifications
+async function notifyStudentsAboutModuleChange(
+  educatorId: number,
+  action: 'created' | 'updated' | 'deleted',
+  contexts: ModuleNotificationContext[]
+) {
+  try {
+    const notificationRows = await createModuleNotificationInputs(educatorId, action, contexts)
+    await insertNotifications(notificationRows)
+  } catch (error) {
+    console.error('Failed to save module notifications.', error)
+  }
 }
 
 // getCurrentEducatorId - resolve current educator profile id
@@ -423,7 +553,7 @@ export async function createModules(input: ModuleCreateInput) {
     input.selections.map((selection) => [`${selection.subjectId}:${selection.sectionId}`, selection])
   )
 
-  return ((data || []) as ModuleRow[]).map((row) => {
+  const createdModuleRecords = ((data || []) as ModuleRow[]).map((row) => {
     const selection = selectionMap.get(`${row.subject_id}:${row.section_id}`)
 
     if (!selection) {
@@ -456,6 +586,21 @@ export async function createModules(input: ModuleCreateInput) {
       endTime: normalizeModuleTimeValue(row.end_time),
     } satisfies ModuleRecord
   })
+
+  await notifyStudentsAboutModuleChange(
+    educatorId,
+    'created',
+    createdModuleRecords.map((record) => ({
+      id: record.id,
+      moduleCode: record.moduleCode,
+      subjectId: record.subjectId,
+      subjectName: record.subjectName,
+      sectionId: record.sectionId,
+      sectionName: record.sectionName,
+    }))
+  )
+
+  return createdModuleRecords
 }
 
 // updateModule - update one module row
@@ -509,7 +654,7 @@ export async function updateModule(input: ModuleUpdateInput) {
     throw new Error('You do not have permission to update this module.')
   }
 
-  return {
+  const updatedModuleRecord = {
     id: updatedRow.id,
     moduleId: updatedRow.module_id,
     moduleCode: updatedRow.module_code,
@@ -534,11 +679,25 @@ export async function updateModule(input: ModuleUpdateInput) {
     startTime: normalizeModuleTimeValue(updatedRow.start_time),
     endTime: normalizeModuleTimeValue(updatedRow.end_time),
   } satisfies ModuleRecord
+
+  await notifyStudentsAboutModuleChange(educatorId, 'updated', [
+    {
+      id: updatedModuleRecord.id,
+      moduleCode: updatedModuleRecord.moduleCode,
+      subjectId: updatedModuleRecord.subjectId,
+      subjectName: updatedModuleRecord.subjectName,
+      sectionId: updatedModuleRecord.sectionId,
+      sectionName: updatedModuleRecord.sectionName,
+    },
+  ])
+
+  return updatedModuleRecord
 }
 
 // deleteModule - remove one module row
 export async function deleteModule(moduleId: number) {
   const educatorId = await getCurrentEducatorId()
+  const notificationContext = await fetchModuleNotificationContext(moduleId, educatorId)
   const supabase = createClient()
   const { data, error } = await supabase
     .from('tbl_modules')
@@ -556,4 +715,6 @@ export async function deleteModule(moduleId: number) {
   if (deletedRows.length === 0) {
     throw new Error('You do not have permission to delete this module.')
   }
+
+  await notifyStudentsAboutModuleChange(educatorId, 'deleted', [notificationContext])
 }

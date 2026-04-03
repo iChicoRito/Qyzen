@@ -161,6 +161,26 @@ CREATE TABLE public.tbl_student_module_retakes (
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+CREATE SEQUENCE IF NOT EXISTS tbl_notifications_id_seq;
+CREATE TABLE public.tbl_notifications (
+  id bigint DEFAULT nextval('tbl_notifications_id_seq'::regclass) NOT NULL,
+  recipient_user_id bigint NOT NULL,
+  actor_user_id bigint NOT NULL,
+  event_type text NOT NULL,
+  title text NOT NULL,
+  message text NOT NULL,
+  link_path text,
+  module_id bigint,
+  subject_id bigint,
+  section_id bigint,
+  metadata jsonb,
+  is_read boolean DEFAULT false NOT NULL,
+  read_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now() NOT NULL,
+  updated_at timestamp with time zone DEFAULT now() NOT NULL,
+  CONSTRAINT tbl_notifications_event_type_check CHECK ((event_type = ANY (ARRAY['module_created'::text, 'module_updated'::text, 'module_deleted'::text, 'quiz_created'::text, 'quiz_uploaded'::text, 'quiz_updated'::text, 'quiz_deleted'::text, 'enrollment_created'::text, 'enrollment_updated'::text, 'enrollment_deleted'::text, 'retake_updated'::text, 'quiz_submitted'::text])))
+);
+
 CREATE SEQUENCE IF NOT EXISTS tbl_user_roles_id_seq;
 CREATE TABLE public.tbl_user_roles (
   id bigint DEFAULT nextval('tbl_user_roles_id_seq'::regclass) NOT NULL,
@@ -201,6 +221,7 @@ ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_pkey PRIMARY KEY (id
 ALTER TABLE public.tbl_scores ADD CONSTRAINT tbl_scores_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_student_presence ADD CONSTRAINT tbl_student_presence_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_student_module_retakes ADD CONSTRAINT tbl_student_module_retakes_pkey PRIMARY KEY (id);
+ALTER TABLE public.tbl_notifications ADD CONSTRAINT tbl_notifications_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_user_roles ADD CONSTRAINT user_roles_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_users ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 
@@ -235,6 +256,11 @@ ALTER TABLE public.tbl_student_presence ADD CONSTRAINT tbl_student_presence_stud
 ALTER TABLE public.tbl_student_module_retakes ADD CONSTRAINT tbl_student_module_retakes_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_student_module_retakes ADD CONSTRAINT tbl_student_module_retakes_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_student_module_retakes ADD CONSTRAINT tbl_student_module_retakes_module_id_fkey FOREIGN KEY (module_id) REFERENCES public.tbl_modules(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_notifications ADD CONSTRAINT tbl_notifications_recipient_user_id_fkey FOREIGN KEY (recipient_user_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_notifications ADD CONSTRAINT tbl_notifications_actor_user_id_fkey FOREIGN KEY (actor_user_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_notifications ADD CONSTRAINT tbl_notifications_module_id_fkey FOREIGN KEY (module_id) REFERENCES public.tbl_modules(id) ON DELETE SET NULL;
+ALTER TABLE public.tbl_notifications ADD CONSTRAINT tbl_notifications_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.tbl_subjects(id) ON DELETE SET NULL;
+ALTER TABLE public.tbl_notifications ADD CONSTRAINT tbl_notifications_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.tbl_sections(id) ON DELETE SET NULL;
 ALTER TABLE public.tbl_user_roles ADD CONSTRAINT user_roles_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.tbl_roles(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_user_roles ADD CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 
@@ -294,6 +320,10 @@ CREATE UNIQUE INDEX idx_tbl_student_module_retakes_unique_pair ON public.tbl_stu
 CREATE INDEX idx_tbl_student_module_retakes_student_module ON public.tbl_student_module_retakes USING btree (student_id, module_id);
 CREATE INDEX idx_tbl_student_module_retakes_educator_id ON public.tbl_student_module_retakes USING btree (educator_id);
 CREATE INDEX idx_tbl_student_module_retakes_module_id ON public.tbl_student_module_retakes USING btree (module_id);
+CREATE INDEX idx_tbl_notifications_recipient_unread_created_at ON public.tbl_notifications USING btree (recipient_user_id, is_read, created_at DESC);
+CREATE INDEX idx_tbl_notifications_recipient_created_at ON public.tbl_notifications USING btree (recipient_user_id, created_at DESC);
+CREATE INDEX idx_tbl_notifications_actor_user_id ON public.tbl_notifications USING btree (actor_user_id);
+CREATE INDEX idx_tbl_notifications_module_id ON public.tbl_notifications USING btree (module_id);
 
 -- Enable RLS
 
@@ -313,6 +343,7 @@ ALTER TABLE public.tbl_enrolled ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_student_presence ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_student_module_retakes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tbl_notifications ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 
@@ -420,6 +451,10 @@ CREATE POLICY "Admin full access on tbl_student_presence" ON public.tbl_student_
   WITH CHECK (has_role('admin'::text));
 
 CREATE POLICY "Admin full access on tbl_student_module_retakes" ON public.tbl_student_module_retakes AS PERMISSIVE FOR ALL TO authenticated
+  USING (has_role('admin'::text))
+  WITH CHECK (has_role('admin'::text));
+
+CREATE POLICY "Admin full access on tbl_notifications" ON public.tbl_notifications AS PERMISSIVE FOR ALL TO authenticated
   USING (has_role('admin'::text))
   WITH CHECK (has_role('admin'::text));
 
@@ -567,3 +602,25 @@ CREATE POLICY "Educator student retake delete access" ON public.tbl_student_modu
 
 CREATE POLICY "Student retake grant view access" ON public.tbl_student_module_retakes AS PERMISSIVE FOR SELECT TO authenticated
   USING ((has_role('student'::text) AND (student_id = get_current_tbl_user_id())));
+
+CREATE POLICY "Recipients can view own notifications" ON public.tbl_notifications AS PERMISSIVE FOR SELECT TO authenticated
+  USING ((recipient_user_id = get_current_tbl_user_id()));
+
+CREATE POLICY "Recipients can update own notifications" ON public.tbl_notifications AS PERMISSIVE FOR UPDATE TO authenticated
+  USING ((recipient_user_id = get_current_tbl_user_id()))
+  WITH CHECK ((recipient_user_id = get_current_tbl_user_id()));
+
+CREATE POLICY "Educator notification insert access" ON public.tbl_notifications AS PERMISSIVE FOR INSERT TO authenticated
+  WITH CHECK ((has_role('educator'::text) AND (actor_user_id = get_current_tbl_user_id()) AND (event_type = ANY (ARRAY['module_created'::text, 'module_updated'::text, 'module_deleted'::text, 'quiz_created'::text, 'quiz_uploaded'::text, 'quiz_updated'::text, 'quiz_deleted'::text, 'enrollment_created'::text, 'enrollment_updated'::text, 'enrollment_deleted'::text, 'retake_updated'::text])) AND (EXISTS ( SELECT 1
+   FROM tbl_users student_user
+  WHERE ((student_user.id = tbl_notifications.recipient_user_id) AND (student_user.user_type = 'student'::text) AND (student_user.deleted_at IS NULL)))) AND (((event_type = 'enrollment_deleted'::text) AND (EXISTS ( SELECT 1
+   FROM tbl_subjects subject_row
+  WHERE ((subject_row.id = tbl_notifications.subject_id) AND (subject_row.educator_id = get_current_tbl_user_id()))))) OR ((event_type <> 'enrollment_deleted'::text) AND (EXISTS ( SELECT 1
+   FROM tbl_enrolled enrolled
+  WHERE ((enrolled.educator_id = get_current_tbl_user_id()) AND (enrolled.student_id = tbl_notifications.recipient_user_id) AND (enrolled.subject_id = tbl_notifications.subject_id))))))));
+
+CREATE POLICY "Student submission notification insert access" ON public.tbl_notifications AS PERMISSIVE FOR INSERT TO authenticated
+  WITH CHECK ((has_role('student'::text) AND (actor_user_id = get_current_tbl_user_id()) AND (event_type = 'quiz_submitted'::text) AND (EXISTS ( SELECT 1
+   FROM (tbl_modules module_row
+     JOIN tbl_enrolled enrolled ON (((enrolled.educator_id = module_row.educator_id) AND (enrolled.subject_id = module_row.subject_id))))
+  WHERE ((module_row.id = tbl_notifications.module_id) AND (module_row.educator_id = tbl_notifications.recipient_user_id) AND (enrolled.student_id = get_current_tbl_user_id()) AND (enrolled.is_active = true))))));

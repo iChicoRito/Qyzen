@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server'
 
 import { fetchAuthContext } from '@/lib/auth/auth-context'
+import { insertNotificationsWithClient } from '@/lib/supabase/notification-shared'
 import {
   QUIZ_RESULT_PASSING_PERCENTAGE,
   fetchStudentQuizGradingSession,
 } from '@/lib/supabase/student-quiz'
 import { createClient } from '@/lib/supabase/server'
 import { studentQuizAttemptSchema } from '@/lib/validations/student-quiz.schema'
+import type { NotificationInsertInput } from '@/types/notification'
 
 interface RouteContext {
   params: Promise<{
@@ -238,6 +240,40 @@ async function submitScore(
   }
 }
 
+// createEducatorSubmissionNotification - save a best-effort educator notification after submit
+async function createEducatorSubmissionNotification(
+  authContext: NonNullable<Awaited<ReturnType<typeof getStudentApiContext>>>,
+  gradingSession: Awaited<ReturnType<typeof fetchStudentQuizGradingSession>>
+) {
+  try {
+    const studentName =
+      `${authContext.context.profile.givenName} ${authContext.context.profile.surname}`.trim()
+    const notificationRows: NotificationInsertInput[] = [
+      {
+        recipientUserId: gradingSession.educatorId,
+        actorUserId: authContext.context.profile.id,
+        eventType: 'quiz_submitted',
+        title: 'New quiz submission',
+        message: `${studentName} submitted ${gradingSession.moduleCode} for ${gradingSession.subjectName}.`,
+        linkPath: '/educator/scores',
+        moduleId: gradingSession.moduleRowId,
+        subjectId: gradingSession.subjectId,
+        sectionId: gradingSession.sectionId,
+        metadata: {
+          studentName,
+          moduleCode: gradingSession.moduleCode,
+          subjectName: gradingSession.subjectName,
+          sectionName: gradingSession.sectionName,
+        },
+      },
+    ]
+
+    await insertNotificationsWithClient(authContext.supabase, notificationRows)
+  } catch (notificationError) {
+    console.error('Failed to save educator submission notifications.', notificationError)
+  }
+}
+
 // POST - save draft answers or submit student score
 export async function POST(request: Request, context: RouteContext) {
   try {
@@ -281,6 +317,8 @@ export async function POST(request: Request, context: RouteContext) {
       payload.answers,
       payload.warningAttempts
     )
+
+    await createEducatorSubmissionNotification(authContext, gradingSession)
 
     return NextResponse.json({
       ...submittedScore,

@@ -1,5 +1,8 @@
 'use client'
 
+import type { NotificationInsertInput } from '@/types/notification'
+
+import { fetchActiveStudentRecipientIds, insertNotifications } from './notifications'
 import { createClient } from './client'
 
 export interface QuizModuleOption {
@@ -108,9 +111,218 @@ interface SupabaseErrorResponse {
   message?: string
 }
 
+interface QuizNotificationContext {
+  moduleId: number
+  moduleCode: string
+  subjectId: number
+  subjectName: string
+  sectionId: number
+  sectionName: string
+  questionCount?: number
+}
+
 // getSupabaseErrorMessage - normalize Supabase errors
 function getSupabaseErrorMessage(error: SupabaseErrorResponse | null, fallbackMessage: string) {
   return error?.message || fallbackMessage
+}
+
+// getQuizNotificationEventType - map quiz actions into notification events
+function getQuizNotificationEventType(action: 'created' | 'uploaded' | 'updated' | 'deleted') {
+  if (action === 'created') {
+    return 'quiz_created' as const
+  }
+
+  if (action === 'uploaded') {
+    return 'quiz_uploaded' as const
+  }
+
+  if (action === 'updated') {
+    return 'quiz_updated' as const
+  }
+
+  return 'quiz_deleted' as const
+}
+
+// buildQuizNotificationTitle - create a short quiz notification title
+function buildQuizNotificationTitle(action: 'created' | 'uploaded' | 'updated' | 'deleted') {
+  if (action === 'created') {
+    return 'New quiz item added'
+  }
+
+  if (action === 'uploaded') {
+    return 'Quiz uploaded'
+  }
+
+  if (action === 'updated') {
+    return 'Quiz updated'
+  }
+
+  return 'Quiz removed'
+}
+
+// buildQuizNotificationMessage - create the quiz notification message body
+function buildQuizNotificationMessage(
+  action: 'created' | 'uploaded' | 'updated' | 'deleted',
+  context: QuizNotificationContext
+) {
+  if (action === 'created') {
+    return `A new quiz item was added to ${context.moduleCode} for ${context.subjectName}.`
+  }
+
+  if (action === 'uploaded') {
+    return `${context.questionCount || 0} quiz items were uploaded to ${context.moduleCode} for ${context.subjectName}.`
+  }
+
+  if (action === 'updated') {
+    return `A quiz item in ${context.moduleCode} for ${context.subjectName} has been updated.`
+  }
+
+  if ((context.questionCount || 0) > 1) {
+    return `${context.questionCount} quiz items were removed from ${context.moduleCode} for ${context.subjectName}.`
+  }
+
+  return `A quiz item in ${context.moduleCode} for ${context.subjectName} has been removed.`
+}
+
+// createQuizNotificationInputs - build notification rows for active enrolled students
+async function createQuizNotificationInputs(
+  educatorId: number,
+  action: 'created' | 'uploaded' | 'updated' | 'deleted',
+  contexts: QuizNotificationContext[]
+) {
+  const notificationRows: NotificationInsertInput[] = []
+
+  for (const context of contexts) {
+    const recipientUserIds = await fetchActiveStudentRecipientIds(educatorId, context.subjectId)
+
+    recipientUserIds.forEach((recipientUserId) => {
+      notificationRows.push({
+        recipientUserId,
+        actorUserId: educatorId,
+        eventType: getQuizNotificationEventType(action),
+        title: buildQuizNotificationTitle(action),
+        message: buildQuizNotificationMessage(action, context),
+        linkPath: '/student/assessment/quiz',
+        moduleId: context.moduleId,
+        subjectId: context.subjectId,
+        sectionId: context.sectionId,
+        metadata: {
+          moduleCode: context.moduleCode,
+          subjectName: context.subjectName,
+          sectionName: context.sectionName,
+          questionCount: context.questionCount,
+        },
+      })
+    })
+  }
+
+  return notificationRows
+}
+
+// notifyStudentsAboutQuizChange - save best-effort quiz notifications
+async function notifyStudentsAboutQuizChange(
+  educatorId: number,
+  action: 'created' | 'uploaded' | 'updated' | 'deleted',
+  contexts: QuizNotificationContext[]
+) {
+  try {
+    const notificationRows = await createQuizNotificationInputs(educatorId, action, contexts)
+    await insertNotifications(notificationRows)
+  } catch (error) {
+    console.error('Failed to save quiz notifications.', error)
+  }
+}
+
+// fetchQuizNotificationContext - load one quiz context before a delete action
+async function fetchQuizNotificationContext(educatorId: number, quizId: number) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('tbl_quizzes')
+    .select(
+      'id,module_id,module:module_id(id,module_code,subject_id,section_id,subject:subject_id(subject_name),section:section_id(section_name))'
+    )
+    .eq('educator_id', educatorId)
+    .eq('id', quizId)
+    .single()
+
+  if (error) {
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to load quiz notification details.'))
+  }
+
+  const row = data as {
+    module_id: number
+    module:
+      | {
+          id: number
+          module_code: string
+          subject_id: number
+          section_id: number
+          subject: { subject_name: string } | { subject_name: string }[] | null
+          section: { section_name: string } | { section_name: string }[] | null
+        }
+      | Array<{
+          id: number
+          module_code: string
+          subject_id: number
+          section_id: number
+          subject: { subject_name: string } | { subject_name: string }[] | null
+          section: { section_name: string } | { section_name: string }[] | null
+        }>
+      | null
+  }
+  const moduleValue = Array.isArray(row.module) ? row.module[0] : row.module
+  const subject = Array.isArray(moduleValue?.subject) ? moduleValue?.subject[0] : moduleValue?.subject
+  const section = Array.isArray(moduleValue?.section) ? moduleValue?.section[0] : moduleValue?.section
+
+  return {
+    moduleId: moduleValue?.id || row.module_id,
+    moduleCode: moduleValue?.module_code || 'Unknown Module',
+    subjectId: moduleValue?.subject_id || 0,
+    subjectName: subject?.subject_name || 'Unknown Subject',
+    sectionId: moduleValue?.section_id || 0,
+    sectionName: section?.section_name || 'Unknown Section',
+    questionCount: 1,
+  } satisfies QuizNotificationContext
+}
+
+// fetchModuleQuizNotificationContext - load module quiz details before deleting all questions
+async function fetchModuleQuizNotificationContext(educatorId: number, moduleRowId: number) {
+  const supabase = createClient()
+  const [{ data: moduleData, error: moduleError }, { count, error: countError }] = await Promise.all([
+    supabase
+      .from('tbl_modules')
+      .select('id,module_code,subject_id,section_id,subject:subject_id(subject_name),section:section_id(section_name)')
+      .eq('educator_id', educatorId)
+      .eq('id', moduleRowId)
+      .single(),
+    supabase
+      .from('tbl_quizzes')
+      .select('id', { count: 'exact', head: true })
+      .eq('educator_id', educatorId)
+      .eq('module_id', moduleRowId),
+  ])
+
+  if (moduleError) {
+    throw new Error(getSupabaseErrorMessage(moduleError, 'Failed to load quiz module details.'))
+  }
+
+  if (countError) {
+    throw new Error(getSupabaseErrorMessage(countError, 'Failed to count uploaded quiz items.'))
+  }
+
+  const row = moduleData as QuizModuleRow
+  const subject = Array.isArray(row.subject) ? row.subject[0] : row.subject
+  const section = Array.isArray(row.section) ? row.section[0] : row.section
+
+  return {
+    moduleId: row.id,
+    moduleCode: row.module_code,
+    subjectId: row.subject_id,
+    subjectName: subject?.subject_name || 'Unknown Subject',
+    sectionId: row.section_id,
+    sectionName: section?.section_name || 'Unknown Section',
+    questionCount: count || 0,
+  } satisfies QuizNotificationContext
 }
 
 // getCurrentEducatorId - resolve current educator profile id
@@ -370,7 +582,21 @@ export async function createQuiz(input: QuizRecord) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to create quiz.'))
   }
 
-  return mapQuizRow(data as QuizRow)
+  const createdQuiz = mapQuizRow(data as QuizRow)
+
+  await notifyStudentsAboutQuizChange(educatorId, 'created', [
+    {
+      moduleId: createdQuiz.moduleRowId,
+      moduleCode: createdQuiz.moduleCode,
+      subjectId: createdQuiz.subjectId,
+      subjectName: createdQuiz.subjectName,
+      sectionId: createdQuiz.sectionId,
+      sectionName: createdQuiz.sectionName,
+      questionCount: 1,
+    },
+  ])
+
+  return createdQuiz
 }
 
 // createQuizzes - insert many quiz rows
@@ -396,6 +622,32 @@ export async function createQuizzes(inputs: QuizRecord[]) {
   if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to upload quizzes.'))
   }
+
+  const uploadContextMap = inputs.reduce<Map<number, QuizNotificationContext>>((result, input) => {
+    const currentContext = result.get(input.moduleRowId)
+
+    if (!currentContext) {
+      result.set(input.moduleRowId, {
+        moduleId: input.moduleRowId,
+        moduleCode: input.moduleCode,
+        subjectId: input.subjectId,
+        subjectName: input.subjectName,
+        sectionId: input.sectionId,
+        sectionName: input.sectionName,
+        questionCount: 1,
+      })
+      return result
+    }
+
+    result.set(input.moduleRowId, {
+      ...currentContext,
+      questionCount: (currentContext.questionCount || 0) + 1,
+    })
+
+    return result
+  }, new Map())
+
+  await notifyStudentsAboutQuizChange(educatorId, 'uploaded', Array.from(uploadContextMap.values()))
 }
 
 // updateQuiz - update one quiz row
@@ -424,12 +676,27 @@ export async function updateQuiz(input: QuizRecord) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to update quiz.'))
   }
 
-  return mapQuizRow(data as QuizRow)
+  const updatedQuiz = mapQuizRow(data as QuizRow)
+
+  await notifyStudentsAboutQuizChange(educatorId, 'updated', [
+    {
+      moduleId: updatedQuiz.moduleRowId,
+      moduleCode: updatedQuiz.moduleCode,
+      subjectId: updatedQuiz.subjectId,
+      subjectName: updatedQuiz.subjectName,
+      sectionId: updatedQuiz.sectionId,
+      sectionName: updatedQuiz.sectionName,
+      questionCount: 1,
+    },
+  ])
+
+  return updatedQuiz
 }
 
 // deleteQuiz - delete one quiz row
 export async function deleteQuiz(quizId: number) {
   const educatorId = await getCurrentEducatorId()
+  const notificationContext = await fetchQuizNotificationContext(educatorId, quizId)
   const supabase = createClient()
   const { error } = await supabase
     .from('tbl_quizzes')
@@ -440,11 +707,14 @@ export async function deleteQuiz(quizId: number) {
   if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to delete quiz.'))
   }
+
+  await notifyStudentsAboutQuizChange(educatorId, 'deleted', [notificationContext])
 }
 
 // deleteQuizzesByModule - delete all quiz rows in one module
 export async function deleteQuizzesByModule(moduleRowId: number) {
   const educatorId = await getCurrentEducatorId()
+  const notificationContext = await fetchModuleQuizNotificationContext(educatorId, moduleRowId)
   const supabase = createClient()
   const { error } = await supabase
     .from('tbl_quizzes')
@@ -455,4 +725,6 @@ export async function deleteQuizzesByModule(moduleRowId: number) {
   if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to delete quizzes for this module.'))
   }
+
+  await notifyStudentsAboutQuizChange(educatorId, 'deleted', [notificationContext])
 }

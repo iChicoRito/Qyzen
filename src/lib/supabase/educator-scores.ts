@@ -1,5 +1,8 @@
 'use client'
 
+import type { NotificationInsertInput } from '@/types/notification'
+
+import { insertNotifications } from './notifications'
 import { createClient } from './client'
 
 export interface EducatorScoreChoice {
@@ -118,6 +121,18 @@ export interface EducatorScoreExportSummary {
 export interface EducatorScoreExportResult {
   summary: EducatorScoreExportSummary
   rows: EducatorScoreExportRow[]
+}
+
+interface RetakeNotificationContext {
+  studentId: number
+  studentName: string
+  moduleRowId: number
+  moduleCode: string
+  subjectId: number
+  subjectName: string
+  sectionId: number
+  sectionName: string
+  retakeCount: number
 }
 
 export interface FetchEducatorScoreExportInput {
@@ -847,6 +862,80 @@ export async function updateEducatorRetakeGrant(input: UpdateEducatorRetakeGrant
 
   if (error) {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to save retake grant.'))
+  }
+
+  try {
+    const [{ data: studentData, error: studentError }, { data: moduleData, error: moduleError }] =
+      await Promise.all([
+        supabase
+          .from('tbl_users')
+          .select('given_name,surname')
+          .eq('id', input.studentId)
+          .single(),
+        supabase
+          .from('tbl_modules')
+          .select('id,module_code,subject_id,section_id,subject:subject_id(subject_name),section:section_id(section_name)')
+          .eq('educator_id', educatorId)
+          .eq('id', input.moduleRowId)
+          .single(),
+      ])
+
+    if (studentError) {
+      throw new Error(getSupabaseErrorMessage(studentError, 'Failed to load retake student details.'))
+    }
+
+    if (moduleError) {
+      throw new Error(getSupabaseErrorMessage(moduleError, 'Failed to load retake module details.'))
+    }
+
+    const moduleRow = moduleData as {
+      id: number
+      module_code: string
+      subject_id: number
+      section_id: number
+      subject: { subject_name: string } | { subject_name: string }[] | null
+      section: { section_name: string } | { section_name: string }[] | null
+    }
+    const moduleSubject = Array.isArray(moduleRow.subject) ? moduleRow.subject[0] : moduleRow.subject
+    const moduleSection = Array.isArray(moduleRow.section) ? moduleRow.section[0] : moduleRow.section
+    const notificationContext = {
+      studentId: input.studentId,
+      studentName: `${(studentData as { given_name: string; surname: string }).given_name} ${(studentData as { given_name: string; surname: string }).surname}`.trim(),
+      moduleRowId: moduleRow.id,
+      moduleCode: moduleRow.module_code,
+      subjectId: moduleRow.subject_id,
+      subjectName: moduleSubject?.subject_name || 'Unknown Subject',
+      sectionId: moduleRow.section_id,
+      sectionName: moduleSection?.section_name || 'Unknown Section',
+      retakeCount: nextRetakeCount,
+    } satisfies RetakeNotificationContext
+    const notificationRows: NotificationInsertInput[] = [
+      {
+        recipientUserId: notificationContext.studentId,
+        actorUserId: educatorId,
+        eventType: 'retake_updated',
+        title: 'Retake updated',
+        message:
+          notificationContext.retakeCount > 0
+            ? `Your retake count for ${notificationContext.moduleCode} in ${notificationContext.subjectName} is now ${notificationContext.retakeCount}.`
+            : `Your extra retake access for ${notificationContext.moduleCode} in ${notificationContext.subjectName} has been removed.`,
+        linkPath: '/student/assessment/quiz',
+        moduleId: notificationContext.moduleRowId,
+        subjectId: notificationContext.subjectId,
+        sectionId: notificationContext.sectionId,
+        metadata: {
+          studentName: notificationContext.studentName,
+          moduleCode: notificationContext.moduleCode,
+          subjectName: notificationContext.subjectName,
+          sectionName: notificationContext.sectionName,
+          retakeCount: notificationContext.retakeCount,
+        },
+      },
+    ]
+
+    await insertNotifications(notificationRows)
+  } catch (notificationError) {
+    console.error('Failed to save retake notifications.', notificationError)
   }
 
   return {

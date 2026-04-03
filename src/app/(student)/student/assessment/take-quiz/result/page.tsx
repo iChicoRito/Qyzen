@@ -18,6 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator'
 
 import { ResultSummaryChart } from './components/result-summary-chart'
+import { RetakeAssessmentDialog } from './components/retake-assessment-dialog'
 
 interface TakeQuizResultPageProps {
   searchParams: Promise<{
@@ -346,9 +347,7 @@ export default async function TakeQuizResultPage({ searchParams }: TakeQuizResul
 
               <div className="flex flex-col gap-3">
                 {result.canRetake ? (
-                  <Button asChild className="w-full cursor-pointer">
-                    <Link href={`/student/assessment/take-quiz?moduleId=${result.moduleRowId}`}>Retake Assessment</Link>
-                  </Button>
+                  <RetakeAssessmentDialog moduleId={result.moduleRowId} />
                 ) : null}
                 <Button asChild variant="outline" className="w-full cursor-pointer">
                   <Link href="/student/assessment/quiz">Back to Assessments</Link>
