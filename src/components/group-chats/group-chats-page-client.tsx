@@ -348,7 +348,7 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
     <div className="flex min-h-0 flex-1 px-0 md:px-6">
       <div
         className={cn(
-          'h-[calc(100svh-4rem)] max-h-[calc(100svh-4rem)] min-h-0 w-full overflow-hidden border-y bg-background md:h-[calc(100dvh-8rem)] md:max-h-[calc(100dvh-8rem)] md:min-h-[36rem] md:rounded-lg md:border md:grid',
+          '-my-4 grid h-[calc(100svh-var(--header-height)-2rem)] max-h-[calc(100svh-var(--header-height)-2rem)] min-h-0 w-full grid-cols-1 overflow-hidden border-y bg-background md:my-0 md:h-[calc(100dvh-var(--header-height)-3rem)] md:max-h-[calc(100dvh-var(--header-height)-3rem)] md:min-h-[36rem] md:rounded-lg md:border',
           conversationRailWidthClass
         )}
       >
@@ -367,7 +367,7 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
         ) : null}
 
         {!showListOnlyOnMobile ? (
-          <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden">
+          <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden">
             <GroupChatHeader
               chat={selectedChat}
               showBackButton={isMobile}
