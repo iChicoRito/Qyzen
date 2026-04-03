@@ -183,6 +183,10 @@ function getNavigationGroupsByRole(role: AppRole): SidebarNavGroup[] {
                 title: 'Sections',
                 url: '/educator/classroom/sections',
               },
+              {
+                title: 'Group Chats',
+                url: '/educator/classroom/group-chats',
+              },
             ],
           },
           {
@@ -243,6 +247,21 @@ function getNavigationGroupsByRole(role: AppRole): SidebarNavGroup[] {
             {
               title: 'Scores',
               url: '/student/assessment/scores',
+            },
+          ],
+        },
+        {
+          title: 'Classrom',
+          url: '#',
+          icon: IconChalkboardTeacher,
+          items: [
+            {
+              title: 'Group Chats',
+              url: '/student/chats',
+            },
+            {
+              title: 'Learning Materials',
+              url: '/student/learning-materials',
             },
           ],
         },

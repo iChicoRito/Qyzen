@@ -1,0 +1,161 @@
+'use client'
+
+import { useEffect, useRef } from 'react'
+import { format, isToday, isYesterday } from 'date-fns'
+import { IconChecks, IconUserScreen } from '@tabler/icons-react'
+
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { cn } from '@/lib/utils'
+import type { GroupChatMessage } from '@/types/group-chat'
+
+interface GroupChatMessageListProps {
+  currentUserId: number
+  messages: GroupChatMessage[]
+  isLoading?: boolean
+}
+
+interface GroupedMessageDay {
+  date: string
+  messages: GroupChatMessage[]
+}
+
+// formatMessageTimestamp - render one message timestamp
+function formatMessageTimestamp(timestamp: string) {
+  return format(new Date(timestamp), 'p')
+}
+
+// formatDayLabel - render a friendly group label for one day
+function formatDayLabel(dateValue: string) {
+  const date = new Date(dateValue)
+
+  if (isToday(date)) {
+    return 'Today'
+  }
+
+  if (isYesterday(date)) {
+    return 'Yesterday'
+  }
+
+  return format(date, 'EEEE, MMMM d')
+}
+
+// groupMessagesByDay - collect message rows under one date label
+function groupMessagesByDay(messages: GroupChatMessage[]) {
+  return messages.reduce<GroupedMessageDay[]>((groups, message) => {
+    const dateLabel = format(new Date(message.createdAt), 'yyyy-MM-dd')
+    const lastGroup = groups[groups.length - 1]
+
+    if (lastGroup && lastGroup.date === dateLabel) {
+      lastGroup.messages.push(message)
+      return groups
+    }
+
+    groups.push({
+      date: dateLabel,
+      messages: [message],
+    })
+
+    return groups
+  }, [])
+}
+
+// GroupChatMessageList - render one scrollable message thread
+export function GroupChatMessageList({
+  currentUserId,
+  messages,
+  isLoading = false,
+}: GroupChatMessageListProps) {
+  const bottomRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+        Loading messages...
+      </div>
+    )
+  }
+
+  if (messages.length === 0) {
+    return (
+      <div className="flex flex-1 items-center justify-center px-4 text-center text-sm text-muted-foreground">
+        No messages yet. Start the conversation with your educator and classmates.
+      </div>
+    )
+  }
+
+  const groupedMessages = groupMessagesByDay(messages)
+
+  return (
+    <ScrollArea className="flex-1">
+      <div className="space-y-4 px-4 py-4">
+        {groupedMessages.map((group) => (
+          <div key={group.date}>
+            <div className="flex justify-center py-2">
+              <span className="rounded-md border bg-background px-3 py-1 text-xs text-muted-foreground">
+                {formatDayLabel(group.date)}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {group.messages.map((message, index) => {
+                const isOwnMessage = message.senderUserId === currentUserId
+                const previousMessage = index > 0 ? group.messages[index - 1] : null
+                const showSender =
+                  !isOwnMessage && (!previousMessage || previousMessage.senderUserId !== message.senderUserId)
+
+                return (
+                  <div
+                    key={message.id}
+                    className={cn('flex gap-3', isOwnMessage ? 'justify-end' : 'justify-start')}
+                  >
+                    {!isOwnMessage ? (
+                      <div className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-secondary text-foreground">
+                        <IconUserScreen size={16} />
+                      </div>
+                    ) : null}
+
+                    <div
+                      className={cn(
+                        'flex max-w-[80%] flex-col',
+                        isOwnMessage ? 'items-end' : 'items-start'
+                      )}
+                    >
+                      {showSender ? (
+                        <p className="mb-1 text-sm font-medium">{message.senderDisplayName}</p>
+                      ) : null}
+
+                      <div
+                        className={cn(
+                          'rounded-lg px-3 py-2 text-sm',
+                          isOwnMessage ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                        )}
+                      >
+                        <p className="whitespace-pre-wrap break-words">{message.content}</p>
+
+                        <div
+                          className={cn(
+                            'mt-2 flex items-center gap-1 text-xs',
+                            isOwnMessage ? 'justify-end text-primary-foreground/80' : 'text-muted-foreground'
+                          )}
+                        >
+                          <span>{formatMessageTimestamp(message.createdAt)}</span>
+                          {isOwnMessage ? <IconChecks size={14} /> : null}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+
+        <div ref={bottomRef} />
+      </div>
+    </ScrollArea>
+  )
+}
