@@ -6,32 +6,41 @@ import { IconRefresh } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { type CreateEnrollmentInput } from '@/lib/supabase/enrollments'
+import { type BulkCreateEnrollmentRow, type CreateEnrollmentInput } from '@/lib/supabase/enrollments'
 
 import { AddStudentModal } from './add-student-modal'
 import { DataTableViewOptions } from './data-table-view-options'
+import { UploadEnrollmentsFileModal } from './upload-enrollments-file-modal'
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
   onAddEnrollment?: (input: CreateEnrollmentInput) => Promise<void>
+  onUploadEnrollments?: (rows: BulkCreateEnrollmentRow[]) => Promise<void>
 }
 
 // DataTableToolbar - filter and create enrollment rows
-export function DataTableToolbar<TData>({ table, onAddEnrollment }: DataTableToolbarProps<TData>) {
+export function DataTableToolbar<TData>({
+  table,
+  onAddEnrollment,
+  onUploadEnrollments,
+}: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0
-  const statusFilter = table.getColumn('status')?.getFilterValue() as string[] | undefined
   const sectionFilter = table.getColumn('sectionName')?.getFilterValue() as string | undefined
+  const subjectFilter = table.getColumn('subjectName')?.getFilterValue() as string | undefined
   const sectionOptions = Array.from(table.getColumn('sectionName')?.getFacetedUniqueValues().keys() || [])
     .map((value) => String(value))
     .sort((firstValue, secondValue) => firstValue.localeCompare(secondValue))
+  const subjectOptions = Array.from(table.getColumn('subjectName')?.getFacetedUniqueValues().keys() || [])
+    .map((value) => String(value))
+    .sort((firstValue, secondValue) => firstValue.localeCompare(secondValue))
 
-  const handleStatusChange = (value: string) => {
-    const column = table.getColumn('status')
+  const handleSubjectChange = (value: string) => {
+    const column = table.getColumn('subjectName')
     if (value === 'all') {
       column?.setFilterValue(undefined)
       return
     }
-    column?.setFilterValue([value])
+    column?.setFilterValue(value)
   }
 
   const handleSectionChange = (value: string) => {
@@ -66,14 +75,17 @@ export function DataTableToolbar<TData>({ table, onAddEnrollment }: DataTableToo
               ))}
             </SelectContent>
           </Select>
-          <Select value={statusFilter?.[0] || 'all'} onValueChange={handleStatusChange}>
+          <Select value={subjectFilter || 'all'} onValueChange={handleSubjectChange}>
             <SelectTrigger className="w-full cursor-pointer sm:w-[180px]">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder="Subject" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all" className="cursor-pointer">All Status</SelectItem>
-              <SelectItem value="active" className="cursor-pointer">Active</SelectItem>
-              <SelectItem value="inactive" className="cursor-pointer">Inactive</SelectItem>
+              <SelectItem value="all" className="cursor-pointer">All Subjects</SelectItem>
+              {subjectOptions.map((subjectName) => (
+                <SelectItem key={subjectName} value={subjectName} className="cursor-pointer">
+                  {subjectName}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={() => table.resetColumnFilters()} className="w-full cursor-pointer px-3 sm:w-auto" disabled={!isFiltered}>
@@ -83,6 +95,7 @@ export function DataTableToolbar<TData>({ table, onAddEnrollment }: DataTableToo
         </div>
         <div className="flex flex-wrap items-center gap-2 lg:justify-end">
           <DataTableViewOptions table={table} />
+          <UploadEnrollmentsFileModal onUploadEnrollments={onUploadEnrollments} />
           <AddStudentModal onAddEnrollment={onAddEnrollment} />
         </div>
       </div>

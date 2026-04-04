@@ -124,6 +124,34 @@ export function AddStudentModal({ onAddEnrollment, trigger }: AddStudentModalPro
     )
   }, [subjectOptions, subjectSearch])
 
+  const selectedStudentIds = form.watch('studentIds')
+  const areAllFilteredStudentsSelected =
+    filteredStudents.length > 0 &&
+    filteredStudents.every((student) => selectedStudentIds.includes(student.id))
+
+  // handleStudentCheckAllChange - toggle all filtered students
+  const handleStudentCheckAllChange = (checked: boolean) => {
+    const currentIds = form.getValues('studentIds')
+    const filteredStudentIds = filteredStudents.map((student) => student.id)
+
+    if (checked) {
+      form.setValue('studentIds', [...new Set([...currentIds, ...filteredStudentIds])], {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+      return
+    }
+
+    form.setValue(
+      'studentIds',
+      currentIds.filter((studentId) => !filteredStudentIds.includes(studentId)),
+      {
+        shouldDirty: true,
+        shouldValidate: true,
+      }
+    )
+  }
+
   const handleSubmit = async (values: AddEnrollmentFormSchema) => {
     try {
       setIsSubmitting(true)
@@ -193,12 +221,27 @@ export function AddStudentModal({ onAddEnrollment, trigger }: AddStudentModalPro
                             onWheelCapture={(event) => event.stopPropagation()}
                           >
                             <div className="space-y-2">
+                            {!isLoadingOptions && filteredStudents.length > 0 ? (
+                              <label className="flex cursor-pointer items-center gap-3 rounded-md border p-3">
+                                <Checkbox
+                                  checked={areAllFilteredStudentsSelected}
+                                  onCheckedChange={(checked) => handleStudentCheckAllChange(Boolean(checked))}
+                                  className="mt-0.5"
+                                />
+                                <div className="space-y-1">
+                                  <p className="text-sm font-medium">Check all</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Select all students in the current filtered list.
+                                  </p>
+                                </div>
+                              </label>
+                            ) : null}
                             {isLoadingOptions ? <p className="text-sm text-muted-foreground">Loading students...</p> : null}
                             {!isLoadingOptions && filteredStudents.length === 0 ? <p className="text-sm text-muted-foreground">No students found.</p> : null}
                             {!isLoadingOptions
                               ? filteredStudents.map((student) => (
                                   <label key={student.id} className="flex cursor-pointer items-start gap-3 rounded-md border p-3">
-                                    <Checkbox checked={form.watch('studentIds').includes(student.id)} onCheckedChange={(checked) => handleStudentCheckedChange(student.id, Boolean(checked))} className="mt-0.5" />
+                                    <Checkbox checked={selectedStudentIds.includes(student.id)} onCheckedChange={(checked) => handleStudentCheckedChange(student.id, Boolean(checked))} className="mt-0.5" />
                                     <div className="space-y-1">
                                       <p className="text-sm font-medium">{student.fullName}</p>
                                       <p className="text-xs text-muted-foreground">{student.userId}</p>

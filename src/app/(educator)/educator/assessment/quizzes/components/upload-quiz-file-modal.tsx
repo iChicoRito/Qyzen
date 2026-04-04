@@ -60,6 +60,11 @@ function normalizeValue(value: unknown) {
   return String(value ?? '').trim()
 }
 
+// isEmptyUploadRow - detect fully blank spreadsheet rows
+function isEmptyUploadRow(row: UploadRow) {
+  return templateHeaders.every((header) => !normalizeValue(row[header]))
+}
+
 // buildModuleUploadKey - create a lookup key for uploaded module ids
 function buildModuleUploadKey(moduleId: string) {
   return normalizeValue(moduleId).toLowerCase()
@@ -215,7 +220,7 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: row.number % 2 === 0 ? 'F5F5F5' : 'FFFFFF' },
+          fgColor: { argb: 'FFFFFF' },
         }
         cell.border = {
           top: { style: 'thin', color: { argb: 'E4E4E7' } },
@@ -235,7 +240,7 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: rowIndex % 2 === 0 ? 'F5F5F5' : 'FFFFFF' },
+          fgColor: { argb: 'FFFFFF' },
         }
         cell.border = {
           top: { style: 'thin', color: { argb: 'E4E4E7' } },
@@ -317,6 +322,10 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
         const rows = await parseFileRows(file)
 
         rows.forEach((row: UploadRow, rowIndex: number) => {
+          if (isEmptyUploadRow(row)) {
+            return
+          }
+
           const moduleIdValue = normalizeValue(row.module_id)
           const moduleKey = buildModuleUploadKey(moduleIdValue)
           const matchedModule = moduleMap.get(moduleKey)
@@ -416,6 +425,11 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
             correctAnswers,
           })
         })
+      }
+
+      if (uploadedQuizzes.length === 0) {
+        toast.error('Add at least one quiz row before uploading.')
+        return
       }
 
       await onUploadQuizzes?.(uploadedQuizzes)

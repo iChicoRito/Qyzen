@@ -14,18 +14,21 @@ import {
 } from '@/components/ui/select'
 import { DataTableViewOptions } from './data-table-view-options'
 import { AddUserModal } from './add-user-modal'
+import { UploadStudentsFileModal } from './upload-students-file-modal'
 
 import { statuses, userTypes } from '../data/data'
-import type { CreateUserInput } from '@/lib/supabase/users'
+import type { BulkCreateStudentInput, CreateUserInput } from '@/lib/supabase/users'
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
   onAddUser?: (user: CreateUserInput) => Promise<void>
+  onUploadStudents?: (students: BulkCreateStudentInput[]) => Promise<void>
 }
 
 export function DataTableToolbar<TData>({
   table,
   onAddUser,
+  onUploadStudents,
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0
 
@@ -125,6 +128,7 @@ export function DataTableToolbar<TData>({
         </div>
         <div className="flex flex-wrap items-center gap-2 lg:justify-end">
           <DataTableViewOptions table={table} />
+          <UploadStudentsFileModal onUploadStudents={onUploadStudents} />
           <AddUserModal onAddUser={onAddUser} />
         </div>
       </div>

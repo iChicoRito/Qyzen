@@ -6,7 +6,13 @@ import { IconArrowUp, IconSchool, IconShieldCheck, IconUserCheck, IconUsersGroup
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { createUser, fetchUsers, type CreateUserInput } from '@/lib/supabase/users'
+import {
+  createStudentsBulk,
+  createUser,
+  fetchUsers,
+  type BulkCreateStudentInput,
+  type CreateUserInput,
+} from '@/lib/supabase/users'
 
 import { columns } from './components/columns'
 import { DataTable } from './components/data-table'
@@ -41,6 +47,12 @@ export default function UsersPage() {
   const handleAddUser = async (newUser: CreateUserInput) => {
     const createdUser = await createUser(newUser)
     setUsers((prev) => [userSchema.parse(createdUser), ...prev])
+  }
+
+  // handleUploadStudents - add uploaded student rows
+  const handleUploadStudents = async (students: BulkCreateStudentInput[]) => {
+    const createdUsers = await createStudentsBulk(students)
+    setUsers((prev) => [...createdUsers.map((user) => userSchema.parse(user)), ...prev])
   }
 
   // ==================== STATS ====================
@@ -195,7 +207,12 @@ export default function UsersPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <DataTable data={users} columns={columns} onAddUser={handleAddUser} />
+            <DataTable
+              data={users}
+              columns={columns}
+              onAddUser={handleAddUser}
+              onUploadStudents={handleUploadStudents}
+            />
           </CardContent>
         </Card>
       </div>

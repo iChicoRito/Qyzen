@@ -38,6 +38,12 @@ export interface CreateEnrollmentInput {
   status: 'active' | 'inactive'
 }
 
+export interface BulkCreateEnrollmentRow {
+  studentId: number
+  subjectId: number
+  status: 'active' | 'inactive'
+}
+
 export interface UpdateEnrollmentInput {
   id: number
   studentId: number
@@ -81,6 +87,12 @@ interface UserLookupRow {
 
 interface SupabaseErrorResponse {
   message?: string
+}
+
+interface EnrollmentPairRow {
+  id: number
+  student_id: number
+  subject_id: number
 }
 
 // buildEnrollmentNotificationTitle - create a short enrollment notification title
@@ -307,6 +319,39 @@ async function ensureEnrollmentUniqueness(
   }
 }
 
+// ensureBulkEnrollmentUniqueness - validate uploaded enrollment rows exactly by pair
+async function ensureBulkEnrollmentUniqueness(educatorId: number, rows: BulkCreateEnrollmentRow[]) {
+  const requestPairs = rows.map((row) => `${row.studentId}:${row.subjectId}`)
+  const duplicateRequestPair = requestPairs.find((pair, index) => requestPairs.indexOf(pair) !== index)
+
+  if (duplicateRequestPair) {
+    throw new Error('One or more uploaded student and subject combinations are duplicated.')
+  }
+
+  const supabase = createClient()
+  const studentIds = [...new Set(rows.map((row) => row.studentId))]
+  const subjectIds = [...new Set(rows.map((row) => row.subjectId))]
+  const { data, error } = await supabase
+    .from('tbl_enrolled')
+    .select('id,student_id,subject_id')
+    .eq('educator_id', educatorId)
+    .in('student_id', studentIds)
+    .in('subject_id', subjectIds)
+
+  if (error) {
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to validate enrollment records.'))
+  }
+
+  const existingPairSet = new Set(
+    ((data || []) as EnrollmentPairRow[]).map((row) => `${row.student_id}:${row.subject_id}`)
+  )
+  const hasExistingDuplicate = rows.some((row) => existingPairSet.has(`${row.studentId}:${row.subjectId}`))
+
+  if (hasExistingDuplicate) {
+    throw new Error('One or more selected student and subject combinations already exist.')
+  }
+}
+
 // fetchEnrollmentStudents - load student dropdown options
 export async function fetchEnrollmentStudents() {
   const supabase = createClient()
@@ -378,6 +423,39 @@ export async function createEnrollments(input: CreateEnrollmentInput) {
       is_active: input.status === 'active',
     }))
   )
+
+  const { data, error } = await supabase
+    .from('tbl_enrolled')
+    .insert(rowsToInsert)
+    .select(
+      'id,is_active,student:student_id(id,user_id,given_name,surname,is_active),educator:educator_id(id,user_id,given_name,surname,is_active),subject:subject_id(id,subject_code,subject_name,is_active,section:sections_id(id,section_name,is_active))'
+    )
+
+  if (error) {
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to create enrollments.'))
+  }
+
+  const createdEnrollments = ((data || []) as EnrollmentRow[])
+    .map(mapEnrollmentRecord)
+    .filter((enrollment): enrollment is EnrollmentRecord => Boolean(enrollment))
+
+  await notifyStudentAboutEnrollmentChange(educatorId, 'created', createdEnrollments)
+
+  return createdEnrollments
+}
+
+// createBulkEnrollments - create one enrollment per uploaded row
+export async function createBulkEnrollments(rows: BulkCreateEnrollmentRow[]) {
+  const educatorId = await getCurrentEducatorId()
+  await ensureBulkEnrollmentUniqueness(educatorId, rows)
+
+  const supabase = createClient()
+  const rowsToInsert = rows.map((row) => ({
+    student_id: row.studentId,
+    educator_id: educatorId,
+    subject_id: row.subjectId,
+    is_active: row.status === 'active',
+  }))
 
   const { data, error } = await supabase
     .from('tbl_enrolled')

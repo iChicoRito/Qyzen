@@ -4,7 +4,7 @@ import * as React from 'react'
 import { type ColumnDef, type ColumnFiltersState, type SortingState, type VisibilityState, flexRender, getCoreRowModel, getFacetedRowModel, getFacetedUniqueValues, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table'
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { type CreateEnrollmentInput } from '@/lib/supabase/enrollments'
+import { type BulkCreateEnrollmentRow, type CreateEnrollmentInput } from '@/lib/supabase/enrollments'
 
 import { DataTablePagination } from './data-table-pagination'
 import { DataTableToolbar } from './data-table-toolbar'
@@ -13,10 +13,16 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   onAddEnrollment?: (input: CreateEnrollmentInput) => Promise<void>
+  onUploadEnrollments?: (rows: BulkCreateEnrollmentRow[]) => Promise<void>
 }
 
 // DataTable - render the enrollment table
-export function DataTable<TData, TValue>({ columns, data, onAddEnrollment }: DataTableProps<TData, TValue>) {
+export function DataTable<TData, TValue>({
+  columns,
+  data,
+  onAddEnrollment,
+  onUploadEnrollments,
+}: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -41,7 +47,11 @@ export function DataTable<TData, TValue>({ columns, data, onAddEnrollment }: Dat
 
   return (
     <div className="min-w-0 space-y-4">
-      <DataTableToolbar table={table} onAddEnrollment={onAddEnrollment} />
+      <DataTableToolbar
+        table={table}
+        onAddEnrollment={onAddEnrollment}
+        onUploadEnrollments={onUploadEnrollments}
+      />
       <div className="min-w-0 overflow-x-auto rounded-md border">
         <Table className="min-w-[1100px]">
           <TableHeader>

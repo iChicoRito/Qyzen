@@ -1,4 +1,5 @@
 import { createClient } from './client'
+import { bulkStudentCreateSchema } from '@/lib/validations/student-upload.schema'
 
 export interface UserRecord {
   id: number
@@ -18,6 +19,14 @@ export interface CreateUserInput {
   email: string
   status: 'active' | 'inactive'
   userType: 'student' | 'educator'
+  roleNames: string[]
+}
+
+export interface BulkCreateStudentInput {
+  userId: string
+  givenName: string
+  surname: string
+  email: string
   roleNames: string[]
 }
 
@@ -118,4 +127,25 @@ export async function createUser(user: CreateUserInput) {
   }
 
   return (await response.json()) as UserRecord
+}
+
+// createStudentsBulk - create student users from uploaded rows
+export async function createStudentsBulk(students: BulkCreateStudentInput[]) {
+  const payload = bulkStudentCreateSchema.parse({ students })
+  const response = await fetch('/api/users/bulk', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    const error = (await response.json()) as SupabaseErrorResponse
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to upload students.'))
+  }
+
+  const data = (await response.json()) as { users: UserRecord[] }
+
+  return data.users
 }

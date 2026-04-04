@@ -13,8 +13,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
+  createBulkEnrollments,
   createEnrollments,
   fetchEnrollments,
+  type BulkCreateEnrollmentRow,
   type CreateEnrollmentInput,
   type EnrollmentRecord,
 } from '@/lib/supabase/enrollments'
@@ -51,6 +53,15 @@ export function EnrollmentPageClient() {
   // handleAddEnrollment - append created rows
   const handleAddEnrollment = async (input: CreateEnrollmentInput) => {
     const createdEnrollments = await createEnrollments(input)
+    setEnrollments((prev) => [
+      ...createdEnrollments.map((enrollment) => enrollmentSchema.parse(enrollment)),
+      ...prev,
+    ])
+  }
+
+  // handleUploadEnrollments - append uploaded enrollment rows
+  const handleUploadEnrollments = async (rows: BulkCreateEnrollmentRow[]) => {
+    const createdEnrollments = await createBulkEnrollments(rows)
     setEnrollments((prev) => [
       ...createdEnrollments.map((enrollment) => enrollmentSchema.parse(enrollment)),
       ...prev,
@@ -231,6 +242,7 @@ export function EnrollmentPageClient() {
                 onEnrollmentDeleted: handleEnrollmentDeleted,
               })}
               onAddEnrollment={handleAddEnrollment}
+              onUploadEnrollments={handleUploadEnrollments}
             />
           </CardContent>
         </Card>

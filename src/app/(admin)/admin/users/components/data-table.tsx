@@ -27,18 +27,20 @@ import {
 
 import { DataTablePagination } from './data-table-pagination'
 import { DataTableToolbar } from './data-table-toolbar'
-import type { CreateUserInput } from '@/lib/supabase/users'
+import type { BulkCreateStudentInput, CreateUserInput } from '@/lib/supabase/users'
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   onAddUser?: (user: CreateUserInput) => Promise<void>
+  onUploadStudents?: (students: BulkCreateStudentInput[]) => Promise<void>
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
   onAddUser,
+  onUploadStudents,
 }: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -71,7 +73,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="min-w-0 space-y-4">
-      <DataTableToolbar table={table} onAddUser={onAddUser} />
+      <DataTableToolbar table={table} onAddUser={onAddUser} onUploadStudents={onUploadStudents} />
       <div className="min-w-0 overflow-x-auto rounded-md border">
         <Table className="min-w-[1000px]">
           <TableHeader>
