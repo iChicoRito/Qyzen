@@ -6,6 +6,12 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { type AppRole } from '@/lib/auth/auth-context'
@@ -48,6 +54,7 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [isConversationRailCollapsed, setIsConversationRailCollapsed] = useState(false)
+  const [isMobileConversationDrawerOpen, setIsMobileConversationDrawerOpen] = useState(false)
   const [isLoadingChats, setIsLoadingChats] = useState(true)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [isSendingMessage, setIsSendingMessage] = useState(false)
@@ -150,6 +157,7 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
     if (chats.length === 0) {
       setSelectedChatId(null)
       setMessages([])
+      setMessagesChatId(null)
       return
     }
 
@@ -159,8 +167,14 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
       return
     }
 
-    setSelectedChatId(isMobile ? null : chats[0].id)
+    setSelectedChatId(chats[0].id)
   }, [chats, isMobile, selectedChatId])
+
+  useEffect(() => {
+    if (!isMobile) {
+      setIsMobileConversationDrawerOpen(false)
+    }
+  }, [isMobile])
 
   useEffect(() => {
     if (!selectedChatId) {
@@ -346,6 +360,7 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
 
   const selectedChat = chats.find((chat) => chat.id === selectedChatId) || null
   const selectedChatMessages = selectedChat && messagesChatId === selectedChat.id ? messages : []
+  const hasUnreadConversations = chats.some((chat) => chat.unreadCount > 0)
 
   if (isLoadingChats) {
     return (
@@ -393,7 +408,6 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
     )
   }
 
-  const showListOnlyOnMobile = isMobile && !selectedChatId
   const conversationRailWidthClass = isConversationRailCollapsed
     ? 'md:grid-cols-[4.5rem_minmax(0,1fr)]'
     : 'md:grid-cols-[minmax(19rem,22rem)_minmax(0,1fr)]'
@@ -406,56 +420,81 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
           conversationRailWidthClass
         )}
       >
-        {!isMobile || showListOnlyOnMobile ? (
+        {!isMobile ? (
           <GroupChatConversationList
             chats={filteredChats}
             selectedChatId={selectedChatId}
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
             onSelectChat={setSelectedChatId}
-            isCollapsed={!isMobile && isConversationRailCollapsed}
-            onToggleCollapsed={
-              !isMobile ? () => setIsConversationRailCollapsed((currentValue) => !currentValue) : undefined
-            }
+            isCollapsed={isConversationRailCollapsed}
+            onToggleCollapsed={() => setIsConversationRailCollapsed((currentValue) => !currentValue)}
           />
         ) : null}
 
-        {!showListOnlyOnMobile ? (
-          <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden">
-            <GroupChatHeader
-              chat={selectedChat}
-              showBackButton={isMobile}
-              onBack={() => setSelectedChatId(null)}
-            />
+        <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden">
+          <GroupChatHeader
+            chat={selectedChat}
+            showMenuButton={isMobile}
+            hasUnreadConversations={hasUnreadConversations}
+            onOpenConversationDrawer={isMobile ? () => setIsMobileConversationDrawerOpen(true) : undefined}
+          />
 
-            {selectedChat ? (
-              <>
-                <GroupChatMessageList
-                  groupChatId={selectedChat.id}
-                  currentUserId={currentUserId}
-                  messages={selectedChatMessages}
-                  isLoading={isLoadingMessages}
-                />
-                <GroupChatMessageInput
-                  disabled={!selectedChat}
-                  isSending={isSendingMessage}
-                  cooldownSeconds={role === 'student' ? studentCooldownSeconds : 0}
-                  placeholder={`Message ${selectedChat.subjectName}...`}
-                  onSendMessage={handleSendMessage}
-                />
-              </>
-            ) : (
-              <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
-                <IconMessageCircleOff size={28} className="text-muted-foreground" />
-                <p className="font-medium">No group chat selected</p>
-                <p className="text-sm text-muted-foreground">
-                  Choose a subject conversation from the list to view messages.
-                </p>
-              </div>
-            )}
-          </div>
-        ) : null}
+          {selectedChat ? (
+            <>
+              <GroupChatMessageList
+                groupChatId={selectedChat.id}
+                currentUserId={currentUserId}
+                messages={selectedChatMessages}
+                isLoading={isLoadingMessages}
+              />
+              <GroupChatMessageInput
+                disabled={!selectedChat}
+                isSending={isSendingMessage}
+                cooldownSeconds={role === 'student' ? studentCooldownSeconds : 0}
+                placeholder={`Message ${selectedChat.subjectName}...`}
+                onSendMessage={handleSendMessage}
+              />
+            </>
+          ) : (
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
+              <IconMessageCircleOff size={28} className="text-muted-foreground" />
+              <p className="font-medium">No group chat selected</p>
+              <p className="text-sm text-muted-foreground">
+                Choose a subject conversation from the list to view messages.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
+
+      {isMobile ? (
+        <Drawer
+          open={isMobileConversationDrawerOpen}
+          onOpenChange={setIsMobileConversationDrawerOpen}
+          direction="left"
+        >
+          <DrawerContent className="h-screen w-[85vw] max-w-md rounded-none border-r border-l-0 border-t-0 border-b-0">
+            <DrawerHeader className="border-b px-4 py-4 text-left">
+              <DrawerTitle>Group Chats</DrawerTitle>
+            </DrawerHeader>
+
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <GroupChatConversationList
+                chats={filteredChats}
+                selectedChatId={selectedChatId}
+                searchQuery={searchQuery}
+                onSearchQueryChange={setSearchQuery}
+                hideHeaderTitle
+                onSelectChat={(chatId) => {
+                  setSelectedChatId(chatId)
+                  setIsMobileConversationDrawerOpen(false)
+                }}
+              />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      ) : null}
     </div>
   )
 }

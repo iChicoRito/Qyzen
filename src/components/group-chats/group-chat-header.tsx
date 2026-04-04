@@ -1,6 +1,6 @@
 'use client'
 
-import { IconArrowLeft, IconUserScreen } from '@tabler/icons-react'
+import { IconMenu2, IconUserScreen } from '@tabler/icons-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -8,25 +8,55 @@ import type { GroupChatListItem } from '@/types/group-chat'
 
 interface GroupChatHeaderProps {
   chat: GroupChatListItem | null
-  showBackButton?: boolean
-  onBack?: () => void
+  showMenuButton?: boolean
+  hasUnreadConversations?: boolean
+  onOpenConversationDrawer?: () => void
 }
 
 // GroupChatHeader - render the active subject and section summary
-export function GroupChatHeader({ chat, showBackButton = false, onBack }: GroupChatHeaderProps) {
+export function GroupChatHeader({
+  chat,
+  showMenuButton = false,
+  hasUnreadConversations = false,
+  onOpenConversationDrawer,
+}: GroupChatHeaderProps) {
   if (!chat) {
     return (
-      <div className="flex h-16 shrink-0 items-center justify-center border-b bg-background px-4 text-sm text-muted-foreground">
-        Select a group chat to start messaging.
+      <div className="flex h-16 shrink-0 items-center gap-3 border-b bg-background px-4 text-sm text-muted-foreground">
+        {showMenuButton ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="relative h-8 w-8 md:hidden"
+            onClick={onOpenConversationDrawer}
+          >
+            <IconMenu2 size={18} />
+            {hasUnreadConversations ? (
+              <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-red-500" />
+            ) : null}
+          </Button>
+        ) : null}
+
+        <div className="flex-1 text-center">Select a group chat to start messaging.</div>
       </div>
     )
   }
 
   return (
     <div className="flex min-h-16 shrink-0 items-center gap-3 border-b bg-background px-4 py-3">
-      {showBackButton ? (
-        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 md:hidden" onClick={onBack}>
-          <IconArrowLeft size={18} />
+      {showMenuButton ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="relative h-8 w-8 md:hidden"
+          onClick={onOpenConversationDrawer}
+        >
+          <IconMenu2 size={18} />
+          {hasUnreadConversations ? (
+            <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-red-500" />
+          ) : null}
         </Button>
       ) : null}
 
@@ -35,15 +65,15 @@ export function GroupChatHeader({ chat, showBackButton = false, onBack }: GroupC
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-1">
           <h2 className="min-w-0 truncate font-semibold">{chat.subjectName}</h2>
-          <Badge variant="secondary" className="max-w-full rounded-md px-2 py-0 text-xs font-normal">
+          <Badge variant="outline" className="h-auto rounded-md px-1.5 py-0 text-xs font-normal">
             {chat.sectionName}
           </Badge>
         </div>
 
         <p className="truncate text-sm text-muted-foreground">
-          ({chat.studentCount} Students | <span className="text-green-500">{chat.onlineStudentCount} Online</span>)
+          {chat.studentCount} Students • <span className="text-green-500">{chat.onlineStudentCount} Online</span>
         </p>
       </div>
     </div>

@@ -23,6 +23,7 @@ interface GroupChatConversationListProps {
   onSelectChat: (chatId: number) => void
   isCollapsed?: boolean
   onToggleCollapsed?: () => void
+  hideHeaderTitle?: boolean
 }
 
 // formatConversationTimestamp - render list timestamps in a compact chat-friendly format
@@ -57,12 +58,13 @@ export function GroupChatConversationList({
   onSelectChat,
   isCollapsed = false,
   onToggleCollapsed,
+  hideHeaderTitle = false,
 }: GroupChatConversationListProps) {
   return (
     <div className="flex h-full min-h-0 flex-col border-r bg-background">
       <div className="border-b px-4 py-4">
         <div className="flex items-center justify-between">
-          {!isCollapsed ? <h1 className="text-lg font-semibold">Group Chats</h1> : <div />}
+          {!isCollapsed && !hideHeaderTitle ? <h1 className="text-lg font-semibold">Group Chats</h1> : <div />}
           {onToggleCollapsed ? (
             <Button
               type="button"
@@ -131,16 +133,11 @@ export function GroupChatConversationList({
               {!isCollapsed ? (
                 <>
                   <div className="min-w-0">
-                    <div className="min-w-0">
-                      <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        <p className="min-w-0 truncate font-medium">{chat.subjectName}</p>
-                        <Badge
-                          variant="secondary"
-                          className="max-w-full rounded-md px-2 py-0 text-xs font-normal"
-                        >
-                          {chat.sectionName}
-                        </Badge>
-                      </div>
+                    <div className="flex min-w-0 flex-col items-start gap-1">
+                      <p className="min-w-0 truncate font-medium">{chat.subjectName}</p>
+                      <Badge variant="outline" className="h-auto rounded-md px-1.5 py-0 text-xs font-normal">
+                        {chat.sectionName}
+                      </Badge>
                     </div>
                   </div>
 
