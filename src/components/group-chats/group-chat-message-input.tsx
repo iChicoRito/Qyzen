@@ -10,6 +10,7 @@ interface GroupChatMessageInputProps {
   disabled?: boolean
   isSending?: boolean
   placeholder?: string
+  cooldownSeconds?: number
   onSendMessage: (content: string) => Promise<void>
 }
 
@@ -18,9 +19,14 @@ export function GroupChatMessageInput({
   disabled = false,
   isSending = false,
   placeholder = 'Message this group chat...',
+  cooldownSeconds = 0,
   onSendMessage,
 }: GroupChatMessageInputProps) {
   const [message, setMessage] = useState('')
+  const isCooldownActive = cooldownSeconds > 0
+  const inputPlaceholder = isCooldownActive
+    ? `You can send another message in ${cooldownSeconds}s`
+    : placeholder
 
   // handleSubmit - send one trimmed message and clear the field on success
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -28,7 +34,7 @@ export function GroupChatMessageInput({
 
     const trimmedMessage = message.trim()
 
-    if (!trimmedMessage || disabled || isSending) {
+    if (!trimmedMessage || disabled || isSending || isCooldownActive) {
       return
     }
 
@@ -42,12 +48,18 @@ export function GroupChatMessageInput({
         <Input
           value={message}
           onChange={(event) => setMessage(event.target.value)}
-          placeholder={placeholder}
-          disabled={disabled || isSending}
+          placeholder={inputPlaceholder}
+          disabled={disabled || isSending || isCooldownActive}
         />
 
-        <Button type="submit" size="icon" disabled={disabled || isSending || !message.trim()}>
-          {isSending ? <Loader2 size={18} className="animate-spin" /> : <IconSendFilled size={18} />}
+        <Button type="submit" size="icon" disabled={disabled || isSending || isCooldownActive || !message.trim()}>
+          {isSending ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : isCooldownActive ? (
+            <span className="text-sm">{cooldownSeconds}s</span>
+          ) : (
+            <IconSendFilled size={18} />
+          )}
         </Button>
       </div>
     </form>

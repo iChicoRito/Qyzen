@@ -30,6 +30,7 @@ export interface GroupChatMessage {
   senderRole: GroupChatSenderRole
   content: string
   createdAt: string
+  isSeenByOtherParticipant: boolean
 }
 
 export interface SendGroupChatMessageInput {

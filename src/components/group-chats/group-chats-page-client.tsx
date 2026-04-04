@@ -40,21 +40,26 @@ interface RealtimeChangePayload {
 
 // GroupChatsPageClient - load and render the shared chat experience for one role
 export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClientProps) {
+  const studentMessageCooldownMs = 10_000
   const isMobile = useIsMobile()
   const [chats, setChats] = useState<GroupChatListItem[]>([])
   const [messages, setMessages] = useState<GroupChatMessage[]>([])
+  const [messagesChatId, setMessagesChatId] = useState<number | null>(null)
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [isConversationRailCollapsed, setIsConversationRailCollapsed] = useState(false)
   const [isLoadingChats, setIsLoadingChats] = useState(true)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [isSendingMessage, setIsSendingMessage] = useState(false)
+  const [studentCooldownEndsAt, setStudentCooldownEndsAt] = useState<number | null>(null)
+  const [studentCooldownSeconds, setStudentCooldownSeconds] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const loadChatsRef = useRef<(mode?: 'initial' | 'refresh' | 'background') => Promise<void>>(async () => {})
   const loadMessagesRef = useRef<
     (groupChatId: number, mode?: 'initial' | 'refresh' | 'background') => Promise<void>
   >(async () => {})
   const markReadRef = useRef<(groupChatId: number) => Promise<void>>(async () => {})
+  const isStudentCooldownActive = role === 'student' && studentCooldownSeconds > 0
 
   // ==================== LOADERS ====================
   loadChatsRef.current = async (mode = 'refresh') => {
@@ -85,6 +90,7 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
 
       const nextMessages = await fetchGroupChatMessages(groupChatId)
       setMessages(nextMessages)
+      setMessagesChatId(groupChatId)
     } catch (loadError) {
       toast.error(loadError instanceof Error ? loadError.message : 'Failed to load chat messages.')
     } finally {
@@ -106,6 +112,39 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
     void loadChatsRef.current('initial')
   }, [])
 
+  // ==================== STUDENT COOLDOWN ====================
+  useEffect(() => {
+    if (role !== 'student') {
+      setStudentCooldownEndsAt(null)
+      setStudentCooldownSeconds(0)
+      return
+    }
+
+    if (!studentCooldownEndsAt) {
+      setStudentCooldownSeconds(0)
+      return
+    }
+
+    const updateCooldown = () => {
+      const remainingMs = studentCooldownEndsAt - Date.now()
+
+      if (remainingMs <= 0) {
+        setStudentCooldownEndsAt(null)
+        setStudentCooldownSeconds(0)
+        return
+      }
+
+      setStudentCooldownSeconds(Math.ceil(remainingMs / 1000))
+    }
+
+    updateCooldown()
+    const intervalId = window.setInterval(updateCooldown, 250)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [role, studentCooldownEndsAt])
+
   // ==================== SELECTION ====================
   useEffect(() => {
     if (chats.length === 0) {
@@ -126,9 +165,12 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
   useEffect(() => {
     if (!selectedChatId) {
       setMessages([])
+      setMessagesChatId(null)
       return
     }
 
+    setMessages([])
+    setMessagesChatId(null)
     void loadMessagesRef.current(selectedChatId, 'initial')
     void markReadRef.current(selectedChatId)
   }, [selectedChatId])
@@ -190,8 +232,15 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
           schema: 'public',
           table: 'tbl_group_chat_reads',
         },
-        () => {
+        (payload: unknown) => {
+          const realtimePayload = payload as RealtimeChangePayload
+          const payloadChatId = realtimePayload.new?.group_chat_id ?? realtimePayload.old?.group_chat_id ?? null
+
           void loadChatsRef.current('background')
+
+          if (selectedChatId && payloadChatId === selectedChatId) {
+            void loadMessagesRef.current(selectedChatId, 'background')
+          }
         }
       )
       .on(
@@ -255,7 +304,7 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
 
   // ==================== ACTIONS ====================
   const handleSendMessage = async (content: string) => {
-    if (!selectedChatId) {
+    if (!selectedChatId || isStudentCooldownActive) {
       return
     }
 
@@ -270,6 +319,10 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
       await markReadRef.current(selectedChatId)
       await loadMessagesRef.current(selectedChatId, 'background')
       await loadChatsRef.current('background')
+
+      if (role === 'student') {
+        setStudentCooldownEndsAt(Date.now() + studentMessageCooldownMs)
+      }
     } catch (sendError) {
       toast.error(sendError instanceof Error ? sendError.message : 'Failed to send the message.')
       throw sendError
@@ -292,6 +345,7 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
   })
 
   const selectedChat = chats.find((chat) => chat.id === selectedChatId) || null
+  const selectedChatMessages = selectedChat && messagesChatId === selectedChat.id ? messages : []
 
   if (isLoadingChats) {
     return (
@@ -377,13 +431,15 @@ export function GroupChatsPageClient({ currentUserId, role }: GroupChatsPageClie
             {selectedChat ? (
               <>
                 <GroupChatMessageList
+                  groupChatId={selectedChat.id}
                   currentUserId={currentUserId}
-                  messages={messages}
+                  messages={selectedChatMessages}
                   isLoading={isLoadingMessages}
                 />
                 <GroupChatMessageInput
                   disabled={!selectedChat}
                   isSending={isSendingMessage}
+                  cooldownSeconds={role === 'student' ? studentCooldownSeconds : 0}
                   placeholder={`Message ${selectedChat.subjectName}...`}
                   onSendMessage={handleSendMessage}
                 />

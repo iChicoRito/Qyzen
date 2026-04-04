@@ -33,6 +33,12 @@ interface GroupChatMessageRow {
   sender_role: string
   content: string
   created_at: string
+  is_seen_by_other_participant: boolean
+}
+
+interface GroupChatReadRow {
+  user_id: number
+  last_read_at: string
 }
 
 interface SubjectGroupChatRow {
@@ -181,7 +187,28 @@ function mapGroupChatMessage(row: GroupChatMessageRow): GroupChatMessage {
     senderRole: normalizeSenderRole(row.sender_role),
     content: row.content,
     createdAt: row.created_at,
+    isSeenByOtherParticipant: row.is_seen_by_other_participant,
   }
+}
+
+// applySeenStateToMessages - derive one seen flag from current read rows
+function applySeenStateToMessages(messages: GroupChatMessage[], reads: GroupChatReadRow[]) {
+  return messages.map((message) => {
+    const messageCreatedAt = new Date(message.createdAt).getTime()
+    const isSeenByOtherParticipant = reads.some((read) => {
+      if (read.user_id === message.senderUserId) {
+        return false
+      }
+
+      const lastReadAt = new Date(read.last_read_at).getTime()
+      return !Number.isNaN(lastReadAt) && lastReadAt >= messageCreatedAt
+    })
+
+    return {
+      ...message,
+      isSeenByOtherParticipant,
+    }
+  })
 }
 
 // mapEducatorManagedGroupChat - convert one educator-owned row and summary counts into a management row
@@ -273,15 +300,26 @@ export async function fetchGroupChatMessagesWithClient(
   supabase: SupabaseClient,
   groupChatId: number
 ) {
-  const { data, error } = await supabase.rpc('get_group_chat_messages', {
-    target_group_chat_id: groupChatId,
-  })
+  const [{ data: messageData, error: messageError }, { data: readData, error: readError }] = await Promise.all([
+    supabase.rpc('get_group_chat_messages', {
+      target_group_chat_id: groupChatId,
+    }),
+    supabase
+      .from('tbl_group_chat_reads')
+      .select('user_id,last_read_at')
+      .eq('group_chat_id', groupChatId),
+  ])
 
-  if (error) {
-    throw new Error(getSupabaseErrorMessage(error, 'Failed to load group chat messages.'))
+  if (messageError) {
+    throw new Error(getSupabaseErrorMessage(messageError, 'Failed to load group chat messages.'))
   }
 
-  return ((data || []) as GroupChatMessageRow[]).map(mapGroupChatMessage)
+  if (readError) {
+    throw new Error(getSupabaseErrorMessage(readError, 'Failed to load the group chat read state.'))
+  }
+
+  const mappedMessages = ((messageData || []) as GroupChatMessageRow[]).map(mapGroupChatMessage)
+  return applySeenStateToMessages(mappedMessages, (readData || []) as GroupChatReadRow[])
 }
 
 // sendGroupChatMessageWithClient - save one text message into a group chat

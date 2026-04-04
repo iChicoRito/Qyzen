@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import type { GroupChatMessage } from '@/types/group-chat'
 
 interface GroupChatMessageListProps {
+  groupChatId: number
   currentUserId: number
   messages: GroupChatMessage[]
   isLoading?: boolean
@@ -62,48 +63,55 @@ function groupMessagesByDay(messages: GroupChatMessage[]) {
 
 // GroupChatMessageList - render one scrollable message thread
 export function GroupChatMessageList({
+  groupChatId,
   currentUserId,
   messages,
   isLoading = false,
 }: GroupChatMessageListProps) {
   const scrollAreaRef = useRef<HTMLDivElement | null>(null)
-  const lastScrollTopRef = useRef(0)
-  const shouldPreserveScrollRef = useRef(false)
+  const hasLoadedInitialMessagesRef = useRef(false)
+  const lastMessageIdRef = useRef<number | null>(null)
+  const shouldAutoScrollRef = useRef(false)
 
+  // resetScrollTracking - restart auto-scroll detection for one chat thread
   useEffect(() => {
-    const viewport = scrollAreaRef.current?.querySelector<HTMLElement>('[data-slot="scroll-area-viewport"]')
+    hasLoadedInitialMessagesRef.current = false
+    lastMessageIdRef.current = null
+    shouldAutoScrollRef.current = false
+  }, [groupChatId])
 
-    if (!viewport) {
+  // trackMessageUpdates - detect only truly new appended messages after initial load
+  useEffect(() => {
+    if (isLoading) {
       return
     }
 
-    const handleScroll = () => {
-      const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight
-      lastScrollTopRef.current = viewport.scrollTop
-      shouldPreserveScrollRef.current = distanceFromBottom > 96
+    const lastMessageId = messages[messages.length - 1]?.id ?? null
+
+    if (!hasLoadedInitialMessagesRef.current) {
+      hasLoadedInitialMessagesRef.current = true
+      lastMessageIdRef.current = lastMessageId
+      shouldAutoScrollRef.current = false
+      return
     }
 
-    handleScroll()
-    viewport.addEventListener('scroll', handleScroll, { passive: true })
+    shouldAutoScrollRef.current = Boolean(
+      messages.length > 0 && lastMessageId && lastMessageIdRef.current && lastMessageId !== lastMessageIdRef.current
+    )
+    lastMessageIdRef.current = lastMessageId
+  }, [isLoading, messages])
 
-    return () => {
-      viewport.removeEventListener('scroll', handleScroll)
-    }
-  }, [])
-
+  // syncScrollPosition - jump to the newest message only after new message updates
   useLayoutEffect(() => {
-    if (!shouldPreserveScrollRef.current) {
-      return
-    }
-
     const viewport = scrollAreaRef.current?.querySelector<HTMLElement>('[data-slot="scroll-area-viewport"]')
 
-    if (!viewport) {
+    if (!viewport || !shouldAutoScrollRef.current) {
       return
     }
 
-    viewport.scrollTop = lastScrollTopRef.current
-  }, [messages])
+    viewport.scrollTop = viewport.scrollHeight
+    shouldAutoScrollRef.current = false
+  }, [messages, groupChatId])
 
   if (isLoading) {
     return (
@@ -193,9 +201,9 @@ export function GroupChatMessageList({
                                 ? 'educator-message-meta'
                                 : 'text-muted-foreground'
                           )}
-                        >
+                          >
                           <span>{formatMessageTimestamp(message.createdAt)}</span>
-                          {isOwnMessage ? <IconChecks size={14} /> : null}
+                          {isOwnMessage && message.isSeenByOtherParticipant ? <IconChecks size={14} /> : null}
                         </div>
                       </div>
                     </div>
