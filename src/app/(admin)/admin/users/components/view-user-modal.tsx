@@ -6,15 +6,16 @@ import { IconEye } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogDescription,
-  DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from '@/components/ui/responsive-dialog'
 
 import type { User } from '../data/schema'
 
@@ -47,30 +48,30 @@ export function ViewUserModal({ user, trigger, open, onOpenChange }: ViewUserMod
   const setDialogOpen = onOpenChange ?? setInternalOpen
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+    <ResponsiveDialog open={dialogOpen} onOpenChange={setDialogOpen}>
       {trigger ? (
-        <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <ResponsiveDialogTrigger asChild>{trigger}</ResponsiveDialogTrigger>
       ) : !isControlled ? (
-        <DialogTrigger asChild>
+        <ResponsiveDialogTrigger asChild>
           <Button variant="outline" size="sm" className="cursor-pointer">
             <IconEye className="h-4 w-4" stroke={2} />
             View User
           </Button>
-        </DialogTrigger>
+        </ResponsiveDialogTrigger>
       ) : null}
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[560px]">
-        <DialogHeader className="px-6 pt-6 pb-4 text-left">
-          <DialogTitle>{fullName}</DialogTitle>
-          <DialogDescription>User information and assigned role details.</DialogDescription>
-        </DialogHeader>
+      <ResponsiveDialogContent className="flex flex-col gap-0 p-0" desktopClassName="sm:max-w-[560px]">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>{fullName}</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>User information and assigned role details.</ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
-        <div className="border-t border-b">
+        <div className="min-h-0 flex flex-1 flex-col border-t border-b">
           <div className="px-2 pt-2">
             <div className="h-[160px] rounded-[28px] bg-muted" />
           </div>
 
           <div className="px-6 pb-4">
-            <div className="-mt-12 flex h-24 w-24 items-center justify-center rounded-full border-4 border-background bg-background shadow-lg">
+            <div className="-mt-12 flex h-24 w-24 items-center justify-center rounded-full border-4 border-border bg-background shadow-lg">
               <span className="sr-only">{fullName}</span>
               <div className="flex h-[5.25rem] w-[5.25rem] items-center justify-center rounded-full bg-muted">
                 <span className="text-xl font-semibold tracking-tight">{initials}</span>
@@ -86,8 +87,10 @@ export function ViewUserModal({ user, trigger, open, onOpenChange }: ViewUserMod
                 {user.status === 'active' ? 'Active' : 'Inactive'}
               </Badge>
             </div>
+          </div>
 
-            <div className="max-h-[40vh] space-y-6 overflow-y-auto py-6">
+          <ResponsiveDialogBody className="min-h-0 flex-1 px-6 py-6">
+            <div className="space-y-6">
               <div className="space-y-2">
                 <p className="font-semibold">User ID</p>
                 <p className="text-base text-muted-foreground">{user.userId}</p>
@@ -119,17 +122,17 @@ export function ViewUserModal({ user, trigger, open, onOpenChange }: ViewUserMod
                 )}
               </div>
             </div>
-          </div>
+          </ResponsiveDialogBody>
         </div>
 
-        <DialogFooter className="px-6 py-4 sm:justify-start">
-          <DialogClose asChild>
+        <ResponsiveDialogFooter className="px-6 py-4 sm:justify-start">
+          <ResponsiveDialogClose asChild>
             <Button type="button" variant="outline" className="cursor-pointer">
               Close
             </Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </ResponsiveDialogClose>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

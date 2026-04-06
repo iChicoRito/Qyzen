@@ -7,15 +7,16 @@ import { IconEye, IconMessages } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from '@/components/ui/responsive-dialog'
 
 import { type EducatorManagedGroupChatRow } from '../data/schema'
 
@@ -50,25 +51,25 @@ export function ViewGroupChatModal({
   )
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+    <ResponsiveDialog open={dialogOpen} onOpenChange={setDialogOpen}>
       {trigger ? (
-        <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <ResponsiveDialogTrigger asChild>{trigger}</ResponsiveDialogTrigger>
       ) : !isControlled ? (
-        <DialogTrigger asChild>
+        <ResponsiveDialogTrigger asChild>
           <Button type="button" variant="outline" size="sm" className="cursor-pointer">
             <IconEye size={18} />
             View Group Chat
           </Button>
-        </DialogTrigger>
+        </ResponsiveDialogTrigger>
       ) : null}
 
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[560px]">
-        <DialogHeader className="px-6 pt-6 pb-4 text-left">
-          <DialogTitle>{groupChat.subjectName}</DialogTitle>
-          <DialogDescription>Group chat details for the selected classroom room.</DialogDescription>
-        </DialogHeader>
+      <ResponsiveDialogContent className="gap-0 p-0" desktopClassName="sm:max-w-[560px]">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>{groupChat.subjectName}</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>Group chat details for the selected classroom room.</ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
-        <div className="max-h-[55vh] space-y-6 overflow-y-auto border-t border-b px-6 py-4">
+        <ResponsiveDialogBody className="max-h-[60vh] space-y-6 border-t border-b">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-2">
               <p className="font-semibold">Subject</p>
@@ -109,22 +110,22 @@ export function ViewGroupChatModal({
               </Badge>
             </div>
           </div>
-        </div>
+        </ResponsiveDialogBody>
 
-        <DialogFooter className="px-6 py-4 sm:justify-start">
+        <ResponsiveDialogFooter className="sm:justify-start">
           <Button asChild type="button" className="cursor-pointer">
             <Link href="/educator/group-chats">
               <IconMessages size={18} />
               Open Live Chat
             </Link>
           </Button>
-          <DialogClose asChild>
+          <ResponsiveDialogClose asChild>
             <Button type="button" variant="outline" className="cursor-pointer">
               Close
             </Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </ResponsiveDialogClose>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

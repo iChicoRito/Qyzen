@@ -12,15 +12,16 @@ import { useFieldArray, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from '@/components/ui/responsive-dialog'
 import {
   Form,
   FormControl,
@@ -194,32 +195,26 @@ export function EditQuizModal({
 
   // ==================== RENDER ====================
   return (
-    <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
+    <ResponsiveDialog open={dialogOpen} onOpenChange={handleOpenChange}>
       {trigger !== null ? (
-        <DialogTrigger asChild>
+        <ResponsiveDialogTrigger asChild>
           {trigger || (
             <Button variant="outline" size="sm" className="cursor-pointer">
               <IconEdit size={18} />
               Edit Quiz
             </Button>
           )}
-        </DialogTrigger>
+        </ResponsiveDialogTrigger>
       ) : null}
-      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[760px]">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Edit Quiz</DialogTitle>
-          <DialogDescription>Update the selected quiz details.</DialogDescription>
-        </DialogHeader>
+      <ResponsiveDialogContent showCloseButton={false} className="gap-0 p-0" desktopClassName="sm:max-w-[760px]">
+        <ResponsiveDialogHeader className="border-b">
+          <ResponsiveDialogTitle>Edit Quiz</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>Update the selected quiz details.</ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-[760px] flex-col overflow-hidden">
-              <CardHeader className="sticky top-0 z-10 border-b bg-card">
-                <CardTitle>Edit Quiz</CardTitle>
-                <CardDescription>Update the selected quiz details.</CardDescription>
-              </CardHeader>
-
-              <CardContent className="flex-1 space-y-6 overflow-y-auto">
+            <ResponsiveDialogBody className="max-h-[68vh] space-y-6">
                 <FormField
                   control={form.control}
                   name="moduleId"
@@ -380,9 +375,10 @@ export function EditQuizModal({
                     </div>
                   </div>
                 )}
-              </CardContent>
+            </ResponsiveDialogBody>
 
-              <CardFooter className="sticky bottom-0 z-10 grid grid-cols-2 gap-2 border-t bg-card">
+              <ResponsiveDialogFooter>
+                <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -409,11 +405,11 @@ export function EditQuizModal({
                     </>
                   )}
                 </Button>
-              </CardFooter>
-            </Card>
+                </div>
+              </ResponsiveDialogFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

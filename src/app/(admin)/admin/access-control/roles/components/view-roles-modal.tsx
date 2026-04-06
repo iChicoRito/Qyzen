@@ -7,15 +7,16 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from '@/components/ui/responsive-dialog'
 import { fetchPermissionsForRole, type PermissionRecord } from '@/lib/supabase/access-control'
 
 import type { Role } from '../data/schema'
@@ -62,24 +63,24 @@ export function ViewRolesModal({ role, trigger, open, onOpenChange }: ViewRolesM
   }, [dialogOpen, role.roleName])
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+    <ResponsiveDialog open={dialogOpen} onOpenChange={setDialogOpen}>
       {trigger ? (
-        <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <ResponsiveDialogTrigger asChild>{trigger}</ResponsiveDialogTrigger>
       ) : open === undefined ? (
-        <DialogTrigger asChild>
+        <ResponsiveDialogTrigger asChild>
           <Button variant="outline" size="sm" className="cursor-pointer">
             <IconEye className="h-4 w-4" stroke={2} />
             View Role
           </Button>
-        </DialogTrigger>
+        </ResponsiveDialogTrigger>
       ) : null}
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[560px]">
-        <DialogHeader className="px-6 pt-6 pb-4 text-left">
-          <DialogTitle>{role.roleName}</DialogTitle>
-          <DialogDescription>Role information and assigned permission details.</DialogDescription>
-        </DialogHeader>
+      <ResponsiveDialogContent className="gap-0 p-0" desktopClassName="sm:max-w-[560px]">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>{role.roleName}</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>Role information and assigned permission details.</ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
-        <div className="max-h-[50vh] space-y-6 overflow-y-auto border-t border-b px-6 py-4">
+        <ResponsiveDialogBody className="max-h-[60vh] space-y-6 border-t border-b">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-2">
               <p className="font-semibold">Description</p>
@@ -122,16 +123,16 @@ export function ViewRolesModal({ role, trigger, open, onOpenChange }: ViewRolesM
               </div>
             )}
           </div>
-        </div>
+        </ResponsiveDialogBody>
 
-        <DialogFooter className="px-6 py-4 sm:justify-start">
-          <DialogClose asChild>
+        <ResponsiveDialogFooter className="sm:justify-start">
+          <ResponsiveDialogClose asChild>
             <Button type="button" variant="outline" className="cursor-pointer">
               Close
             </Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </ResponsiveDialogClose>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

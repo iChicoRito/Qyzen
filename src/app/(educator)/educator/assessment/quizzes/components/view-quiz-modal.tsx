@@ -6,15 +6,16 @@ import { IconEye } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from '@/components/ui/responsive-dialog'
 import { Separator } from '@/components/ui/separator'
 
 import type { QuizGroup } from '../data/schema'
@@ -47,24 +48,24 @@ export function ViewQuizModal({
   const setDialogOpen = onOpenChange ?? setInternalOpen
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+    <ResponsiveDialog open={dialogOpen} onOpenChange={setDialogOpen}>
       {trigger ? (
-        <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <ResponsiveDialogTrigger asChild>{trigger}</ResponsiveDialogTrigger>
       ) : open === undefined ? (
-        <DialogTrigger asChild>
+        <ResponsiveDialogTrigger asChild>
           <Button variant="outline" size="sm" className="cursor-pointer">
             <IconEye size={18} />
             View Questions
           </Button>
-        </DialogTrigger>
+        </ResponsiveDialogTrigger>
       ) : null}
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[760px]">
-        <DialogHeader className="px-6 pt-6 pb-4 text-left">
-          <DialogTitle>{quizGroup.moduleCode}</DialogTitle>
-          <DialogDescription>All quiz questions stored under this module.</DialogDescription>
-        </DialogHeader>
+      <ResponsiveDialogContent className="gap-0 p-0" desktopClassName="sm:max-w-[760px]">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>{quizGroup.moduleCode}</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>All quiz questions stored under this module.</ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
-        <div className="max-h-[72vh] space-y-6 overflow-y-auto border-t border-b px-6 py-4">
+        <ResponsiveDialogBody className="max-h-[68vh] space-y-6 border-t border-b">
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
               <p className="font-semibold">Module</p>
@@ -161,16 +162,16 @@ export function ViewQuizModal({
               </div>
             ))}
           </div>
-        </div>
+        </ResponsiveDialogBody>
 
-        <DialogFooter className="px-6 py-4 sm:justify-start">
-          <DialogClose asChild>
+        <ResponsiveDialogFooter className="sm:justify-start">
+          <ResponsiveDialogClose asChild>
             <Button type="button" variant="outline" className="cursor-pointer">
               Close
             </Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </ResponsiveDialogClose>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

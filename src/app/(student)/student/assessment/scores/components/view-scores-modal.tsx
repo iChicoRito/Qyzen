@@ -7,15 +7,16 @@ import { IconEye } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from '@/components/ui/responsive-dialog'
 import { Separator } from '@/components/ui/separator'
 
 import { ResultSummaryChart } from '@/app/(student)/student/assessment/take-quiz/result/components/result-summary-chart'
@@ -142,29 +143,29 @@ export function ViewScoresModal({
   const incorrectAnswers = score.questions.length - correctAnswers
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+    <ResponsiveDialog open={dialogOpen} onOpenChange={setDialogOpen}>
       {trigger ? (
-        <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <ResponsiveDialogTrigger asChild>{trigger}</ResponsiveDialogTrigger>
       ) : open === undefined ? (
-        <DialogTrigger asChild>
+        <ResponsiveDialogTrigger asChild>
           <Button variant="outline" size="sm" className="cursor-pointer">
             <IconEye size={18} />
             View Score
           </Button>
-        </DialogTrigger>
+        </ResponsiveDialogTrigger>
       ) : null}
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[980px]">
-        <DialogHeader className="px-6 pt-6 pb-4 text-left">
+      <ResponsiveDialogContent className="flex min-h-0 flex-col gap-0 overflow-hidden p-0 sm:max-w-[980px]">
+        <ResponsiveDialogHeader>
           <div className="flex flex-wrap items-center gap-2">
-            <DialogTitle>{score.moduleCode}</DialogTitle>
+            <ResponsiveDialogTitle>{score.moduleCode}</ResponsiveDialogTitle>
             <Badge className={getStatusClassName(score.status)}>{score.status}</Badge>
           </div>
-          <DialogDescription>
+          <ResponsiveDialogDescription>
             {score.subjectName} - {score.sectionName} - {score.termName}
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
-        <div className="max-h-[72vh] space-y-6 overflow-y-auto border-t border-b px-6 py-4">
+        <ResponsiveDialogBody className="space-y-6 border-t border-b">
           <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
             <div className="rounded-lg border p-4">
               <ResultSummaryChart
@@ -383,16 +384,16 @@ export function ViewScoresModal({
               </div>
             ))}
           </div>
-        </div>
+        </ResponsiveDialogBody>
 
-        <DialogFooter className="px-6 py-4 sm:justify-start">
-          <DialogClose asChild>
+        <ResponsiveDialogFooter className="sm:justify-start">
+          <ResponsiveDialogClose asChild>
             <Button type="button" variant="outline" className="cursor-pointer">
               Close
             </Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </ResponsiveDialogClose>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

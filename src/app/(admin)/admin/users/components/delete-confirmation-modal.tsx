@@ -43,7 +43,7 @@ export function DeleteConfirmationModal({
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
-      <DialogContent showCloseButton={false} className="rounded-[1rem] sm:max-w-[500px]">
+      <DialogContent overlayClassName="bg-transparent backdrop-blur-sm" showCloseButton={false} className="rounded-[1rem] sm:max-w-[500px]">
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/12 text-destructive">
             <AlertTriangleIcon className="h-8 w-8" />

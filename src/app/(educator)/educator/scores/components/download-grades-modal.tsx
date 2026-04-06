@@ -10,13 +10,14 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from '@/components/ui/responsive-dialog'
 import {
   Form,
   FormControl,
@@ -377,214 +378,216 @@ export function DownloadGradesModal({
 
   // ==================== RENDER ====================
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[760px]">
-        <DialogHeader>
-          <DialogTitle>Download Grades</DialogTitle>
-          <DialogDescription>
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+      <ResponsiveDialogContent desktopClassName="sm:max-w-[760px]">
+        <ResponsiveDialogHeader className="pb-0">
+          <ResponsiveDialogTitle>Download Grades</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             Choose the subject, section, module, and term before downloading the formatted grade sheet.
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
         <Form {...form}>
-          <form className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="subjectId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Subject</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange} disabled={isLoadingOptions}>
-                      <FormControl>
-                        <SelectTrigger className="w-full cursor-pointer">
-                          <SelectValue placeholder="Select subject" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {subjectOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value} className="cursor-pointer">
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <form>
+            <ResponsiveDialogBody className="max-h-[68vh] space-y-6">
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="subjectId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subject</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange} disabled={isLoadingOptions}>
+                        <FormControl>
+                          <SelectTrigger className="w-full cursor-pointer">
+                            <SelectValue placeholder="Select subject" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {subjectOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value} className="cursor-pointer">
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="sectionId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Section</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={isLoadingOptions || !subjectId}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full cursor-pointer">
-                          <SelectValue placeholder="Select section" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {sectionOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value} className="cursor-pointer">
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="sectionId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Section</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={isLoadingOptions || !subjectId}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full cursor-pointer">
+                            <SelectValue placeholder="Select section" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {sectionOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value} className="cursor-pointer">
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="moduleRowId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Module Code</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={isLoadingOptions || !sectionId}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full cursor-pointer">
-                          <SelectValue placeholder="Select module" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {moduleOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value} className="cursor-pointer">
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="moduleRowId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Module Code</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={isLoadingOptions || !sectionId}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full cursor-pointer">
+                            <SelectValue placeholder="Select module" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {moduleOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value} className="cursor-pointer">
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="termId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Academic Term</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={isLoadingOptions || !moduleRowId}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full cursor-pointer">
-                          <SelectValue placeholder="Select term" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {termOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value} className="cursor-pointer">
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="rounded-lg border p-4">
-              <div className="space-y-1">
-                <div className="text-sm font-medium">Summary Review</div>
-                <div className="text-muted-foreground text-sm">
-                  Review the selected class details before downloading the grade sheet.
-                </div>
+                <FormField
+                  control={form.control}
+                  name="termId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Academic Term</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={isLoadingOptions || !moduleRowId}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full cursor-pointer">
+                            <SelectValue placeholder="Select term" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {termOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value} className="cursor-pointer">
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-              {isLoadingPreview ? (
-                <div className="mt-4 flex items-center text-sm text-muted-foreground">
-                  <Loader2 size={18} className="mr-0 animate-spin" />
-                  Loading selected grade summary...
-                </div>
-              ) : previewData ? (
-                <div className="mt-4 space-y-5">
-                  <div className="rounded-lg border bg-card px-4 py-4">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="space-y-2">
-                        <div className="text-muted-foreground text-xs">
-                          Selected Export
-                        </div>
-                        <div className="font-semibold">{previewData.summary.moduleCode}</div>
-                        <div className="text-muted-foreground text-sm">
-                          {previewData.summary.subjectName} | {previewData.summary.sectionName}
-                        </div>
-                      </div>
-                      <Badge variant="outline">
-                        {previewData.summary.termName}
-                      </Badge>
-                    </div>
-                  </div>
 
-                  <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border p-4">
+                <div className="space-y-1">
+                  <div className="text-sm font-medium">Summary Review</div>
+                  <div className="text-muted-foreground text-sm">
+                    Review the selected class details before downloading the grade sheet.
+                  </div>
+                </div>
+                {isLoadingPreview ? (
+                  <div className="mt-4 flex items-center text-sm text-muted-foreground">
+                    <Loader2 size={18} className="mr-0 animate-spin" />
+                    Loading selected grade summary...
+                  </div>
+                ) : previewData ? (
+                  <div className="mt-4 space-y-5">
                     <div className="rounded-lg border bg-card px-4 py-4">
-                      <div className="text-muted-foreground text-xs">
-                        Total Enrolled
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="space-y-2">
+                          <div className="text-muted-foreground text-xs">
+                            Selected Export
+                          </div>
+                          <div className="font-semibold">{previewData.summary.moduleCode}</div>
+                          <div className="text-muted-foreground text-sm">
+                            {previewData.summary.subjectName} | {previewData.summary.sectionName}
+                          </div>
+                        </div>
+                        <Badge variant="outline">
+                          {previewData.summary.termName}
+                        </Badge>
                       </div>
-                      <div className="mt-3 font-semibold">{previewData.summary.totalEnrolled}</div>
                     </div>
-                    <div className="rounded-lg border bg-green-500/10 px-4 py-4">
-                      <div className="text-xs text-green-500">
-                        With Submission
+
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-lg border bg-card px-4 py-4">
+                        <div className="text-muted-foreground text-xs">
+                          Total Enrolled
+                        </div>
+                        <div className="mt-3 font-semibold">{previewData.summary.totalEnrolled}</div>
                       </div>
-                      <div className="mt-3 font-semibold text-green-500">
-                        {previewData.summary.studentsWithSubmission}
+                      <div className="rounded-lg border bg-green-500/10 px-4 py-4">
+                        <div className="text-xs text-green-500">
+                          With Submission
+                        </div>
+                        <div className="mt-3 font-semibold text-green-500">
+                          {previewData.summary.studentsWithSubmission}
+                        </div>
+                      </div>
+                      <div className="rounded-lg border bg-yellow-500/10 px-4 py-4">
+                        <div className="text-xs text-yellow-500">
+                          No Submission
+                        </div>
+                        <div className="mt-3 font-semibold text-yellow-500">
+                          {previewData.summary.studentsWithoutSubmission}
+                        </div>
                       </div>
                     </div>
-                    <div className="rounded-lg border bg-yellow-500/10 px-4 py-4">
-                      <div className="text-xs text-yellow-500">
-                        No Submission
+
+                    <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                      <div>
+                        <div className="text-muted-foreground text-xs">Subject</div>
+                        <div className="mt-1 text-sm font-medium">{previewData.summary.subjectName}</div>
                       </div>
-                      <div className="mt-3 font-semibold text-yellow-500">
-                        {previewData.summary.studentsWithoutSubmission}
+                      <div>
+                        <div className="text-muted-foreground text-xs">Section</div>
+                        <div className="mt-1 text-sm font-medium">{previewData.summary.sectionName}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground text-xs">Module Code</div>
+                        <div className="mt-1 text-sm font-medium">{previewData.summary.moduleCode}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground text-xs">Academic Term</div>
+                        <div className="mt-1 text-sm font-medium">{previewData.summary.termName}</div>
                       </div>
                     </div>
                   </div>
-
-                  <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-                    <div>
-                      <div className="text-muted-foreground text-xs">Subject</div>
-                      <div className="mt-1 text-sm font-medium">{previewData.summary.subjectName}</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground text-xs">Section</div>
-                      <div className="mt-1 text-sm font-medium">{previewData.summary.sectionName}</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground text-xs">Module Code</div>
-                      <div className="mt-1 text-sm font-medium">{previewData.summary.moduleCode}</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground text-xs">Academic Term</div>
-                      <div className="mt-1 text-sm font-medium">{previewData.summary.termName}</div>
-                    </div>
+                ) : (
+                  <div className="mt-4 text-sm text-muted-foreground">
+                    Complete the dropdown selections to preview the grade export summary.
                   </div>
-                </div>
-              ) : (
-                <div className="mt-4 text-sm text-muted-foreground">
-                  Complete the dropdown selections to preview the grade export summary.
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            </ResponsiveDialogBody>
 
-            <DialogFooter className="gap-2 sm:justify-end">
+            <ResponsiveDialogFooter className="gap-2 sm:justify-end">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
@@ -605,10 +608,10 @@ export function DownloadGradesModal({
                   </>
                 )}
               </Button>
-            </DialogFooter>
+            </ResponsiveDialogFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

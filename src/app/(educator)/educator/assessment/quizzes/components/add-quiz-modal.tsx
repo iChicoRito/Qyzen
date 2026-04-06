@@ -12,15 +12,16 @@ import { useFieldArray, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from '@/components/ui/responsive-dialog'
 import {
   Form,
   FormControl,
@@ -171,45 +172,39 @@ export function AddQuizModal({ onAddQuiz, onUploadQuizzes, trigger }: AddQuizMod
 
   // ==================== RENDER ====================
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
+    <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
+      <ResponsiveDialogTrigger asChild>
         {trigger || (
           <Button variant="default" size="sm" className="cursor-pointer">
             <IconPlus size={18} />
             Add Quiz
           </Button>
         )}
-      </DialogTrigger>
-      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[760px]">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Add New Quiz</DialogTitle>
-          <DialogDescription>Create a quiz for a selected module.</DialogDescription>
-        </DialogHeader>
+      </ResponsiveDialogTrigger>
+      <ResponsiveDialogContent showCloseButton={false} className="gap-0 p-0" desktopClassName="sm:max-w-[760px]">
+        <ResponsiveDialogHeader className="border-b">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <ResponsiveDialogTitle>Add New Quiz</ResponsiveDialogTitle>
+              <ResponsiveDialogDescription>
+                Create a quiz question for a module using multiple choice or identification.
+              </ResponsiveDialogDescription>
+            </div>
+            <UploadQuizFileModal
+              onUploadQuizzes={onUploadQuizzes}
+              trigger={
+                <Button type="button" variant="outline" className="cursor-pointer">
+                  <IconPlus size={18} className="mr-0" />
+                  Upload File
+                </Button>
+              }
+            />
+          </div>
+        </ResponsiveDialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-[760px] flex-col overflow-hidden">
-              <CardHeader className="sticky top-0 z-10 border-b bg-card">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <CardTitle>Add New Quiz</CardTitle>
-                    <CardDescription>
-                      Create a quiz question for a module using multiple choice or identification.
-                    </CardDescription>
-                  </div>
-                  <UploadQuizFileModal
-                    onUploadQuizzes={onUploadQuizzes}
-                    trigger={
-                      <Button type="button" variant="outline" className="cursor-pointer">
-                        <IconPlus size={18} className="mr-0" />
-                        Upload File
-                      </Button>
-                    }
-                  />
-                </div>
-              </CardHeader>
-
-              <CardContent className="flex-1 space-y-6 overflow-y-auto">
+            <ResponsiveDialogBody className="max-h-[68vh] space-y-6">
                 <FormField
                   control={form.control}
                   name="moduleId"
@@ -390,9 +385,10 @@ export function AddQuizModal({ onAddQuiz, onUploadQuizzes, trigger }: AddQuizMod
                     </div>
                   </div>
                 )}
-              </CardContent>
+            </ResponsiveDialogBody>
 
-              <CardFooter className="sticky bottom-0 z-10 grid grid-cols-2 gap-2 border-t bg-card">
+              <ResponsiveDialogFooter>
+                <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -416,11 +412,11 @@ export function AddQuizModal({ onAddQuiz, onUploadQuizzes, trigger }: AddQuizMod
                     <>Create Quiz</>
                   )}
                 </Button>
-              </CardFooter>
-            </Card>
+                </div>
+              </ResponsiveDialogFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

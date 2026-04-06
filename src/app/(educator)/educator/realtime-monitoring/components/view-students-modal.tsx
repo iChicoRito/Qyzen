@@ -18,15 +18,15 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  ResponsiveDialog,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from '@/components/ui/responsive-dialog'
 import {
   Table,
   TableBody,
@@ -239,23 +239,23 @@ export function ViewStudentsModal({
   }
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+    <ResponsiveDialog open={dialogOpen} onOpenChange={setDialogOpen}>
       {trigger ? (
-        <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <ResponsiveDialogTrigger asChild>{trigger}</ResponsiveDialogTrigger>
       ) : open === undefined ? (
-        <DialogTrigger asChild>
+        <ResponsiveDialogTrigger asChild>
           <Button type="button" variant="outline" size="sm" className="cursor-pointer">
             <IconEye size={18} />
             View Students
           </Button>
-        </DialogTrigger>
+        </ResponsiveDialogTrigger>
       ) : null}
-      <DialogContent className="flex h-[90vh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:h-[88vh] sm:max-w-[1100px] xl:max-w-[1320px]">
-        <DialogHeader className="border-b px-4 pt-5 pb-4 text-left sm:px-6 sm:pt-6">
-          <DialogTitle>Monitor Students</DialogTitle>
-          <DialogDescription>
+      <ResponsiveDialogContent className="flex h-[85vh] w-full flex-col gap-0 p-0" desktopClassName="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:h-[88vh] sm:max-w-[1100px] xl:max-w-[1320px]">
+        <ResponsiveDialogHeader className="border-b px-4 pt-5 pb-4 sm:px-6 sm:pt-6">
+          <ResponsiveDialogTitle>Monitor Students</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             Review live student activity for this assessment module.
-          </DialogDescription>
+          </ResponsiveDialogDescription>
 
           <div className="mt-4 border-t pt-4">
             <Accordion type="single" collapsible className="rounded-md border px-4">
@@ -294,7 +294,7 @@ export function ViewStudentsModal({
               </AccordionItem>
             </Accordion>
           </div>
-        </DialogHeader>
+        </ResponsiveDialogHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
           {row.students.length === 0 ? (
@@ -438,14 +438,14 @@ export function ViewStudentsModal({
           )}
         </div>
 
-        <DialogFooter className="border-t px-4 py-4 sm:justify-start sm:px-6">
-          <DialogClose asChild>
+        <ResponsiveDialogFooter className="sm:justify-start sm:px-6">
+          <ResponsiveDialogClose asChild>
             <Button type="button" variant="outline" className="cursor-pointer">
               Close
             </Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </ResponsiveDialogClose>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

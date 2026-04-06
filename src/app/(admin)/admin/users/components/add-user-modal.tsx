@@ -10,21 +10,15 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogDescription,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from '@/components/ui/responsive-dialog'
 import {
   Form,
   FormControl,
@@ -185,34 +179,26 @@ export function AddUserModal({ onAddUser, trigger }: AddUserModalProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
+    <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
+      <ResponsiveDialogTrigger asChild>
         {trigger || (
           <Button variant="default" size="sm" className="cursor-pointer">
             <IconPlus className="h-4 w-4" stroke={2} />
             Add User
           </Button>
         )}
-      </DialogTrigger>
-      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[620px]">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Add New User</DialogTitle>
-          <DialogDescription>
+      </ResponsiveDialogTrigger>
+      <ResponsiveDialogContent showCloseButton={false} className="gap-0 p-0" desktopClassName="sm:max-w-[620px]">
+        <ResponsiveDialogHeader className="border-b px-5 pt-6 pb-4">
+          <ResponsiveDialogTitle>Add New User</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             Create a new student or educator and assign one or more roles.
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-[620px] flex-col overflow-hidden gap-0 py-0 shadow-xl">
-              <CardHeader className="sticky top-0 z-10 border-b bg-card px-5 pt-6">
-                <CardTitle>Add New User</CardTitle>
-                <CardDescription>
-                  Create a new student or educator and assign one or more roles.
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent className="flex-1 space-y-6 overflow-y-auto px-5 py-5">
+            <ResponsiveDialogBody className="max-h-[68vh] space-y-6 px-5 py-5">
                 {/* user id and given name */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
@@ -389,9 +375,10 @@ export function AddUserModal({ onAddUser, trigger }: AddUserModalProps) {
                     </FormItem>
                   )}
                 />
-              </CardContent>
+            </ResponsiveDialogBody>
 
-              <CardFooter className="sticky bottom-0 z-10 grid grid-cols-2 gap-2 border-t bg-card px-5 pb-6">
+              <ResponsiveDialogFooter className="px-5 pb-6">
+                <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -409,11 +396,11 @@ export function AddUserModal({ onAddUser, trigger }: AddUserModalProps) {
                   {isSubmitting ? <Spinner className="mr-2 h-4 w-4" /> : null}
                   Create User
                 </Button>
-              </CardFooter>
-            </Card>
+                </div>
+              </ResponsiveDialogFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

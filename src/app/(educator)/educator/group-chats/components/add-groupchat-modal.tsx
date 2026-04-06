@@ -8,21 +8,15 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from '@/components/ui/responsive-dialog'
 import {
   Form,
   FormControl,
@@ -125,31 +119,25 @@ export function AddGroupChatModal({
   }
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
+    <ResponsiveDialog open={dialogOpen} onOpenChange={handleOpenChange}>
+      <ResponsiveDialogTrigger asChild>
         {trigger || (
           <Button type="button" size="sm" className="cursor-pointer">
             <IconPlus size={18} />
             Add Group Chat
           </Button>
         )}
-      </DialogTrigger>
+      </ResponsiveDialogTrigger>
 
-      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[620px]">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Create Group Chat</DialogTitle>
-          <DialogDescription>Create a manual subject group chat for one of your classrooms.</DialogDescription>
-        </DialogHeader>
+      <ResponsiveDialogContent showCloseButton={false} className="gap-0 p-0" desktopClassName="sm:max-w-[620px]">
+        <ResponsiveDialogHeader className="border-b">
+          <ResponsiveDialogTitle>Create Group Chat</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>Create a manual subject group chat for one of your classrooms.</ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-[620px] flex-col overflow-hidden">
-              <CardHeader className="sticky top-0 z-10 border-b bg-card">
-                <CardTitle>Create Group Chat</CardTitle>
-                <CardDescription>Select an educator-owned subject to create its classroom chat room.</CardDescription>
-              </CardHeader>
-
-              <CardContent className="flex-1 space-y-6 overflow-y-auto">
+            <ResponsiveDialogBody className="max-h-[68vh] space-y-6">
                 <FormField
                   control={form.control}
                   name="subjectId"
@@ -197,9 +185,10 @@ export function AddGroupChatModal({
                     </div>
                   </div>
                 </div>
-              </CardContent>
+            </ResponsiveDialogBody>
 
-              <CardFooter className="sticky bottom-0 z-10 grid grid-cols-2 gap-2 border-t bg-card">
+              <ResponsiveDialogFooter>
+                <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -223,11 +212,11 @@ export function AddGroupChatModal({
                     <>Create Group Chat</>
                   )}
                 </Button>
-              </CardFooter>
-            </Card>
+                </div>
+              </ResponsiveDialogFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

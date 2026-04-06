@@ -14,15 +14,16 @@ import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from '@/components/ui/responsive-dialog'
 import {
   fetchEnrollmentStudents,
   fetchEnrollmentSubjects,
@@ -348,30 +349,24 @@ export function UploadEnrollmentsFileModal({
 
   // ==================== RENDER ====================
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    <ResponsiveDialog open={open} onOpenChange={setOpen}>
+      <ResponsiveDialogTrigger asChild>
         {trigger || (
           <Button variant="outline" size="sm" className="cursor-pointer">
             <IconUpload size={18} />
             Upload File
           </Button>
         )}
-      </DialogTrigger>
-      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[760px]">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Upload Enrollment Files</DialogTitle>
-          <DialogDescription>Upload one or more xlsx files for bulk enrollment creation.</DialogDescription>
-        </DialogHeader>
-
-        <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-[760px] flex-col overflow-hidden">
-          <CardHeader className="sticky top-0 z-10 border-b bg-card">
-            <CardTitle>Upload Enrollment Files</CardTitle>
-            <CardDescription>
+      </ResponsiveDialogTrigger>
+      <ResponsiveDialogContent showCloseButton={false} className="gap-0 p-0" desktopClassName="sm:max-w-[760px]">
+        <ResponsiveDialogHeader className="border-b">
+          <ResponsiveDialogTitle>Upload Enrollment Files</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
               Drop one or more xlsx files and use the template so the upload matches the educator enrollment fields.
-            </CardDescription>
-          </CardHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
-          <CardContent className="flex-1 space-y-6 overflow-y-auto">
+          <ResponsiveDialogBody className="max-h-[68vh] space-y-6">
             <div className="flex items-center justify-between gap-3 rounded-md border p-4">
               <div>
                 <p className="font-medium">Download Template</p>
@@ -466,9 +461,10 @@ export function UploadEnrollmentsFileModal({
                 Match `student_user_id` to the student account ID and use `active` or `inactive` for status.
               </p>
             </div>
-          </CardContent>
+          </ResponsiveDialogBody>
 
-          <CardFooter className="sticky bottom-0 z-10 grid grid-cols-2 gap-2 border-t bg-card">
+          <ResponsiveDialogFooter>
+            <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)} className="w-full cursor-pointer" disabled={isUploading}>
               Cancel
             </Button>
@@ -488,11 +484,11 @@ export function UploadEnrollmentsFileModal({
                   <IconUpload size={18} className="mr-0" />
                   Upload File
                 </>
-              )}
-            </Button>
-          </CardFooter>
-        </Card>
-      </DialogContent>
-    </Dialog>
+                )}
+              </Button>
+            </div>
+          </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

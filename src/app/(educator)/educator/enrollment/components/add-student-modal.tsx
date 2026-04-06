@@ -9,8 +9,16 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from '@/components/ui/responsive-dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -166,30 +174,24 @@ export function AddStudentModal({ onAddEnrollment, trigger }: AddStudentModalPro
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
+    <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
+      <ResponsiveDialogTrigger asChild>
         {trigger || (
           <Button variant="default" size="sm" className="cursor-pointer">
             <IconPlus size={18} />
             Add Student
           </Button>
         )}
-      </DialogTrigger>
-      <DialogContent showCloseButton={false} className="border-0 bg-transparent p-0 shadow-none sm:max-w-[620px]">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Add Student Enrollment</DialogTitle>
-          <DialogDescription>Enroll one or more students into one or more subjects.</DialogDescription>
-        </DialogHeader>
+      </ResponsiveDialogTrigger>
+      <ResponsiveDialogContent showCloseButton={false} className="gap-0 p-0" desktopClassName="sm:max-w-[620px]">
+        <ResponsiveDialogHeader className="border-b">
+          <ResponsiveDialogTitle>Add Student Enrollment</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>Enroll one or more students into one or more subjects.</ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Card className="mx-auto flex max-h-[calc(100vh-2rem)] w-full max-w-[620px] flex-col overflow-hidden">
-              <CardHeader className="sticky top-0 z-10 border-b bg-card">
-                <CardTitle>Add Student Enrollment</CardTitle>
-                <CardDescription>Enroll one or more students into one or more subjects.</CardDescription>
-              </CardHeader>
-
-              <CardContent className="flex-1 space-y-6 overflow-y-auto">
+            <ResponsiveDialogBody className="max-h-[68vh] space-y-6">
                 <FormField
                   control={form.control}
                   name="studentIds"
@@ -340,9 +342,10 @@ export function AddStudentModal({ onAddEnrollment, trigger }: AddStudentModalPro
                     </FormItem>
                   )}
                 />
-              </CardContent>
+            </ResponsiveDialogBody>
 
-              <CardFooter className="sticky bottom-0 z-10 grid grid-cols-2 gap-2 border-t bg-card">
+              <ResponsiveDialogFooter>
+                <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
                 <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} className="w-full cursor-pointer" disabled={isSubmitting}>
                   Cancel
                 </Button>
@@ -356,11 +359,11 @@ export function AddStudentModal({ onAddEnrollment, trigger }: AddStudentModalPro
                     <>Create Enrollment</>
                   )}
                 </Button>
-              </CardFooter>
-            </Card>
+                </div>
+              </ResponsiveDialogFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

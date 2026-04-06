@@ -8,13 +8,13 @@ import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from '@/components/ui/responsive-dialog'
 import {
   Form,
   FormControl,
@@ -77,17 +77,17 @@ export function AllowRetakeModal({
 
   // ==================== RENDER ====================
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[420px]">
-        <DialogHeader>
-          <DialogTitle>Allow Retake</DialogTitle>
-          <DialogDescription>
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+      <ResponsiveDialogContent desktopClassName="sm:max-w-[420px]">
+        <ResponsiveDialogHeader className="pb-0">
+          <ResponsiveDialogTitle>Allow Retake</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             Grant extra retake chances for {score.studentName} in {score.moduleCode}.
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 px-4 pb-4 md:px-6">
             <div className="rounded-lg border p-4 text-sm">
               <div className="font-medium">{score.studentName}</div>
               <div className="text-muted-foreground mt-1">{score.studentUserId}</div>
@@ -118,7 +118,7 @@ export function AllowRetakeModal({
               )}
             />
 
-            <DialogFooter className="gap-2 sm:justify-end">
+            <ResponsiveDialogFooter className="gap-2 px-0 pb-0 sm:justify-end">
               <Button
                 type="button"
                 variant="outline"
@@ -137,10 +137,10 @@ export function AllowRetakeModal({
                   'Save Retake'
                 )}
               </Button>
-            </DialogFooter>
+            </ResponsiveDialogFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }
