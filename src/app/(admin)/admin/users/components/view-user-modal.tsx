@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { IconEye } from '@tabler/icons-react'
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -62,21 +63,31 @@ export function ViewUserModal({ user, trigger, open, onOpenChange }: ViewUserMod
       <ResponsiveDialogContent className="flex flex-col gap-0 p-0" desktopClassName="sm:max-w-[560px]">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>{fullName}</ResponsiveDialogTitle>
-          <ResponsiveDialogDescription>User information and assigned role details.</ResponsiveDialogDescription>
+          <ResponsiveDialogDescription>
+            User information and assigned role details.
+          </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
         <div className="min-h-0 flex flex-1 flex-col border-t border-b">
           <div className="px-2 pt-2">
-            <div className="h-[160px] rounded-[28px] bg-muted" />
+            <div className="h-[160px] overflow-hidden rounded-[28px] bg-muted">
+              {user.coverPhoto ? (
+                <img
+                  src={user.coverPhoto}
+                  alt={`${fullName} cover photo`}
+                  className="h-full w-full object-cover"
+                />
+              ) : null}
+            </div>
           </div>
 
           <div className="px-6 pb-4">
-            <div className="-mt-12 flex h-24 w-24 items-center justify-center rounded-full border-4 border-border bg-background shadow-lg">
-              <span className="sr-only">{fullName}</span>
-              <div className="flex h-[5.25rem] w-[5.25rem] items-center justify-center rounded-full bg-muted">
-                <span className="text-xl font-semibold tracking-tight">{initials}</span>
-              </div>
-            </div>
+            <Avatar className="-mt-12 h-24 w-24 rounded-full border-4 border-border bg-background shadow-lg">
+              <AvatarImage src={user.profilePicture || undefined} alt={fullName} className="object-cover" />
+              <AvatarFallback className="bg-muted text-xl font-semibold tracking-tight">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
 
             <div className="mt-4 flex flex-wrap items-start justify-between gap-4 border-b pb-6">
               <div className="min-w-0 space-y-1">

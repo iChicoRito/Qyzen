@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import {
+  IconSettings,
   IconUserCircle,
   IconDotsVertical,
   IconLoader2 as Loader2,
@@ -48,6 +49,11 @@ export function NavUser({ user, role, roles }: NavUserProps) {
   const supabase = createClient()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const assignedRoles = roles?.length ? roles : [role]
+
+  // handleProfileSettings - open the shared profile settings page
+  const handleProfileSettings = () => {
+    router.push('/profile')
+  }
 
   // handleLogout - sign out current user
   const handleLogout = async () => {
@@ -122,6 +128,10 @@ export function NavUser({ user, role, roles }: NavUserProps) {
             <DropdownMenuItem className="cursor-default">
               <IconShieldCheck size={18} />
               Signed in as {assignedRoles.map(getRoleLabel).join(', ')}
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer" onClick={handleProfileSettings}>
+              <IconSettings size={18} />
+              Profile settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

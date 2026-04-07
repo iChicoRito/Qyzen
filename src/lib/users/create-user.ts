@@ -6,6 +6,8 @@ export interface UserRecord {
   givenName: string
   surname: string
   email: string
+  profilePicture: string | null
+  coverPhoto: string | null
   status: 'active' | 'inactive'
   userType: 'admin' | 'student' | 'educator'
   roleNames: string[]
@@ -28,6 +30,8 @@ interface UserRow {
   given_name: string
   surname: string
   email: string
+  profile_picture: string | null
+  cover_photo: string | null
   is_active: boolean
 }
 
@@ -69,6 +73,8 @@ export function mapUserRow(row: UserRow, roleNames: string[]): UserRecord {
     givenName: row.given_name,
     surname: row.surname,
     email: row.email,
+    profilePicture: row.profile_picture,
+    coverPhoto: row.cover_photo,
     status: row.is_active ? 'active' : 'inactive',
     userType: row.user_type,
     roleNames,
@@ -145,7 +151,7 @@ export async function createPublicUser(user: CreateUserInput) {
       email: user.email,
       is_active: user.status === 'active',
     })
-    .select('id,user_type,user_id,given_name,surname,email,is_active')
+    .select('id,user_type,user_id,given_name,surname,email,profile_picture,cover_photo,is_active')
     .single()
 
   if (error) {

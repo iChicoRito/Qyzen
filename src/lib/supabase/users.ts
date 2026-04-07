@@ -1,4 +1,5 @@
 import { createClient } from './client'
+import { getStoragePublicUrl } from './storage'
 import { bulkStudentCreateSchema } from '@/lib/validations/student-upload.schema'
 
 export interface UserRecord {
@@ -7,6 +8,8 @@ export interface UserRecord {
   givenName: string
   surname: string
   email: string
+  profilePicture: string | null
+  coverPhoto: string | null
   status: 'active' | 'inactive'
   userType: 'admin' | 'student' | 'educator'
   roleNames: string[]
@@ -37,6 +40,8 @@ interface UserRow {
   given_name: string
   surname: string
   email: string
+  profile_picture: string | null
+  cover_photo: string | null
   is_active: boolean
 }
 
@@ -68,6 +73,8 @@ function mapUserRow(row: UserRow, roleNames: string[]): UserRecord {
     givenName: row.given_name,
     surname: row.surname,
     email: row.email,
+    profilePicture: getStoragePublicUrl('profile-media', row.profile_picture),
+    coverPhoto: getStoragePublicUrl('profile-media', row.cover_photo),
     status: row.is_active ? 'active' : 'inactive',
     userType: row.user_type,
     roleNames,
@@ -81,7 +88,7 @@ export async function fetchUsers() {
     await Promise.all([
       supabase
         .from('tbl_users')
-        .select('id,user_type,user_id,given_name,surname,email,is_active')
+        .select('id,user_type,user_id,given_name,surname,email,profile_picture,cover_photo,is_active')
         .order('id', { ascending: false }),
       supabase.from('tbl_user_roles').select('user_id,role:role_id(id,name)'),
     ])

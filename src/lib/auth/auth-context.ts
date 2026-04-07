@@ -23,14 +23,18 @@ interface AuthSupabaseClient {
 
 export interface AuthContextUser {
   id: number
+  userId: string
   email: string
   givenName: string
   surname: string
+  profilePicture: string | null
+  coverPhoto: string | null
   isActive: boolean
   userType: string
 }
 
 export interface AuthContext {
+  authUserId: string | null
   authUser: AuthUser
   profile: AuthContextUser
   role: AppRole | null
@@ -42,9 +46,12 @@ export interface AuthContext {
 
 interface UserProfileRow {
   id: number
+  user_id: string
   email: string
   given_name: string
   surname: string
+  profile_picture: string | null
+  cover_photo: string | null
   is_active: boolean
   user_type: string
 }
@@ -151,7 +158,7 @@ export function getPrimaryRole(
 // fetchAuthContext - load app user and role context
 export async function fetchAuthContext(
   supabase: AuthSupabaseClient,
-  authUser: AuthUser
+  authUser: AuthUser & { id?: string | null }
 ): Promise<AuthContext> {
   const email = authUser.email?.trim().toLowerCase()
 
@@ -159,7 +166,11 @@ export async function fetchAuthContext(
     throw new Error('Authenticated user email is missing.')
   }
 
-  const profileQuery = supabase.from('tbl_users').select('id,email,given_name,surname,is_active,user_type')
+  const profileQuery = supabase
+    .from('tbl_users')
+    .select(
+      'id,user_id,email,given_name,surname,profile_picture,cover_photo,is_active,user_type'
+    )
   const { data: profileData, error: profileError } = (await (profileQuery as {
     eq(column: string, value: string): {
       is(column: string, value: null): {
@@ -203,12 +214,16 @@ export async function fetchAuthContext(
   const role = getPrimaryRole(normalizedRoles, profile.user_type)
 
   return {
+    authUserId: authUser.id || null,
     authUser,
     profile: {
       id: profile.id,
+      userId: profile.user_id,
       email: profile.email,
       givenName: profile.given_name,
       surname: profile.surname,
+      profilePicture: profile.profile_picture,
+      coverPhoto: profile.cover_photo,
       isActive: profile.is_active,
       userType: profile.user_type,
     },

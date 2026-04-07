@@ -227,6 +227,8 @@ CREATE TABLE public.tbl_users (
   given_name text NOT NULL,
   surname text NOT NULL,
   email text NOT NULL,
+  profile_picture text,
+  cover_photo text,
   is_active boolean DEFAULT true NOT NULL,
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -435,6 +437,10 @@ CREATE POLICY "Students can read assessment educators" ON public.tbl_users AS PE
   USING ((has_role('student'::text) AND (user_type = 'educator'::text) AND (deleted_at IS NULL) AND (EXISTS ( SELECT 1
    FROM tbl_enrolled enrolled
   WHERE ((enrolled.student_id = get_current_tbl_user_id()) AND (enrolled.educator_id = tbl_users.id) AND (enrolled.is_active = true))))));
+
+CREATE POLICY "Users can update own profile" ON public.tbl_users AS PERMISSIVE FOR UPDATE TO authenticated
+  USING (((id = get_current_tbl_user_id()) AND (deleted_at IS NULL)))
+  WITH CHECK (((id = get_current_tbl_user_id()) AND (deleted_at IS NULL)));
 
 CREATE POLICY "Users can read own role links" ON public.tbl_user_roles AS PERMISSIVE FOR SELECT TO authenticated
   USING ((user_id = get_current_tbl_user_id()));
