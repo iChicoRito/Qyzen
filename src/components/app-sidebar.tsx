@@ -14,6 +14,7 @@ import {
   IconSubtitlesEdit,
   IconUserSquareRounded,
   IconScanEye,
+  IconNotebook,
 } from '@tabler/icons-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -187,6 +188,17 @@ function getNavigationGroupsByRole(role: AppRole): SidebarNavGroup[] {
             ],
           },
           {
+            title: 'Learning Materials',
+            url: '#',
+            icon: IconNotebook,
+            items: [
+              {
+                title: 'Upload Files',
+                url: '/educator/materials',
+              },
+            ],
+          },
+          {
             title: 'Chats',
             url: '#',
             icon: IconMessageCircleUser,
@@ -273,7 +285,7 @@ function getNavigationGroupsByRole(role: AppRole): SidebarNavGroup[] {
             },
             {
               title: 'Learning Materials',
-              url: '/student/learning-materials',
+              url: '/student/materials',
             },
           ],
         },

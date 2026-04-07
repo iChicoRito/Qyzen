@@ -111,6 +111,16 @@ const notificationVisualMap: Record<NotificationEventType, NotificationVisualCon
     eventLabel: 'Module Removed',
     tone: 'rose',
   },
+  learning_material_uploaded: {
+    icon: IconFileImport,
+    eventLabel: 'Learning Material Uploaded',
+    tone: 'blue',
+  },
+  learning_material_deleted: {
+    icon: IconTrash,
+    eventLabel: 'Learning Material Removed',
+    tone: 'rose',
+  },
   quiz_created: {
     icon: IconChecklist,
     eventLabel: 'Quiz Created',
@@ -185,6 +195,17 @@ function getNotificationDetails(metadata: NotificationMetadata | null): Notifica
 
   if (metadata.studentName) {
     detailItems.push({ label: 'Student', value: metadata.studentName })
+  }
+
+  if (metadata.fileName) {
+    detailItems.push({ label: 'File', value: metadata.fileName })
+  }
+
+  if (typeof metadata.fileCount === 'number') {
+    detailItems.push({
+      label: 'File Count',
+      value: String(metadata.fileCount),
+    })
   }
 
   if (typeof metadata.questionCount === 'number') {

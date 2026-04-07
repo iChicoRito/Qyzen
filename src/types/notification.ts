@@ -2,6 +2,8 @@ export type NotificationEventType =
   | 'module_created'
   | 'module_updated'
   | 'module_deleted'
+  | 'learning_material_uploaded'
+  | 'learning_material_deleted'
   | 'quiz_created'
   | 'quiz_uploaded'
   | 'quiz_updated'
@@ -17,6 +19,8 @@ export interface NotificationMetadata {
   subjectName?: string
   sectionName?: string
   studentName?: string
+  fileName?: string
+  fileCount?: number
   questionCount?: number
   retakeCount?: number
   enrollmentStatus?: 'active' | 'inactive'

@@ -33,6 +33,8 @@ CREATE POLICY "Educator notification insert access" ON public.tbl_notifications
         'module_created'::TEXT,
         'module_updated'::TEXT,
         'module_deleted'::TEXT,
+        'learning_material_uploaded'::TEXT,
+        'learning_material_deleted'::TEXT,
         'quiz_created'::TEXT,
         'quiz_uploaded'::TEXT,
         'quiz_updated'::TEXT,
