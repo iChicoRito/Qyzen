@@ -11,6 +11,8 @@ export const userSchema = z.object({
   status: z.enum(['active', 'inactive']),
   userType: z.enum(['admin', 'student', 'educator']),
   roleNames: z.array(z.string()),
+  isEmailVerified: z.boolean(),
+  hasAuthUser: z.boolean(),
 })
 
 export type User = z.infer<typeof userSchema>

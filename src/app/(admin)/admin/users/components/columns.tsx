@@ -10,7 +10,14 @@ import type { User } from '../data/schema'
 import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
 
-export const columns: ColumnDef<User>[] = [
+interface GetColumnsOptions {
+  onDeleteUser: (userId: number) => Promise<void>
+  onResendEmail: (userId: number) => Promise<string>
+}
+
+// getColumns - build the user table columns with row actions
+export function getColumns({ onDeleteUser, onResendEmail }: GetColumnsOptions): ColumnDef<User>[] {
+  return [
   {
     id: 'select',
     header: ({ table }) => (
@@ -108,6 +115,9 @@ export const columns: ColumnDef<User>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    cell: ({ row }) => (
+      <DataTableRowActions row={row} onDeleteUser={onDeleteUser} onResendEmail={onResendEmail} />
+    ),
   },
-]
+  ]
+}

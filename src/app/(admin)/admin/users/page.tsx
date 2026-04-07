@@ -9,12 +9,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 import {
   createStudentsBulk,
   createUser,
+  deleteUser,
   fetchUsers,
+  resendUserVerificationEmail,
   type BulkCreateStudentInput,
   type CreateUserInput,
 } from '@/lib/supabase/users'
 
-import { columns } from './components/columns'
+import { getColumns } from './components/columns'
 import { DataTable } from './components/data-table'
 import { userSchema, type User } from './data/schema'
 
@@ -55,6 +57,19 @@ export default function UsersPage() {
     setUsers((prev) => [...createdUsers.map((user) => userSchema.parse(user)), ...prev])
   }
 
+  // handleDeleteUser - remove a user from auth and public data
+  const handleDeleteUser = async (userId: number) => {
+    await deleteUser(userId)
+    setUsers((prev) => prev.filter((user) => user.id !== userId))
+  }
+
+  // handleResendEmail - resend the verification email to the selected user
+  const handleResendEmail = async (userId: number) => {
+    const result = await resendUserVerificationEmail(userId)
+
+    return result.message
+  }
+
   // ==================== STATS ====================
   const stats = {
     total: users.length,
@@ -62,6 +77,10 @@ export default function UsersPage() {
     educators: users.filter((user) => user.userType === 'educator').length,
     students: users.filter((user) => user.userType === 'student').length,
   }
+  const columns = getColumns({
+    onDeleteUser: handleDeleteUser,
+    onResendEmail: handleResendEmail,
+  })
 
   if (loading) {
     return (

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+import { fetchAuthContext } from '@/lib/auth/auth-context'
 import { createClient } from '@/lib/supabase/server'
 import { createManagedUser } from '@/lib/users/create-user'
 import { getRoleIdMapByNames } from '@/lib/users/create-user'
@@ -10,6 +11,32 @@ import type { CreateUserInput } from '@/lib/users/create-user'
 interface ExistingUserRow {
   user_id: string
   email: string
+}
+
+// requireAdminContext - block non-admin access to bulk user creation
+async function requireAdminContext() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error('Unauthorized.')
+  }
+
+  const context = await fetchAuthContext(supabase, user)
+
+  if (!context.isActive) {
+    throw new Error('Your account is inactive.')
+  }
+
+  if (!context.isEmailVerified) {
+    throw new Error('Please verify your email first.')
+  }
+
+  if (!context.roles.includes('admin')) {
+    throw new Error('Forbidden.')
+  }
 }
 
 // buildDuplicateValues - find duplicate values inside a request
@@ -62,6 +89,7 @@ async function validateDuplicateStudents(students: CreateUserInput[]) {
 // POST - create multiple student users using the manual add flow
 export async function POST(request: Request) {
   try {
+    await requireAdminContext()
     const payload = bulkStudentCreateSchema.parse(await request.json())
     const students: CreateUserInput[] = payload.students.map((student) => ({
       userId: student.userId,

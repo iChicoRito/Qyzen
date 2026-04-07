@@ -28,6 +28,7 @@ import {
 import { DataTablePagination } from './data-table-pagination'
 import { DataTableToolbar } from './data-table-toolbar'
 import type { BulkCreateStudentInput, CreateUserInput } from '@/lib/supabase/users'
+import type { User } from '../data/schema'
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -36,6 +37,7 @@ interface DataTableProps<TData, TValue> {
   onUploadStudents?: (students: BulkCreateStudentInput[]) => Promise<void>
 }
 
+// DataTable - render the users table and toolbar controls
 export function DataTable<TData, TValue>({
   columns,
   data,
@@ -114,7 +116,7 @@ export function DataTable<TData, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No users found.
+                  {((data as User[]) || []).length === 0 ? 'No users found.' : 'No matching users found.'}
                 </TableCell>
               </TableRow>
             )}
