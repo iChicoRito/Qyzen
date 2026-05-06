@@ -173,8 +173,9 @@ async function submitScore(
   const supabase = await createClient()
   const score = calculateScore(answers, gradingSession.questions)
   const totalQuestions = gradingSession.questions.length
-  const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0
-  const isPassed = percentage >= QUIZ_RESULT_PASSING_PERCENTAGE
+  const rawPercentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0
+  const percentage = Math.round(rawPercentage)
+  const isPassed = rawPercentage >= QUIZ_RESULT_PASSING_PERCENTAGE
   const submittedAt = new Date().toISOString()
   const submissionPayload = {
     student_id: studentId,

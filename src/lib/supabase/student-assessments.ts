@@ -92,7 +92,6 @@ interface ModuleTermRow {
 
 interface ModuleRow {
   id: number
-  module_id: string
   module_code: string
   subject_id: number
   section_id: number
@@ -316,7 +315,7 @@ function mapModuleToStudentAssessment(
   const statusLabel: StudentAssessmentRecord['statusLabel'] = isFinished ? 'finished' : 'pending'
 
   return {
-    id: module.module_id,
+    id: String(module.id),
     moduleRowId: module.id,
     moduleCode: module.module_code,
     subjectName: subject?.subject_name || 'Unknown Subject',
@@ -409,7 +408,7 @@ export async function fetchStudentAssessments(studentId: number) {
   const { data: moduleData, error: moduleError } = await supabase
     .from('tbl_modules')
     .select(
-      'id,module_id,module_code,subject_id,section_id,educator_id,time_limit,is_shuffle,allow_retake,retake_count,start_date,end_date,start_time,end_time,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester)'
+      'id,module_code,subject_id,section_id,educator_id,time_limit,is_shuffle,allow_retake,retake_count,start_date,end_date,start_time,end_time,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester)'
     )
     .in('subject_id', subjectIds)
     .in('section_id', sectionIds)

@@ -16,8 +16,10 @@ interface ScoresPageClientProps {
 export function ScoresPageClient({ scores }: ScoresPageClientProps) {
   const passedCount = scores.filter((score) => score.status === 'passed').length
   const failedCount = scores.filter((score) => score.status === 'failed').length
-  const averagePercentage = scores.length > 0
-    ? Math.round(scores.reduce((total, score) => total + score.percentage, 0) / scores.length)
+  const totalCorrectAnswers = scores.reduce((total, score) => total + score.score, 0)
+  const totalQuestions = scores.reduce((total, score) => total + score.totalQuestions, 0)
+  const averagePercentage = totalQuestions > 0
+    ? Math.round((totalCorrectAnswers / totalQuestions) * 100)
     : 0
 
   return (

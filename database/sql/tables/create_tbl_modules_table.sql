@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS public.tbl_modules (
   educator_id BIGINT NOT NULL REFERENCES public.tbl_users(id) ON DELETE CASCADE,
   subject_id BIGINT NOT NULL REFERENCES public.tbl_subjects(id) ON DELETE CASCADE,
   section_id BIGINT NOT NULL REFERENCES public.tbl_sections(id) ON DELETE CASCADE,
-  module_id TEXT NOT NULL DEFAULT CONCAT('MDL-', LPAD(FLOOR(RANDOM() * 1000000000)::BIGINT::TEXT, 9, '0')),
   module_code TEXT NOT NULL,
   term BIGINT NOT NULL REFERENCES public.tbl_academic_term(id) ON DELETE CASCADE,
   time_limit TEXT NOT NULL,
@@ -26,7 +25,6 @@ CREATE TABLE IF NOT EXISTS public.tbl_modules (
   end_time TIME NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT tbl_modules_unique_module_id UNIQUE (module_id),
   CONSTRAINT tbl_modules_unique_code_per_subject_section_term UNIQUE (module_code, subject_id, section_id, term)
 );
 

@@ -673,7 +673,7 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
                 </div>
               </div>
               <div className="space-y-1 md:text-right">
-                <div className="text-muted-foreground text-xs uppercase tracking-[0.24em]">
+                <div className="text-muted-foreground text-xs uppercase">
                   Schedule
                 </div>
                 <div className="text-sm">

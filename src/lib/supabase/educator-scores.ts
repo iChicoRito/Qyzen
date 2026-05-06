@@ -186,7 +186,6 @@ interface ModuleTermRow {
 
 interface ModuleRow {
   id?: number
-  module_id?: string
   module_code: string
   term?: number
   subject_id: number
@@ -479,7 +478,7 @@ function getModuleExportOptions(moduleRows: ModuleRow[]) {
 
     return {
       moduleRowId: row.id || 0,
-      moduleId: row.module_id || 'Unknown Module',
+      moduleId: row.module_code || 'Unknown Module',
       moduleCode: row.module_code,
       termId: row.term || 0,
       termName: buildAcademicTermLabel(term),
@@ -498,7 +497,7 @@ export async function fetchEducatorScoreExportOptions() {
   const { data, error } = await supabase
     .from('tbl_modules')
     .select(
-      'id,module_id,module_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
+      'id,module_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
     )
     .eq('educator_id', educatorId)
     .order('created_at', { ascending: false })
@@ -519,7 +518,7 @@ export async function fetchEducatorScoreExportData(input: FetchEducatorScoreExpo
       supabase
         .from('tbl_modules')
         .select(
-          'id,module_id,module_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
+          'id,module_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
         )
         .eq('educator_id', educatorId)
         .eq('id', input.moduleRowId)

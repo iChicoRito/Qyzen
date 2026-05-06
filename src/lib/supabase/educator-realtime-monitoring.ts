@@ -80,7 +80,6 @@ interface ModuleTermRow {
 
 interface ModuleRow {
   id: number
-  module_id: string
   module_code: string
   subject_id: number
   section_id: number
@@ -332,7 +331,7 @@ export async function fetchEducatorRealtimeMonitoringList() {
       supabase
         .from('tbl_modules')
         .select(
-          'id,module_id,module_code,subject_id,section_id,time_limit,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
+          'id,module_code,subject_id,section_id,time_limit,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
         )
         .eq('educator_id', educatorId)
         .eq('is_active', true)
@@ -496,7 +495,7 @@ export async function fetchEducatorRealtimeMonitoringList() {
 
       return {
         moduleRowId: module.id,
-        moduleId: module.module_id,
+        moduleId: module.module_code,
         moduleCode: module.module_code,
         subjectId: module.subject_id,
         subjectName: subject?.subject_name || 'Unknown Subject',

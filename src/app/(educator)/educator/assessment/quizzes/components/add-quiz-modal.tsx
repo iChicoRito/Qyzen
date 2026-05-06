@@ -39,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { fetchQuizModuleOptions, type QuizModuleOption } from '@/lib/supabase/quizzes'
 import { buildQuizPayload, quizFormSchema, type QuizFormSchema } from '@/lib/validations/quiz.schema'
 
@@ -251,21 +252,26 @@ export function AddQuizModal({ onAddQuiz, onUploadQuizzes, trigger }: AddQuizMod
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Quiz Type</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="w-full cursor-pointer">
-                            <SelectValue placeholder="Select quiz type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="multiple_choice" className="cursor-pointer">
-                            Multiple Choice
-                          </SelectItem>
-                          <SelectItem value="identification" className="cursor-pointer">
-                            Identification
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Tabs
+                          value={field.value}
+                          onValueChange={(value) => {
+                            if (value) {
+                              field.onChange(value)
+                            }
+                          }}
+                          className="w-full"
+                        >
+                          <TabsList className="grid h-auto w-full grid-cols-2 rounded-md p-1">
+                            <TabsTrigger value="multiple_choice" className="text-sm">
+                              Multiple Choice
+                            </TabsTrigger>
+                            <TabsTrigger value="identification" className="text-sm">
+                              Identification
+                            </TabsTrigger>
+                          </TabsList>
+                        </Tabs>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

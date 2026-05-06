@@ -72,7 +72,6 @@ CREATE TABLE public.tbl_modules (
   educator_id bigint NOT NULL,
   subject_id bigint NOT NULL,
   section_id bigint NOT NULL,
-  module_id text NOT NULL DEFAULT concat('MDL-', lpad((floor((random() * (1000000000)::double precision)))::bigint::text, 9, '0'::text)),
   module_code text NOT NULL,
   term bigint NOT NULL,
   time_limit text NOT NULL,
@@ -331,7 +330,6 @@ CREATE INDEX idx_tbl_subjects_educator_id ON public.tbl_subjects USING btree (ed
 CREATE INDEX idx_tbl_subjects_sections_id ON public.tbl_subjects USING btree (sections_id);
 CREATE INDEX idx_tbl_subjects_subject_code ON public.tbl_subjects USING btree (subject_code);
 CREATE INDEX idx_tbl_subjects_subject_name ON public.tbl_subjects USING btree (subject_name);
-CREATE UNIQUE INDEX tbl_modules_unique_module_id ON public.tbl_modules USING btree (module_id);
 CREATE UNIQUE INDEX tbl_modules_unique_code_per_subject_section_term ON public.tbl_modules USING btree (module_code, subject_id, section_id, term);
 CREATE INDEX idx_tbl_modules_educator_id ON public.tbl_modules USING btree (educator_id);
 CREATE INDEX idx_tbl_modules_subject_id ON public.tbl_modules USING btree (subject_id);

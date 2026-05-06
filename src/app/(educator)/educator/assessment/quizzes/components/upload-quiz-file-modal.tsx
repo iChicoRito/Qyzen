@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   IconDownload,
+  IconChevronDown,
   IconFileSpreadsheet,
   IconLoader2 as Loader2,
+  IconTrash,
   IconUpload,
   IconX,
 } from '@tabler/icons-react'
@@ -12,7 +14,9 @@ import ExcelJS from 'exceljs'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   ResponsiveDialog,
   ResponsiveDialogBody,
@@ -23,6 +27,7 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogTrigger,
 } from '@/components/ui/responsive-dialog'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { fetchQuizModuleOptions, type QuizModuleOption } from '@/lib/supabase/quizzes'
 
 import type { Quiz } from '../data/schema'
@@ -33,7 +38,6 @@ interface UploadQuizFileModalProps {
 }
 
 interface UploadRow {
-  module_id?: string
   quiz_type?: string
   question?: string
   choice_a?: string
@@ -45,7 +49,6 @@ interface UploadRow {
 }
 
 const templateHeaders = [
-  'module_id',
   'quiz_type',
   'question',
   'choice_a',
@@ -66,23 +69,10 @@ function isEmptyUploadRow(row: UploadRow) {
   return templateHeaders.every((header) => !normalizeValue(row[header]))
 }
 
-// buildModuleUploadKey - create a lookup key for uploaded module ids
-function buildModuleUploadKey(moduleId: string) {
-  return normalizeValue(moduleId).toLowerCase()
-}
-
-// buildTemplateRows - create sample rows using real educator modules
-function buildTemplateRows(moduleOptions: QuizModuleOption[]) {
-  const firstModule = moduleOptions[0]
-  const secondModule = moduleOptions[1] ?? firstModule
-
-  if (!firstModule || !secondModule) {
-    return []
-  }
-
+// buildTemplateRows - create sample rows for the xlsx template
+function buildTemplateRows() {
   return [
     {
-      module_id: firstModule.moduleId,
       quiz_type: 'multiple_choice',
       question: 'Placeholder: What is the capital of France?',
       choice_a: 'Berlin',
@@ -93,7 +83,6 @@ function buildTemplateRows(moduleOptions: QuizModuleOption[]) {
       correct_answers: '',
     },
     {
-      module_id: secondModule.moduleId,
       quiz_type: 'identification',
       question: 'Placeholder: Name a primary color.',
       choice_a: '',
@@ -106,6 +95,16 @@ function buildTemplateRows(moduleOptions: QuizModuleOption[]) {
   ] as const
 }
 
+// formatModuleSelectionLabel - create a readable label for module choices
+function formatModuleSelectionLabel(moduleOption: QuizModuleOption) {
+  return `${moduleOption.subjectName} | ${moduleOption.sectionName}`
+}
+
+// formatModuleSelectionMeta - create supporting text for a module choice
+function formatModuleSelectionMeta(moduleOption: QuizModuleOption) {
+  return `${moduleOption.moduleCode} | ${moduleOption.termName}`
+}
+
 // UploadQuizFileModal - upload quiz rows from xlsx files
 export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFileModalProps) {
   // ==================== STATE ====================
@@ -115,11 +114,23 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
   const [isLoadingModules, setIsLoadingModules] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [moduleOptions, setModuleOptions] = useState<QuizModuleOption[]>([])
+  const [selectedModuleIds, setSelectedModuleIds] = useState<number[]>([])
 
   const acceptedLabel = useMemo(
     () => (files.length === 0 ? 'Drop .xlsx files here or browse your files' : `${files.length} file(s) ready`),
     [files.length]
   )
+  const selectedModules = useMemo(
+    () => moduleOptions.filter((moduleOption) => selectedModuleIds.includes(moduleOption.id)),
+    [moduleOptions, selectedModuleIds]
+  )
+  const selectedModulesLabel = useMemo(() => {
+    if (selectedModules.length === 0) {
+      return 'Select one or more modules'
+    }
+
+    return `${selectedModules.length} module${selectedModules.length > 1 ? 's' : ''} selected`
+  }, [selectedModules.length])
 
   // loadModuleOptions - fetch modules used for upload matching
   const loadModuleOptions = async () => {
@@ -142,6 +153,7 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
 
     setFiles([])
     setIsDragging(false)
+    setSelectedModuleIds([])
   }, [open])
 
   // handleFileSelection - merge selected xlsx files
@@ -171,19 +183,34 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
     )
   }
 
+  // handleModuleCheckedChange - toggle selected upload modules
+  const handleModuleCheckedChange = (moduleId: number, checked: boolean) => {
+    setSelectedModuleIds((currentIds) => {
+      if (checked) {
+        if (currentIds.includes(moduleId)) {
+          return currentIds
+        }
+
+        return [...currentIds, moduleId]
+      }
+
+      return currentIds.filter((currentId) => currentId !== moduleId)
+    })
+  }
+
+  // handleModuleRemove - remove a selected module from the upload target list
+  const handleModuleRemove = (moduleId: number) => {
+    setSelectedModuleIds((currentIds) => currentIds.filter((currentId) => currentId !== moduleId))
+  }
+
   // handleDownloadTemplate - download the xlsx template
   const handleDownloadTemplate = async () => {
-    if (moduleOptions.length === 0) {
-      toast.error('No modules are available for the template yet.')
-      return
-    }
-
-    const templateRows = buildTemplateRows(moduleOptions)
+    const templateRows = buildTemplateRows()
 
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet('Quiz Upload Template')
 
-    worksheet.mergeCells('A1:I1')
+    worksheet.mergeCells('A1:H1')
     worksheet.getCell('A1').value = 'Qyzen Quiz Template'
     worksheet.getCell('A1').font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } }
     worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' }
@@ -253,7 +280,6 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
     }
 
     worksheet.columns = [
-      { key: 'module_id', width: 18 },
       { key: 'quiz_type', width: 20 },
       { key: 'question', width: 42 },
       { key: 'choice_a', width: 28 },
@@ -311,13 +337,16 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
       return
     }
 
+    if (selectedModules.length === 0) {
+      toast.error('Select at least one subject and section module.')
+      return
+    }
+
     try {
       setIsUploading(true)
 
-      const moduleMap = new Map(
-        moduleOptions.map((moduleOption) => [buildModuleUploadKey(moduleOption.moduleId), moduleOption])
-      )
       const uploadedQuizzes: Quiz[] = []
+      let nextQuizId = Date.now()
 
       for (const file of files) {
         const rows = await parseFileRows(file)
@@ -325,16 +354,6 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
         rows.forEach((row: UploadRow, rowIndex: number) => {
           if (isEmptyUploadRow(row)) {
             return
-          }
-
-          const moduleIdValue = normalizeValue(row.module_id)
-          const moduleKey = buildModuleUploadKey(moduleIdValue)
-          const matchedModule = moduleMap.get(moduleKey)
-
-          if (!matchedModule) {
-            throw new Error(
-              `File "${file.name}", row ${rowIndex + 2}: module_id could not be matched.`
-            )
           }
 
           const quizTypeValue = normalizeValue(row.quiz_type).toLowerCase()
@@ -351,30 +370,68 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
             throw new Error(`File "${file.name}", row ${rowIndex + 2}: question is required.`)
           }
 
-          if (quizTypeValue === 'multiple_choice') {
-            const choiceValues = [
-              normalizeValue(row.choice_a),
-              normalizeValue(row.choice_b),
-              normalizeValue(row.choice_c),
-              normalizeValue(row.choice_d),
-            ]
+          selectedModules.forEach((matchedModule) => {
+            if (quizTypeValue === 'multiple_choice') {
+              const choiceValues = [
+                normalizeValue(row.choice_a),
+                normalizeValue(row.choice_b),
+                normalizeValue(row.choice_c),
+                normalizeValue(row.choice_d),
+              ]
 
-            if (choiceValues.some((choice) => !choice)) {
+              if (choiceValues.some((choice) => !choice)) {
+                throw new Error(
+                  `File "${file.name}", row ${rowIndex + 2}: all multiple choice fields are required.`
+                )
+              }
+
+              const correctAnswer = normalizeValue(row.correct_answer)
+
+              if (!correctAnswer) {
+                throw new Error(
+                  `File "${file.name}", row ${rowIndex + 2}: correct_answer is required for multiple_choice.`
+                )
+              }
+
+              nextQuizId += 1
+              uploadedQuizzes.push({
+                id: nextQuizId,
+                moduleRowId: matchedModule.id,
+                moduleId: matchedModule.moduleId,
+                moduleCode: matchedModule.moduleCode,
+                termName: matchedModule.termName,
+                subjectId: matchedModule.subjectId,
+                subjectName: matchedModule.subjectName,
+                sectionId: matchedModule.sectionId,
+                sectionName: matchedModule.sectionName,
+                question,
+                quizType: 'multiple_choice',
+                choices: [
+                  { key: 'A', value: choiceValues[0] },
+                  { key: 'B', value: choiceValues[1] },
+                  { key: 'C', value: choiceValues[2] },
+                  { key: 'D', value: choiceValues[3] },
+                ],
+                correctAnswer,
+                correctAnswers: [correctAnswer],
+              })
+              return
+            }
+
+            const correctAnswers = normalizeValue(row.correct_answers)
+              .split('|')
+              .map((value) => value.trim())
+              .filter(Boolean)
+
+            if (correctAnswers.length === 0) {
               throw new Error(
-                `File "${file.name}", row ${rowIndex + 2}: all multiple choice fields are required.`
+                `File "${file.name}", row ${rowIndex + 2}: correct_answers is required for identification.`
               )
             }
 
-            const correctAnswer = normalizeValue(row.correct_answer)
-
-            if (!correctAnswer) {
-              throw new Error(
-                `File "${file.name}", row ${rowIndex + 2}: correct_answer is required for multiple_choice.`
-              )
-            }
-
+            nextQuizId += 1
             uploadedQuizzes.push({
-              id: Date.now() + rowIndex,
+              id: nextQuizId,
               moduleRowId: matchedModule.id,
               moduleId: matchedModule.moduleId,
               moduleCode: matchedModule.moduleCode,
@@ -384,46 +441,11 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
               sectionId: matchedModule.sectionId,
               sectionName: matchedModule.sectionName,
               question,
-              quizType: 'multiple_choice',
-              choices: [
-                { key: 'A', value: choiceValues[0] },
-                { key: 'B', value: choiceValues[1] },
-                { key: 'C', value: choiceValues[2] },
-                { key: 'D', value: choiceValues[3] },
-              ],
-              correctAnswer,
-              correctAnswers: [correctAnswer],
+              quizType: 'identification',
+              choices: [],
+              correctAnswer: JSON.stringify(correctAnswers),
+              correctAnswers,
             })
-
-            return
-          }
-
-          const correctAnswers = normalizeValue(row.correct_answers)
-            .split('|')
-            .map((value) => value.trim())
-            .filter(Boolean)
-
-          if (correctAnswers.length === 0) {
-            throw new Error(
-              `File "${file.name}", row ${rowIndex + 2}: correct_answers is required for identification.`
-            )
-          }
-
-          uploadedQuizzes.push({
-            id: Date.now() + rowIndex,
-            moduleRowId: matchedModule.id,
-            moduleId: matchedModule.moduleId,
-            moduleCode: matchedModule.moduleCode,
-            termName: matchedModule.termName,
-            subjectId: matchedModule.subjectId,
-            subjectName: matchedModule.subjectName,
-            sectionId: matchedModule.sectionId,
-            sectionName: matchedModule.sectionName,
-            question,
-            quizType: 'identification',
-            choices: [],
-            correctAnswer: JSON.stringify(correctAnswers),
-            correctAnswers,
           })
         })
       }
@@ -458,109 +480,216 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
         <ResponsiveDialogHeader className="border-b">
           <ResponsiveDialogTitle>Upload Quiz Files</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-              Drop one or more xlsx files and use the template so the upload matches the manual quiz fields.
+            Drop one or more xlsx files, choose the target modules, and use the template so the upload matches the manual quiz fields.
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
-          <ResponsiveDialogBody className="max-h-[68vh] space-y-6">
-            <div className="flex items-center justify-between gap-3 rounded-md border p-4">
-              <div>
-                <p className="font-medium">Download Template</p>
-                <p className="text-sm text-muted-foreground">
-                  Use the provided format before uploading your files.
-                </p>
-              </div>
-              <Button type="button" variant="outline" className="cursor-pointer" onClick={handleDownloadTemplate}>
-                <IconDownload size={18} className="mr-0" />
-                Download Format
-              </Button>
+        <ResponsiveDialogBody className="max-h-[68vh] space-y-6">
+          <div className="flex flex-col gap-3 rounded-md border p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-medium">Download Template</p>
+              <p className="text-sm text-muted-foreground">
+                Use the provided format before uploading your files.
+              </p>
             </div>
+            <Button type="button" variant="outline" className="cursor-pointer" onClick={handleDownloadTemplate}>
+              <IconDownload size={18} className="mr-0" />
+              Download Template
+            </Button>
+          </div>
 
-            <label
-              className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed p-10 text-center ${
-                isDragging ? 'border-primary bg-accent/40' : 'border-border'
-              }`}
-              onDragOver={(event) => {
-                event.preventDefault()
-                setIsDragging(true)
-              }}
-              onDragLeave={(event) => {
-                event.preventDefault()
-                setIsDragging(false)
-              }}
-              onDrop={(event) => {
-                event.preventDefault()
-                setIsDragging(false)
-                handleFileSelection(event.dataTransfer.files)
-              }}
-            >
-              <input
-                type="file"
-                accept=".xlsx"
-                multiple
-                className="hidden"
-                onChange={(event) => {
-                  if (event.target.files) {
-                    handleFileSelection(event.target.files)
-                    event.target.value = ''
+          <div className="space-y-4 rounded-md border p-4">
+            <div className="space-y-1">
+              <p className="font-medium">Target Module</p>
+              <p className="text-sm text-muted-foreground">
+                Select every subject and section module that should receive the uploaded quiz rows.
+              </p>
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button type="button" variant="outline" className="w-full justify-between">
+                  <span className="truncate text-left">{selectedModulesLabel}</span>
+                  <IconChevronDown size={18} className="text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="z-50 max-h-72 w-[var(--radix-popover-trigger-width)] overflow-y-auto overscroll-contain p-4"
+                align="start"
+                sideOffset={6}
+                onWheelCapture={(event) => {
+                  const target = event.currentTarget
+                  const maxScrollTop = target.scrollHeight - target.clientHeight
+
+                  if (maxScrollTop <= 0) {
+                    return
                   }
+
+                  event.stopPropagation()
+                  event.preventDefault()
+                  target.scrollTop = Math.max(0, Math.min(maxScrollTop, target.scrollTop + event.deltaY))
                 }}
-              />
-              <IconFileSpreadsheet size={40} className="mb-4 text-muted-foreground" />
-              <p className="font-medium">{acceptedLabel}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Multiple xlsx files are supported.
-              </p>
-            </label>
+              >
+                <div className="space-y-2">
+                  {isLoadingModules ? (
+                    <p className="text-sm text-muted-foreground">Loading module options...</p>
+                  ) : moduleOptions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No modules available.</p>
+                  ) : (
+                    moduleOptions.map((moduleOption) => {
+                      const isChecked = selectedModuleIds.includes(moduleOption.id)
 
-            <div className="space-y-3">
-              <div>
-                <p className="font-medium">Queued Files</p>
-                <p className="text-sm text-muted-foreground">
-                  Review the files before uploading them to the database.
-                </p>
-              </div>
-              {files.length === 0 ? (
-                <div className="rounded-md border px-4 py-3 text-sm text-muted-foreground">
-                  No files selected.
+                      return (
+                        <label
+                          key={moduleOption.id}
+                          className="flex cursor-pointer items-start gap-3 rounded-md border p-3"
+                        >
+                          <Checkbox
+                            checked={isChecked}
+                            onCheckedChange={(checked) =>
+                              handleModuleCheckedChange(moduleOption.id, Boolean(checked))
+                            }
+                            className="mt-0.5 cursor-pointer"
+                          />
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <p className="text-sm font-medium uppercase">
+                              {formatModuleSelectionLabel(moduleOption)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatModuleSelectionMeta(moduleOption)}
+                            </p>
+                          </div>
+                        </label>
+                      )
+                    })
+                  )}
                 </div>
-              ) : (
-                files.map((file) => (
-                  <div key={`${file.name}-${file.size}`} className="flex items-center justify-between rounded-md border px-4 py-3">
-                    <div>
-                      <p className="font-medium">{file.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {(file.size / 1024).toFixed(1)} KB
-                      </p>
+              </PopoverContent>
+            </Popover>
+
+            {selectedModules.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Selected Modules</p>
+                <div className="rounded-md border bg-card">
+                  {selectedModules.map((moduleOption, index) => (
+                    <div key={moduleOption.id}>
+                      <div className="flex items-start justify-between gap-3 px-4 py-3 text-sm">
+                        <div className="min-w-0 space-y-1">
+                          <p className="font-medium uppercase">{moduleOption.subjectName}</p>
+                          <Badge
+                            variant="outline"
+                            className="rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500"
+                          >
+                            {moduleOption.sectionName}
+                          </Badge>
+                          <p className="text-xs text-muted-foreground">
+                            {moduleOption.moduleCode} | {moduleOption.termName}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0 text-rose-500 hover:bg-rose-500/10 hover:text-rose-500"
+                          onClick={() => handleModuleRemove(moduleOption.id)}
+                          aria-label={`Remove ${moduleOption.subjectName} ${moduleOption.sectionName}`}
+                        >
+                          <IconTrash size={18} />
+                        </Button>
+                      </div>
+                      {index < selectedModules.length - 1 ? <div className="border-b" /> : null}
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="cursor-pointer text-rose-500 hover:bg-rose-500/10 hover:text-rose-500"
-                      onClick={() => handleRemoveFile(file.name, file.size)}
-                    >
-                      <IconX size={18} />
-                    </Button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-md border px-4 py-3 text-sm text-muted-foreground">
+                No target modules selected.
+              </div>
+            )}
+          </div>
+
+          <label
+            className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed p-10 text-center ${
+              isDragging ? 'border-primary bg-accent/40' : 'border-border'
+            }`}
+            onDragOver={(event) => {
+              event.preventDefault()
+              setIsDragging(true)
+            }}
+            onDragLeave={(event) => {
+              event.preventDefault()
+              setIsDragging(false)
+            }}
+            onDrop={(event) => {
+              event.preventDefault()
+              setIsDragging(false)
+              handleFileSelection(event.dataTransfer.files)
+            }}
+          >
+            <input
+              type="file"
+              accept=".xlsx"
+              multiple
+              className="hidden"
+              onChange={(event) => {
+                if (event.target.files) {
+                  handleFileSelection(event.target.files)
+                  event.target.value = ''
+                }
+              }}
+            />
+            <IconFileSpreadsheet size={40} className="mb-4 text-muted-foreground" />
+            <p className="font-medium">{acceptedLabel}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Multiple xlsx files are supported.</p>
+          </label>
+
+          <div className="space-y-3">
+            <div>
+              <p className="font-medium">Queued Files</p>
+              <p className="text-sm text-muted-foreground">
+                Review the files before uploading them to the database.
+              </p>
+            </div>
+            {files.length === 0 ? (
+              <div className="rounded-md border px-4 py-3 text-sm text-muted-foreground">No files selected.</div>
+            ) : (
+              files.map((file) => (
+                <div
+                  key={`${file.name}-${file.size}`}
+                  className="flex items-center justify-between rounded-md border px-4 py-3"
+                >
+                  <div>
+                    <p className="font-medium">{file.name}</p>
+                    <p className="text-sm text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</p>
                   </div>
-                ))
-              )}
-            </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="cursor-pointer text-rose-500 hover:bg-rose-500/10 hover:text-rose-500"
+                    onClick={() => handleRemoveFile(file.name, file.size)}
+                  >
+                    <IconX size={18} />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
 
-            <div className="rounded-md border bg-card px-4 py-3">
-              <p className="font-medium">Required Template Columns</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                module_id, quiz_type, question,
-                choice_a, choice_b, choice_c, choice_d, correct_answer, correct_answers
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Use the `module_id` value like `MDL-441901480`, use `correct_answer` for multiple choice, and use `correct_answers` with `|` separators for identification.
-              </p>
-            </div>
-          </ResponsiveDialogBody>
+          <div className="rounded-md border bg-card px-4 py-3">
+            <p className="font-medium">Required Template Columns</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              quiz_type, question, choice_a, choice_b, choice_c, choice_d, correct_answer, correct_answers
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Use `correct_answer` for multiple choice questions and use `correct_answers` with `|` separators for
+              identification questions.
+            </p>
+          </div>
+        </ResponsiveDialogBody>
 
-          <ResponsiveDialogFooter>
-            <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
+        <ResponsiveDialogFooter>
+          <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)} className="w-full cursor-pointer" disabled={isUploading}>
               Cancel
             </Button>
@@ -578,12 +707,12 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
               ) : (
                 <>
                   <IconUpload size={18} className="mr-0" />
-                  Upload File
+                  Upload Quizzes
                 </>
-                )}
-              </Button>
-            </div>
-          </ResponsiveDialogFooter>
+              )}
+            </Button>
+          </div>
+        </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   )

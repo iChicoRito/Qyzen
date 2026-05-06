@@ -66,11 +66,6 @@ export function getColumns({
       enableHiding: false,
     },
     {
-      accessorKey: 'moduleId',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Module ID" />,
-      cell: ({ row }) => <div className="min-w-[130px] font-medium">{row.getValue('moduleId')}</div>,
-    },
-    {
       accessorKey: 'moduleCode',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Module Code" />,
       cell: ({ row }) => <div className="min-w-[130px] font-medium">{row.getValue('moduleCode')}</div>,

@@ -178,7 +178,6 @@ interface ModuleTermRow {
 
 interface ModuleRow {
   id: number
-  module_id: string
   module_code: string
   subject_id: number
   section_id: number
@@ -509,7 +508,7 @@ function buildSessionRecord(
 
   return {
     moduleRowId: module.id,
-    moduleId: module.module_id,
+    moduleId: module.module_code,
     moduleCode: module.module_code,
     subjectId: module.subject_id,
     subjectName: subject?.subject_name || 'Unknown Subject',
@@ -597,7 +596,7 @@ async function fetchModuleRow(moduleId: number) {
   const { data, error } = await supabase
     .from('tbl_modules')
     .select(
-      'id,module_id,module_code,subject_id,section_id,educator_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_retake,retake_count,allow_hint,hint_count,start_date,end_date,start_time,end_time,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester)'
+      'id,module_code,subject_id,section_id,educator_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_retake,retake_count,allow_hint,hint_count,start_date,end_date,start_time,end_time,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester)'
     )
     .eq('id', moduleId)
     .eq('is_active', true)

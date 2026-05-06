@@ -68,10 +68,8 @@ export function ViewQuizModal({
         <ResponsiveDialogBody className="max-h-[68vh] space-y-6 border-t border-b">
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
-              <p className="font-semibold">Module</p>
-              <p className="text-muted-foreground">
-                {quizGroup.moduleCode} | {quizGroup.moduleId}
-              </p>
+              <p className="font-semibold">Module Code</p>
+              <p className="text-muted-foreground">{quizGroup.moduleCode}</p>
             </div>
             <div className="space-y-2">
               <p className="font-semibold">Class</p>

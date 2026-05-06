@@ -58,7 +58,6 @@ interface UserRow {
 
 interface QuizModuleRow {
   id: number
-  module_id: string
   module_code: string
   term: number
   subject_id: number
@@ -80,7 +79,6 @@ interface QuizRow {
   correct_answer: string
   module: {
     id: number
-    module_id: string
     module_code: string
     term: number
     subject_id: number
@@ -93,7 +91,6 @@ interface QuizRow {
     section: { section_name: string } | { section_name: string }[] | null
   } | Array<{
     id: number
-    module_id: string
     module_code: string
     term: number
     subject_id: number
@@ -427,7 +424,7 @@ function mapQuizRow(row: QuizRow): QuizRecord {
   return {
     id: row.id,
     moduleRowId: moduleValue?.id || row.module_id,
-    moduleId: moduleValue?.module_id || 'Unknown Module',
+    moduleId: moduleValue?.module_code || 'Unknown Module',
     moduleCode: moduleValue?.module_code || 'Unknown Module',
     termName: academicTerm ? buildAcademicTermLabel(academicTerm) : 'No term',
     subjectId: moduleValue?.subject_id || 0,
@@ -511,7 +508,7 @@ export async function fetchQuizModuleOptions() {
   const { data, error } = await supabase
     .from('tbl_modules')
     .select(
-      'id,module_id,module_code,term,subject_id,section_id,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(section_name)'
+      'id,module_code,term,subject_id,section_id,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(section_name)'
     )
     .eq('educator_id', educatorId)
     .order('created_at', { ascending: false })
@@ -527,7 +524,7 @@ export async function fetchQuizModuleOptions() {
 
     return {
       id: row.id,
-      moduleId: row.module_id,
+      moduleId: row.module_code,
       moduleCode: row.module_code,
       termName: academicTerm ? buildAcademicTermLabel(academicTerm) : 'No term',
       subjectId: row.subject_id,
@@ -545,7 +542,7 @@ export async function fetchQuizzes() {
   const { data, error } = await supabase
     .from('tbl_quizzes')
     .select(
-      'id,module_id,question,quiz_type,choices,correct_answer,module:module_id(id,module_id,module_code,term,subject_id,section_id,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(section_name))'
+      'id,module_id,question,quiz_type,choices,correct_answer,module:module_id(id,module_code,term,subject_id,section_id,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(section_name))'
     )
     .eq('educator_id', educatorId)
     .order('created_at', { ascending: false })
@@ -574,7 +571,7 @@ export async function createQuiz(input: QuizRecord) {
       correct_answer: input.correctAnswer,
     })
     .select(
-      'id,module_id,question,quiz_type,choices,correct_answer,module:module_id(id,module_id,module_code,term,subject_id,section_id,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(section_name))'
+      'id,module_id,question,quiz_type,choices,correct_answer,module:module_id(id,module_code,term,subject_id,section_id,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(section_name))'
     )
     .single()
 
@@ -668,7 +665,7 @@ export async function updateQuiz(input: QuizRecord) {
     .eq('educator_id', educatorId)
     .eq('id', input.id)
     .select(
-      'id,module_id,question,quiz_type,choices,correct_answer,module:module_id(id,module_id,module_code,term,subject_id,section_id,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(section_name))'
+      'id,module_id,question,quiz_type,choices,correct_answer,module:module_id(id,module_code,term,subject_id,section_id,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(section_name))'
     )
     .single()
 

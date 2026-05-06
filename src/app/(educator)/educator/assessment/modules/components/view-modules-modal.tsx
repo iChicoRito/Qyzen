@@ -77,11 +77,7 @@ export function ViewModulesModal({
         </ResponsiveDialogHeader>
 
         <ResponsiveDialogBody className="max-h-[60vh] space-y-6 border-t border-b">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-2">
-              <p className="font-semibold">Module ID</p>
-              <p className="text-muted-foreground">{module.moduleId}</p>
-            </div>
+          <div className="flex items-start justify-end gap-4">
             <Badge variant="outline" className={`${statusClassName} shrink-0`}>
               {module.status === 'active' ? 'Active' : 'Inactive'}
             </Badge>

@@ -122,7 +122,6 @@ interface TermRow {
 
 interface ModuleRow {
   id: number
-  module_id: string
   module_code: string
   term: number
   subject_id: number
@@ -462,7 +461,7 @@ export async function fetchModules() {
   const { data, error } = await supabase
     .from('tbl_modules')
     .select(
-      'id,module_id,module_code,term,subject_id,section_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_retake,retake_count,allow_hint,hint_count,is_active,start_date,end_date,start_time,end_time,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(id,section_name)'
+      'id,module_code,term,subject_id,section_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_retake,retake_count,allow_hint,hint_count,is_active,start_date,end_date,start_time,end_time,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(id,section_name)'
     )
     .eq('educator_id', educatorId)
     .order('created_at', { ascending: false })
@@ -479,7 +478,7 @@ export async function fetchModules() {
 
     return {
       id: row.id,
-      moduleId: row.module_id,
+      moduleId: row.module_code,
       moduleCode: row.module_code,
       termId: row.term,
       termName: academicTerm ? buildAcademicTermLabel(academicTerm) : 'No term',
@@ -542,7 +541,7 @@ export async function createModules(input: ModuleCreateInput) {
     .from('tbl_modules')
     .insert(rowsToInsert)
     .select(
-      'id,module_id,module_code,term,subject_id,section_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_retake,retake_count,allow_hint,hint_count,is_active,start_date,end_date,start_time,end_time'
+      'id,module_code,term,subject_id,section_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_retake,retake_count,allow_hint,hint_count,is_active,start_date,end_date,start_time,end_time'
     )
 
   if (error) {
@@ -562,7 +561,7 @@ export async function createModules(input: ModuleCreateInput) {
 
     return {
       id: row.id,
-      moduleId: row.module_id,
+      moduleId: row.module_code,
       moduleCode: row.module_code,
       termId: row.term,
       termName:
@@ -641,7 +640,7 @@ export async function updateModule(input: ModuleUpdateInput) {
     .eq('educator_id', educatorId)
     .eq('id', input.id)
     .select(
-      'id,module_id,module_code,term,subject_id,section_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_retake,retake_count,allow_hint,hint_count,is_active,start_date,end_date,start_time,end_time'
+      'id,module_code,term,subject_id,section_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_retake,retake_count,allow_hint,hint_count,is_active,start_date,end_date,start_time,end_time'
     )
 
   if (error) {
@@ -656,7 +655,7 @@ export async function updateModule(input: ModuleUpdateInput) {
 
   const updatedModuleRecord = {
     id: updatedRow.id,
-    moduleId: updatedRow.module_id,
+    moduleId: updatedRow.module_code,
     moduleCode: updatedRow.module_code,
     termId: updatedRow.term,
     termName:
