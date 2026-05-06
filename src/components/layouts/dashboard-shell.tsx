@@ -28,6 +28,7 @@ export function DashboardShell({ children, role, roles, user }: DashboardShellPr
   const { config } = useSidebarConfig()
   const pathname = usePathname()
   const hideSidebar = role === 'student' && pathname === '/student/assessment/take-quiz'
+  const showThemeCustomizer = pathname === `/${role}/dashboard`
 
   // ==================== RENDER ====================
   return (
@@ -85,9 +86,13 @@ export function DashboardShell({ children, role, roles, user }: DashboardShellPr
         </>
       )}
 
-      {/* theme customizer */}
-      <ThemeCustomizerTrigger onClick={() => setThemeCustomizerOpen(true)} />
-      <ThemeCustomizer open={themeCustomizerOpen} onOpenChange={setThemeCustomizerOpen} />
+      {showThemeCustomizer ? (
+        <>
+          {/* theme customizer */}
+          <ThemeCustomizerTrigger onClick={() => setThemeCustomizerOpen(true)} />
+          <ThemeCustomizer open={themeCustomizerOpen} onOpenChange={setThemeCustomizerOpen} />
+        </>
+      ) : null}
     </SidebarProvider>
   )
 }
