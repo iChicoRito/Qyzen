@@ -19,13 +19,13 @@ function getPassRateBadgeClassName(passRate: number) {
 // EducatorSectionOverviewCard - render section workload and outcome data
 export function EducatorSectionOverviewCard({ sections }: { sections: EducatorSectionInsight[] }) {
   return (
-    <Card>
+    <Card className="flex h-full flex-col overflow-hidden">
       <CardHeader className="px-4 pt-4">
         <CardTitle>Section Overview</CardTitle>
         <CardDescription>Student counts, module coverage, and performance by section.</CardDescription>
       </CardHeader>
-      <CardContent className="px-4 pb-4">
-        <div className="overflow-x-auto">
+      <CardContent className="min-h-0 flex-1 px-4 pb-4">
+        <div className="h-full overflow-auto">
           <Table>
             <TableHeader>
               <TableRow>

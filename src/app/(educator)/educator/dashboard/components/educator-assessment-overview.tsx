@@ -95,12 +95,12 @@ export function EducatorAssessmentOverviewCard({
   const activePieProps = { activeIndex } as unknown as Record<string, unknown>
 
   return (
-    <Card className="flex flex-col">
+    <Card className="h-full">
       <CardHeader className="items-center pb-0">
         <CardTitle>Assessment Overview</CardTitle>
         <CardDescription>Live assessment status distribution from your enrolled modules.</CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 pb-0">
+      <CardContent className="pb-0">
         {totalStatuses > 0 ? (
           <ChartContainer
             config={chartConfig}

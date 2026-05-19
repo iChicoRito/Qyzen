@@ -19,13 +19,13 @@ function getPassRateBadgeClassName(passRate: number) {
 // EducatorModuleOverviewCard - render module performance and coverage
 export function EducatorModuleOverviewCard({ modules }: { modules: EducatorModuleInsight[] }) {
   return (
-    <Card>
+    <Card className="flex h-full flex-col overflow-hidden">
       <CardHeader className="px-4 pt-4">
         <CardTitle>Module Overview</CardTitle>
         <CardDescription>Question coverage, completion counts, and pass rate per module.</CardDescription>
       </CardHeader>
-      <CardContent className="px-4 pb-4">
-        <div className="overflow-x-auto">
+      <CardContent className="min-h-0 flex-1 px-4 pb-4">
+        <div className="h-full overflow-auto">
           <Table>
             <TableHeader>
               <TableRow>

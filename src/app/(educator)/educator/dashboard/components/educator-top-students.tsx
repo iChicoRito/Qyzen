@@ -8,14 +8,14 @@ import { Progress } from '@/components/ui/progress'
 // EducatorTopStudentsCard - render the top student list
 export function EducatorTopStudentsCard({ students }: { students: EducatorTopStudentRow[] }) {
   return (
-    <Card>
+    <Card className="flex h-full flex-col overflow-hidden">
       <CardHeader className="px-4 pt-4 pb-4">
         <div className="space-y-1">
           <CardTitle>Top Students</CardTitle>
           <CardDescription>Highest performing students across your latest finished assessments.</CardDescription>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4 px-4 pb-4">
+      <CardContent className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-4">
         {students.length > 0 ? (
           students.map((student, index) => (
             <div key={student.studentId} className="flex flex-wrap items-center gap-3 rounded-lg border p-4">

@@ -33,12 +33,12 @@ export default async function EducatorDashboardPage() {
           <div className="space-y-4">
             <EducatorSummaryCards cards={analytics.summaryCards} />
 
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 xl:auto-rows-[29rem] xl:grid-cols-2">
               <EducatorAssessmentOverviewCard assessmentOverview={analytics.assessmentOverview} />
               <EducatorTopStudentsCard students={analytics.topStudents} />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 xl:auto-rows-[25rem] xl:grid-cols-2">
               <EducatorSectionOverviewCard sections={analytics.sectionInsights} />
               <EducatorModuleOverviewCard modules={analytics.moduleInsights} />
             </div>
