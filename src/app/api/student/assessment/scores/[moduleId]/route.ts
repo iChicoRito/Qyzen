@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { fetchAuthContext } from '@/lib/auth/auth-context'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { insertNotificationsWithClient } from '@/lib/supabase/notification-shared'
 import {
   QUIZ_RESULT_PASSING_PERCENTAGE,
@@ -109,7 +110,7 @@ async function saveDraftScore(
 ) {
   ensureAttemptAllowed(gradingSession)
 
-  const supabase = await createClient()
+  const adminClient = createAdminClient()
   const takenAt = gradingSession.hasInProgressAttempt
     ? gradingSession.takenAt || new Date().toISOString()
     : new Date().toISOString()
@@ -130,7 +131,7 @@ async function saveDraftScore(
   }
 
   if (gradingSession.currentAttemptId) {
-    const { data, error } = await supabase
+    const { data, error } = await adminClient
       .from('tbl_scores')
       .update(draftPayload)
       .eq('id', gradingSession.currentAttemptId)
@@ -145,7 +146,7 @@ async function saveDraftScore(
   }
 
   const createdAt = new Date().toISOString()
-  const { data, error } = await supabase
+  const { data, error } = await adminClient
     .from('tbl_scores')
     .insert({
       ...draftPayload,
@@ -170,7 +171,7 @@ async function submitScore(
 ) {
   ensureAttemptAllowed(gradingSession)
 
-  const supabase = await createClient()
+  const adminClient = createAdminClient()
   const score = calculateScore(answers, gradingSession.questions)
   const totalQuestions = gradingSession.questions.length
   const rawPercentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0
@@ -197,7 +198,7 @@ async function submitScore(
   }
 
   if (gradingSession.currentAttemptId) {
-    const { data, error } = await supabase
+    const { data, error } = await adminClient
       .from('tbl_scores')
       .update(submissionPayload)
       .eq('id', gradingSession.currentAttemptId)
@@ -218,7 +219,7 @@ async function submitScore(
     }
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await adminClient
     .from('tbl_scores')
     .insert({
       ...submissionPayload,

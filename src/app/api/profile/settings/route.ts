@@ -6,12 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getStoragePublicUrl } from '@/lib/supabase/storage'
 import {
   createProfileSettingsSchema,
-  type BaseProfileSettingsSchema,
 } from '@/lib/validations/profile-settings.schema'
-
-interface ExistingUserConflictRow {
-  id: number
-}
 
 interface CurrentUserRow {
   id: number
@@ -65,6 +60,11 @@ function getStringValue(formData: FormData, fieldName: string) {
   return value.trim()
 }
 
+// normalizeEmail - keep email lookups consistent
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase()
+}
+
 // validateUploadedImage - block unsupported or oversized uploads
 function validateUploadedImage(file: File, label: string) {
   if (!file.type.startsWith('image/')) {
@@ -76,40 +76,22 @@ function validateUploadedImage(file: File, label: string) {
   }
 }
 
-// ensureUniqueProfileFields - prevent duplicate user ids and emails
-async function ensureUniqueProfileFields(
-  userId: number,
-  nextUserId: string,
-  nextEmail: string
-) {
+// ensureUniqueEmail - prevent duplicate email addresses
+async function ensureUniqueEmail(userId: number, nextEmail: string) {
   const adminClient = createAdminClient()
-  const [{ data: userIdConflict, error: userIdError }, { data: emailConflict, error: emailError }] =
-    await Promise.all([
-      adminClient
-        .from('tbl_users')
-        .select('id')
-        .eq('user_id', nextUserId)
-        .neq('id', userId)
-        .is('deleted_at', null)
-        .maybeSingle(),
-      adminClient
-        .from('tbl_users')
-        .select('id')
-        .eq('email', nextEmail)
-        .neq('id', userId)
-        .is('deleted_at', null)
-        .maybeSingle(),
-    ])
+  const { data: emailConflict, error: emailError } = await adminClient
+    .from('tbl_users')
+    .select('id')
+    .eq('email', normalizeEmail(nextEmail))
+    .neq('id', userId)
+    .is('deleted_at', null)
+    .maybeSingle()
 
-  if (userIdError || emailError) {
-    throw new Error('Failed to validate profile uniqueness.')
+  if (emailError) {
+    throw new Error('Failed to validate profile email.')
   }
 
-  if ((userIdConflict as ExistingUserConflictRow | null)?.id) {
-    throw new Error('User ID already exists.')
-  }
-
-  if ((emailConflict as ExistingUserConflictRow | null)?.id) {
+  if (emailConflict) {
     throw new Error('Email already exists.')
   }
 }
@@ -146,6 +128,7 @@ async function uploadProfileMedia(
 // POST - update the current user's profile settings and media
 export async function POST(request: Request) {
   try {
+    // ==================== LOAD SESSION ====================
     const supabase = await createClient()
     const {
       data: { user },
@@ -156,22 +139,16 @@ export async function POST(request: Request) {
     }
 
     const context = await fetchAuthContext(supabase, user)
-    const adminClient = createAdminClient()
     const formData = await request.formData()
     const currentProfile = context.profile
-    const roleAwareSchema = createProfileSettingsSchema(context.role, {
-      userId: currentProfile.userId,
+    const payload = createProfileSettingsSchema(context.role, {
       givenName: currentProfile.givenName,
       surname: currentProfile.surname,
-    })
-    const payload = roleAwareSchema.parse({
-      userId: getStringValue(formData, 'userId'),
+    }).parse({
       givenName: getStringValue(formData, 'givenName'),
       surname: getStringValue(formData, 'surname'),
-      email: getStringValue(formData, 'email').toLowerCase(),
-      password: getStringValue(formData, 'password'),
-      confirmPassword: getStringValue(formData, 'confirmPassword'),
-    }) as BaseProfileSettingsSchema
+      email: normalizeEmail(getStringValue(formData, 'email')),
+    })
 
     const profilePictureFile = formData.get('profilePicture')
     const coverPhotoFile = formData.get('coverPhoto')
@@ -184,10 +161,21 @@ export async function POST(request: Request) {
       validateUploadedImage(coverPhotoFile, 'Cover photo')
     }
 
-    await ensureUniqueProfileFields(currentProfile.id, payload.userId, payload.email)
+    // ==================== BUILD UPDATE PAYLOAD ====================
+    await ensureUniqueEmail(currentProfile.id, payload.email)
+
+    if (payload.email !== normalizeEmail(currentProfile.email)) {
+      const authUpdateResult = await createAdminClient().auth.admin.updateUserById(user.id, {
+        email: payload.email,
+        email_confirm: true,
+      })
+
+      if (authUpdateResult.error) {
+        throw new Error(authUpdateResult.error.message || 'Failed to update account email.')
+      }
+    }
 
     const updateFields: {
-      user_id?: string
       given_name?: string
       surname?: string
       email?: string
@@ -195,38 +183,10 @@ export async function POST(request: Request) {
       cover_photo?: string | null
       updated_at: string
     } = {
+      given_name: payload.givenName,
+      surname: payload.surname,
+      email: payload.email,
       updated_at: new Date().toISOString(),
-    }
-
-    if (payload.email !== currentProfile.email || payload.password) {
-      const authUpdates: {
-        email?: string
-        password?: string
-        email_confirm?: boolean
-      } = {}
-
-      if (payload.email !== currentProfile.email) {
-        authUpdates.email = payload.email
-        authUpdates.email_confirm = true
-      }
-
-      if (payload.password) {
-        authUpdates.password = payload.password
-      }
-
-      const authUpdateResult = await adminClient.auth.admin.updateUserById(user.id, authUpdates)
-
-      if (authUpdateResult.error) {
-        throw new Error(authUpdateResult.error.message || 'Failed to update account credentials.')
-      }
-    }
-
-    updateFields.email = payload.email
-
-    if (context.role === 'admin') {
-      updateFields.user_id = payload.userId
-      updateFields.given_name = payload.givenName
-      updateFields.surname = payload.surname
     }
 
     if (isUploadedFile(profilePictureFile)) {
@@ -249,7 +209,8 @@ export async function POST(request: Request) {
       updateFields.cover_photo = uploadResult.path
     }
 
-    const { error: updateError } = await adminClient
+    // ==================== SAVE PROFILE ====================
+    const { error: updateError } = await supabase
       .from('tbl_users')
       .update(updateFields)
       .eq('id', currentProfile.id)
@@ -261,7 +222,7 @@ export async function POST(request: Request) {
     const {
       data: updatedProfileData,
       error: updatedProfileError,
-    } = await adminClient
+    } = await supabase
       .from('tbl_users')
       .select('id,user_id,email,given_name,surname,profile_picture,cover_photo')
       .eq('id', currentProfile.id)

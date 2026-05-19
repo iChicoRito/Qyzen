@@ -5,11 +5,9 @@ import {
   IconCamera,
   IconCheck,
   IconEdit,
-  IconId,
   IconLoader2 as Loader2,
   IconMail,
   IconX,
-  IconShieldLock,
   IconUser,
 } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
@@ -40,8 +38,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
 import {
-  baseProfileSettingsSchema,
-  type BaseProfileSettingsInput,
+  createProfileSettingsSchema,
+  type ProfileSettingsInput,
 } from '@/lib/validations/profile-settings.schema'
 import type { AppRole } from '@/lib/auth/auth-context'
 
@@ -205,29 +203,28 @@ export function ProfileSettingsForm({ role, profile }: ProfileSettingsFormProps)
   const [cropRenderedSize, setCropRenderedSize] = useState({ width: PROFILE_CROP_VIEWPORT_SIZE, height: PROFILE_CROP_VIEWPORT_SIZE })
   const [cropImageMeta, setCropImageMeta] = useState<CropImageMeta | null>(null)
   const [isApplyingCrop, setIsApplyingCrop] = useState(false)
-  const isAdmin = role === 'admin'
+  const isStudent = role === 'student'
 
-  const form = useForm<BaseProfileSettingsInput>({
-    resolver: zodResolver(baseProfileSettingsSchema),
+  const form = useForm<ProfileSettingsInput>({
+    resolver: zodResolver(
+      createProfileSettingsSchema(role, {
+        givenName: profile.givenName,
+        surname: profile.surname,
+      })
+    ),
     defaultValues: {
-      userId: profile.userId,
       givenName: profile.givenName,
       surname: profile.surname,
       email: profile.email,
-      password: '',
-      confirmPassword: '',
     },
   })
 
   // handleReset - restore the original form values and media previews
   const handleReset = () => {
     form.reset({
-      userId: currentProfile.userId,
       givenName: currentProfile.givenName,
       surname: currentProfile.surname,
       email: currentProfile.email,
-      password: '',
-      confirmPassword: '',
     })
     setProfileFile(null)
     setCoverFile(null)
@@ -434,18 +431,12 @@ export function ProfileSettingsForm({ role, profile }: ProfileSettingsFormProps)
   }
 
   // handleSubmit - send account updates and media uploads to the server
-  const handleSubmit = async (values: BaseProfileSettingsInput) => {
+  const handleSubmit = async (values: ProfileSettingsInput) => {
     try {
       const formData = new FormData()
-      formData.append('userId', values.userId)
       formData.append('givenName', values.givenName)
       formData.append('surname', values.surname)
       formData.append('email', values.email)
-
-      if (values.password) {
-        formData.append('password', values.password)
-        formData.append('confirmPassword', values.confirmPassword || '')
-      }
 
       if (profileFile) {
         formData.append('profilePicture', profileFile)
@@ -473,21 +464,14 @@ export function ProfileSettingsForm({ role, profile }: ProfileSettingsFormProps)
           ...nextProfile,
         }))
         form.reset({
-          userId: nextProfile.userId,
           givenName: nextProfile.givenName,
           surname: nextProfile.surname,
           email: nextProfile.email,
-          password: '',
-          confirmPassword: '',
         })
         setProfilePreviewUrl(nextProfile.profilePicture)
         setCoverPreviewUrl(nextProfile.coverPhoto)
       } else {
-        form.reset({
-          ...values,
-          password: '',
-          confirmPassword: '',
-        })
+        form.reset(values)
       }
 
       setProfileFile(null)
@@ -601,11 +585,11 @@ export function ProfileSettingsForm({ role, profile }: ProfileSettingsFormProps)
                           variant="outline"
                           className="order-1 rounded-md px-2 py-0 text-xs md:order-2"
                         >
-                          {form.watch('userId')}
+                          {currentProfile.userId}
                         </Badge>
                       </div>
                       <p className="break-words text-center text-sm text-muted-foreground md:text-left">
-                        {form.watch('email')}
+                        {currentProfile.email}
                       </p>
                     </div>
                   </div>
@@ -629,15 +613,20 @@ export function ProfileSettingsForm({ role, profile }: ProfileSettingsFormProps)
                       <FormItem>
                         <FormLabel className="flex items-center gap-2">
                           <IconUser size={18} />
-                          {isAdmin ? 'Given Name' : 'First Name'}
+                          Given Name
                         </FormLabel>
                         <FormControl>
                           <Input
                             {...field}
-                            disabled={!isAdmin || form.formState.isSubmitting}
-                            placeholder="Enter your first name"
+                            disabled={form.formState.isSubmitting || isStudent}
+                            placeholder="Enter your given name"
                           />
                         </FormControl>
+                        {isStudent ? (
+                          <p className="text-xs text-muted-foreground">
+                            Students can update email and media only.
+                          </p>
+                        ) : null}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -654,10 +643,15 @@ export function ProfileSettingsForm({ role, profile }: ProfileSettingsFormProps)
                         <FormControl>
                           <Input
                             {...field}
-                            disabled={!isAdmin || form.formState.isSubmitting}
+                            disabled={form.formState.isSubmitting || isStudent}
                             placeholder="Enter your last name"
                           />
                         </FormControl>
+                        {isStudent ? (
+                          <p className="text-xs text-muted-foreground">
+                            Students can update email and media only.
+                          </p>
+                        ) : null}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -669,7 +663,7 @@ export function ProfileSettingsForm({ role, profile }: ProfileSettingsFormProps)
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center gap-2">
+                        <FormLabel className="flex items-center gap-2">
                         <IconMail size={18} />
                         Email Address
                       </FormLabel>
@@ -679,85 +673,6 @@ export function ProfileSettingsForm({ role, profile }: ProfileSettingsFormProps)
                           type="email"
                           disabled={form.formState.isSubmitting}
                           placeholder="Enter your email"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="userId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <IconId size={18} />
-                        User ID
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          disabled={!isAdmin || form.formState.isSubmitting}
-                          placeholder="Enter your user ID"
-                        />
-                      </FormControl>
-                      {!isAdmin ? (
-                        <p className="text-xs text-muted-foreground">
-                          Your user ID is managed by the administrator.
-                        </p>
-                      ) : null}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
-            <Card className="border-border bg-card">
-              <CardHeader className="space-y-1">
-                <CardTitle className="text-base">Change Password</CardTitle>
-                <CardDescription className="text-sm">
-                  Leave these fields blank if you do not want to change your password.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <IconShieldLock size={18} />
-                        New Password
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="password"
-                          disabled={form.formState.isSubmitting}
-                          placeholder="Enter new password only if you want to change it"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <IconShieldLock size={18} />
-                        Confirm New Password
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="password"
-                          disabled={form.formState.isSubmitting}
-                          placeholder="Confirm your new password"
                         />
                       </FormControl>
                       <FormMessage />
