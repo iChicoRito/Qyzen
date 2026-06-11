@@ -1,19 +1,3 @@
-declare module 'xlsx' {
-  export const utils: {
-    json_to_sheet: (data: unknown[]) => unknown
-    book_new: () => unknown
-    book_append_sheet: (workbook: unknown, worksheet: unknown, name: string) => void
-    sheet_to_json: <T = unknown>(worksheet: unknown, options?: unknown) => T[]
-  }
-
-  export function read(data: ArrayBuffer | Uint8Array, options?: unknown): {
-    SheetNames: string[]
-    Sheets: Record<string, unknown>
-  }
-
-  export function writeFile(workbook: unknown, fileName: string): void
-}
-
 declare module 'exceljs' {
   interface Cell {
     value?: unknown
@@ -31,13 +15,16 @@ declare module 'exceljs' {
   }
 
   export class Workbook {
+    worksheets: Worksheet[]
     addWorksheet(name: string): Worksheet
     xlsx: {
+      load: (data: ArrayBuffer) => Promise<Workbook>
       writeBuffer: () => Promise<ArrayBuffer>
     }
   }
 
   export interface Worksheet {
+    rowCount: number
     mergeCells: (range: string) => void
     getCell: (reference: string) => Cell
     getRow: (rowNumber: number) => Row

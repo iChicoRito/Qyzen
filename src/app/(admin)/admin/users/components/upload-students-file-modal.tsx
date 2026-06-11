@@ -11,7 +11,6 @@ import {
 import ExcelJS from 'exceljs'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import * as XLSX from 'xlsx'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -25,6 +24,7 @@ import {
   ResponsiveDialogTrigger,
 } from '@/components/ui/responsive-dialog'
 import { fetchRoles, type RoleRecord } from '@/lib/supabase/access-control'
+import { readFirstWorksheetRows } from '@/lib/spreadsheets/xlsx-reader'
 import {
   normalizeSpreadsheetValue,
   parseRoleNames,
@@ -202,24 +202,7 @@ export function UploadStudentsFileModal({
 
   // parseFileRows - read one xlsx file into row objects
   const parseFileRows = async (file: File) => {
-    const buffer = await file.arrayBuffer()
-    const workbook = XLSX.read(buffer, { type: 'array' })
-    const sheetName = workbook.SheetNames[0]
-
-    if (!sheetName) {
-      return []
-    }
-
-    const worksheet = workbook.Sheets[sheetName]
-
-    if (!worksheet) {
-      return []
-    }
-
-    return XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, {
-      defval: '',
-      range: 1,
-    })
+    return readFirstWorksheetRows(file, studentUploadHeaders)
   }
 
   // validateUploadRow - validate and normalize one spreadsheet row

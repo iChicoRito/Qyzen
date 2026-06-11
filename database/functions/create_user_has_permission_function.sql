@@ -8,7 +8,7 @@ RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
   SELECT EXISTS (
     SELECT 1
@@ -26,3 +26,6 @@ AS $$
       AND permissions.permission_string = required_permission
   );
 $$;
+
+REVOKE ALL ON FUNCTION public.user_has_permission(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.user_has_permission(TEXT) TO authenticated;

@@ -10,6 +10,7 @@ import {
   isLearningMaterialExtensionAllowed,
   parseLearningMaterialSelectionKey,
   uploadLearningMaterialsSchema,
+  validateLearningMaterialFileSize,
 } from '@/lib/validations/learning-materials.schema'
 
 interface SubjectTargetRow {
@@ -217,6 +218,8 @@ function validateUploadedFile(file: File) {
   if (!isLearningMaterialExtensionAllowed(file.name)) {
     throw new Error(`Unsupported file type for ${file.name}.`)
   }
+
+  validateLearningMaterialFileSize(file)
 }
 
 // buildStoragePath - create a reusable storage path for one uploaded file

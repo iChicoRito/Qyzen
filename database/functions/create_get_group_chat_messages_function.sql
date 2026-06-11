@@ -17,7 +17,7 @@ RETURNS TABLE (
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
   WITH authorized_chat AS (
     SELECT
@@ -78,3 +78,6 @@ AS $$
    AND sender_user.deleted_at IS NULL
   ORDER BY message.created_at ASC, message.id ASC;
 $$;
+
+REVOKE ALL ON FUNCTION public.get_group_chat_messages(BIGINT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_group_chat_messages(BIGINT) TO authenticated;

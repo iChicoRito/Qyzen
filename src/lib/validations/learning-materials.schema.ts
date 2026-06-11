@@ -10,6 +10,8 @@ export const allowedLearningMaterialExtensions = [
   'rtf',
 ] as const
 
+export const MAX_LEARNING_MATERIAL_FILE_SIZE_BYTES = 20 * 1024 * 1024
+
 export const learningMaterialSelectionKeySchema = z
   .string()
   .regex(/^\d+:\d+$/, 'Select a valid subject and section assignment.')
@@ -34,6 +36,13 @@ export function isLearningMaterialExtensionAllowed(fileName: string) {
   return allowedLearningMaterialExtensions.includes(
     getLearningMaterialExtension(fileName) as (typeof allowedLearningMaterialExtensions)[number]
   )
+}
+
+// validateLearningMaterialFileSize - block oversized learning material uploads
+export function validateLearningMaterialFileSize(file: File) {
+  if (file.size > MAX_LEARNING_MATERIAL_FILE_SIZE_BYTES) {
+    throw new Error(`${file.name} must be 20 MB or less.`)
+  }
 }
 
 // parseLearningMaterialSelectionKey - convert a checkbox value into ids

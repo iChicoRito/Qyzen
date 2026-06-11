@@ -19,6 +19,8 @@ interface CurrentUserRow {
 }
 
 const PROFILE_MEDIA_BUCKET = 'profile-media'
+const ALLOWED_PROFILE_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+const BLOCKED_PROFILE_IMAGE_TYPES = new Set(['image/svg+xml'])
 
 // isUploadedFile - narrow form values to uploaded files
 function isUploadedFile(value: FormDataEntryValue | null): value is File {
@@ -67,8 +69,8 @@ function normalizeEmail(email: string) {
 
 // validateUploadedImage - block unsupported or oversized uploads
 function validateUploadedImage(file: File, label: string) {
-  if (!file.type.startsWith('image/')) {
-    throw new Error(`${label} must be an image file.`)
+  if (BLOCKED_PROFILE_IMAGE_TYPES.has(file.type) || !ALLOWED_PROFILE_IMAGE_TYPES.has(file.type)) {
+    throw new Error(`${label} must be a JPG, PNG, or WebP image.`)
   }
 
   if (file.size > 2 * 1024 * 1024) {

@@ -12,7 +12,6 @@ import {
 } from '@tabler/icons-react'
 import ExcelJS from 'exceljs'
 import { toast } from 'sonner'
-import * as XLSX from 'xlsx'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -28,6 +27,7 @@ import {
   ResponsiveDialogTrigger,
 } from '@/components/ui/responsive-dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { readFirstWorksheetRows } from '@/lib/spreadsheets/xlsx-reader'
 import { fetchQuizModuleOptions, type QuizModuleOption } from '@/lib/supabase/quizzes'
 
 import type { Quiz } from '../data/schema'
@@ -38,14 +38,14 @@ interface UploadQuizFileModalProps {
 }
 
 interface UploadRow {
-  quiz_type?: string
-  question?: string
-  choice_a?: string
-  choice_b?: string
-  choice_c?: string
-  choice_d?: string
-  correct_answer?: string
-  correct_answers?: string
+  quiz_type?: unknown
+  question?: unknown
+  choice_a?: unknown
+  choice_b?: unknown
+  choice_c?: unknown
+  choice_d?: unknown
+  correct_answer?: unknown
+  correct_answers?: unknown
 }
 
 const templateHeaders = [
@@ -305,24 +305,7 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
 
   // parseFileRows - read one xlsx file into row objects
   const parseFileRows = async (file: File) => {
-    const buffer = await file.arrayBuffer()
-    const workbook = XLSX.read(buffer, { type: 'array' })
-    const sheetName = workbook.SheetNames[0]
-
-    if (!sheetName) {
-      return []
-    }
-
-    const worksheet = workbook.Sheets[sheetName]
-
-    if (!worksheet) {
-      return []
-    }
-
-    return XLSX.utils.sheet_to_json<UploadRow>(worksheet, {
-      defval: '',
-      range: 1,
-    })
+    return readFirstWorksheetRows(file, templateHeaders)
   }
 
   // handleUpload - parse and upload quiz rows

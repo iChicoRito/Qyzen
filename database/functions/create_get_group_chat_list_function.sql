@@ -22,7 +22,7 @@ RETURNS TABLE (
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
   WITH accessible_chats AS (
     SELECT
@@ -136,3 +136,6 @@ AS $$
   ) AS unread ON TRUE
   ORDER BY COALESCE(last_message.created_at, chats.created_at) DESC, chats.subject_name ASC;
 $$;
+
+REVOKE ALL ON FUNCTION public.get_group_chat_list() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_group_chat_list() TO authenticated;

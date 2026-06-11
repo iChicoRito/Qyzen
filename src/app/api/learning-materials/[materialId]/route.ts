@@ -10,6 +10,7 @@ import {
   isLearningMaterialExtensionAllowed,
   parseLearningMaterialSelectionKey,
   updateLearningMaterialSchema,
+  validateLearningMaterialFileSize,
 } from '@/lib/validations/learning-materials.schema'
 
 interface LearningMaterialRecord {
@@ -81,6 +82,8 @@ function validateUploadedFile(file: File) {
   if (!isLearningMaterialExtensionAllowed(file.name)) {
     throw new Error(`Unsupported file type for ${file.name}.`)
   }
+
+  validateLearningMaterialFileSize(file)
 }
 
 // buildStoragePath - create a storage path for a replacement upload

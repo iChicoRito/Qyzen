@@ -11,7 +11,6 @@ import {
 import ExcelJS from 'exceljs'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import * as XLSX from 'xlsx'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -31,6 +30,7 @@ import {
   type EnrollmentStudentOption,
   type EnrollmentSubjectOption,
 } from '@/lib/supabase/enrollments'
+import { readFirstWorksheetRows } from '@/lib/spreadsheets/xlsx-reader'
 import {
   bulkEnrollmentSchema,
   enrollmentUploadHeaders,
@@ -50,10 +50,10 @@ interface ParsedUploadFile {
 }
 
 interface UploadEnrollmentRowRecord {
-  student_user_id?: string
-  subject_code?: string
-  section_name?: string
-  status?: string
+  student_user_id?: unknown
+  subject_code?: unknown
+  section_name?: unknown
+  status?: unknown
 }
 
 // buildStudentLookup - map students by user id
@@ -224,24 +224,7 @@ export function UploadEnrollmentsFileModal({
 
   // parseFileRows - read one xlsx file into row objects
   const parseFileRows = async (file: File) => {
-    const buffer = await file.arrayBuffer()
-    const workbook = XLSX.read(buffer, { type: 'array' })
-    const sheetName = workbook.SheetNames[0]
-
-    if (!sheetName) {
-      return []
-    }
-
-    const worksheet = workbook.Sheets[sheetName]
-
-    if (!worksheet) {
-      return []
-    }
-
-    return XLSX.utils.sheet_to_json<UploadEnrollmentRowRecord>(worksheet, {
-      defval: '',
-      range: 1,
-    })
+    return readFirstWorksheetRows(file, enrollmentUploadHeaders)
   }
 
   // validateUploadRow - validate and resolve one spreadsheet row
