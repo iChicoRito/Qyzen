@@ -39,11 +39,23 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
   const isMobile = useIsMobile()
 
   const [activeTab, setActiveTab] = React.useState("theme")
-  const [selectedTheme, setSelectedTheme] = React.useState("default")
-  const [selectedTweakcnTheme, setSelectedTweakcnTheme] = React.useState("")
-  const [selectedRadius, setSelectedRadius] = React.useState("0.5rem")
+  const [selectedTheme, setSelectedTheme] = React.useState(
+    () => (typeof window !== "undefined" && localStorage.getItem("qyzen-theme-preset")) || "default"
+  )
+  const [selectedTweakcnTheme, setSelectedTweakcnTheme] = React.useState(
+    () => (typeof window !== "undefined" && localStorage.getItem("qyzen-theme-tweakcn")) || ""
+  )
+  const [selectedRadius, setSelectedRadius] = React.useState(
+    () => (typeof window !== "undefined" && localStorage.getItem("qyzen-theme-radius")) || "0.5rem"
+  )
   const [importModalOpen, setImportModalOpen] = React.useState(false)
-  const [importedTheme, setImportedTheme] = React.useState<ImportedTheme | null>(null)
+  const [importedTheme, setImportedTheme] = React.useState<ImportedTheme | null>(() => {
+    if (typeof window === "undefined") return null
+    try {
+      const raw = localStorage.getItem("qyzen-theme-imported")
+      return raw ? JSON.parse(raw) : null
+    } catch { return null }
+  })
 
   const handleReset = () => {
     // Complete reset to application defaults
@@ -52,8 +64,12 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
     setSelectedTheme("default")
     setSelectedTweakcnTheme("")
     setSelectedRadius("0.5rem")
-    setImportedTheme(null) // Clear imported theme
-    setBrandColorsValues({}) // Clear brand colors state
+    setImportedTheme(null)
+    localStorage.removeItem("qyzen-theme-preset")
+    localStorage.removeItem("qyzen-theme-tweakcn")
+    localStorage.removeItem("qyzen-theme-radius")
+    localStorage.removeItem("qyzen-theme-imported")
+    setBrandColorsValues({})
 
     // 2. Completely remove all custom CSS variables
     resetTheme()
@@ -92,6 +108,28 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
       }
     }
   }, [isDarkMode, importedTheme, selectedTheme, selectedTweakcnTheme, applyImportedTheme, applyTheme, applyTweakcnTheme])
+
+  // Persist theme customizer selections to localStorage so DashboardShell
+  // can re-apply on dark mode toggle even after this component unmounts
+  React.useEffect(() => {
+    localStorage.setItem("qyzen-theme-preset", selectedTheme)
+  }, [selectedTheme])
+
+  React.useEffect(() => {
+    localStorage.setItem("qyzen-theme-tweakcn", selectedTweakcnTheme)
+  }, [selectedTweakcnTheme])
+
+  React.useEffect(() => {
+    localStorage.setItem("qyzen-theme-radius", selectedRadius)
+  }, [selectedRadius])
+
+  React.useEffect(() => {
+    if (importedTheme) {
+      localStorage.setItem("qyzen-theme-imported", JSON.stringify(importedTheme))
+    } else {
+      localStorage.removeItem("qyzen-theme-imported")
+    }
+  }, [importedTheme])
 
   // renderCustomizerContent - reuse the same theme customizer content for sheet and drawer
   function renderCustomizerContent(isDrawer: boolean) {
