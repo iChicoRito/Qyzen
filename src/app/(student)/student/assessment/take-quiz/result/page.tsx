@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 
 import { requireServerAuthContext } from '@/lib/auth/server'
 import {
@@ -180,7 +180,7 @@ export default async function TakeQuizResultPage({ searchParams }: TakeQuizResul
             <CardHeader className="border-b">
               <CardTitle>{result.subjectName}</CardTitle>
               <CardDescription>
-                {result.sectionName} - {result.moduleCode} - {result.termName}
+                {result.sectionName} - {result.assessmentCode} - {result.termName}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
@@ -347,7 +347,7 @@ export default async function TakeQuizResultPage({ searchParams }: TakeQuizResul
 
               <div className="flex flex-col gap-3">
                 {result.canRetake ? (
-                  <RetakeAssessmentDialog moduleId={result.moduleRowId} />
+                  <RetakeAssessmentDialog assessmentId={result.assessmentRowId} />
                 ) : null}
                 <Button asChild variant="outline" className="w-full cursor-pointer">
                   <Link href="/student/assessment/quiz">Back to Assessments</Link>
@@ -524,3 +524,4 @@ export default async function TakeQuizResultPage({ searchParams }: TakeQuizResul
     </div>
   )
 }
+

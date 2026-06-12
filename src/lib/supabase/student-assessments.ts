@@ -1,6 +1,6 @@
 import { createClient } from './server'
 import { getAssessmentAvailability } from './assessment-availability'
-import { fetchStudentModuleRetakeGrantMap } from './student-retakes'
+import { fetchStudentAssessmentRetakeGrantMap } from './student-retakes'
 
 export interface StudentAssessmentAttemptItem {
   scoreId: number
@@ -15,8 +15,8 @@ export interface StudentAssessmentAttemptItem {
 
 export interface StudentAssessmentRecord {
   id: string
-  moduleRowId: number
-  moduleCode: string
+  assessmentRowId: number
+  assessmentCode: string
   subjectName: string
   sectionName: string
   educatorName: string
@@ -71,28 +71,28 @@ interface EnrollmentSubjectRow {
   sections_id: number | null
 }
 
-interface ModuleUserRow {
+interface AssessmentUserRow {
   given_name: string
   surname: string
   user_type: string
 }
 
-interface ModuleSubjectRow {
+interface AssessmentSubjectRow {
   subject_name: string
 }
 
-interface ModuleSectionRow {
+interface AssessmentSectionRow {
   section_name: string
 }
 
-interface ModuleTermRow {
+interface AssessmentTermRow {
   term_name: string
   semester: string
 }
 
-interface ModuleRow {
+interface AssessmentRow {
   id: number
-  module_code: string
+  assessment_code: string
   subject_id: number
   section_id: number
   educator_id: number
@@ -104,21 +104,21 @@ interface ModuleRow {
   end_date: string
   start_time: string
   end_time: string
-  subject: ModuleSubjectRow | ModuleSubjectRow[] | null
-  section: ModuleSectionRow | ModuleSectionRow[] | null
-  educator: ModuleUserRow | ModuleUserRow[] | null
-  academic_term: ModuleTermRow | ModuleTermRow[] | null
+  subject: AssessmentSubjectRow | AssessmentSubjectRow[] | null
+  section: AssessmentSectionRow | AssessmentSectionRow[] | null
+  educator: AssessmentUserRow | AssessmentUserRow[] | null
+  academic_term: AssessmentTermRow | AssessmentTermRow[] | null
 }
 
 interface QuizRow {
   id: number
-  module_id: number
+  assessment_id: number
   quiz_type: 'multiple_choice' | 'identification'
 }
 
 interface ScoreRow {
   id: number
-  module_id: number
+  assessment_id: number
   score: number | null
   total_questions: number | null
   submitted_at: string | null
@@ -130,7 +130,7 @@ interface SupabaseErrorResponse {
 }
 
 const STATIC_ASSESSMENT_TEXT =
-  'This assessment page now shows your enrolled module details.\n\nRead each question carefully before submitting your answers. Once you start the quiz, make sure you complete it within the allowed schedule.\n\nGood luck and do your best.'
+  'This assessment page now shows your enrolled assessment details.\n\nRead each question carefully before submitting your answers. Once you start the quiz, make sure you complete it within the allowed schedule.\n\nGood luck and do your best.'
 
 // getSupabaseErrorMessage - normalize api errors
 function getSupabaseErrorMessage(error: SupabaseErrorResponse | null, fallbackMessage: string) {
@@ -143,7 +143,7 @@ function getSingleRelation<T>(value: T | T[] | null) {
 }
 
 // buildAcademicTermLabel - format term label
-function buildAcademicTermLabel(term: ModuleTermRow | null) {
+function buildAcademicTermLabel(term: AssessmentTermRow | null) {
   if (!term) {
     return 'No term'
   }
@@ -151,10 +151,10 @@ function buildAcademicTermLabel(term: ModuleTermRow | null) {
   return `${term.term_name} - ${term.semester}`
 }
 
-// formatModuleSchedule - format module date and time
-function formatModuleSchedule(module: Pick<ModuleRow, 'start_date' | 'start_time' | 'end_date' | 'end_time'>) {
-  const startDateTime = new Date(`${module.start_date}T${module.start_time}`)
-  const endDateTime = new Date(`${module.end_date}T${module.end_time}`)
+// formatAssessmentSchedule - format assessment date and time
+function formatAssessmentSchedule(assessment: Pick<AssessmentRow, 'start_date' | 'start_time' | 'end_date' | 'end_time'>) {
+  const startDateTime = new Date(`${assessment.start_date}T${assessment.start_time}`)
+  const endDateTime = new Date(`${assessment.end_date}T${assessment.end_time}`)
 
   const dateFormatter = new Intl.DateTimeFormat('en-US', {
     month: 'short',
@@ -167,16 +167,16 @@ function formatModuleSchedule(module: Pick<ModuleRow, 'start_date' | 'start_time
   })
 
   const startDateLabel = Number.isNaN(startDateTime.getTime())
-    ? module.start_date
+    ? assessment.start_date
     : dateFormatter.format(startDateTime)
   const endDateLabel = Number.isNaN(endDateTime.getTime())
-    ? module.end_date
+    ? assessment.end_date
     : dateFormatter.format(endDateTime)
   const startTimeLabel = Number.isNaN(startDateTime.getTime())
-    ? module.start_time
+    ? assessment.start_time
     : timeFormatter.format(startDateTime)
   const endTimeLabel = Number.isNaN(endDateTime.getTime())
-    ? module.end_time
+    ? assessment.end_time
     : timeFormatter.format(endDateTime)
 
   if (startDateLabel === endDateLabel) {
@@ -187,7 +187,7 @@ function formatModuleSchedule(module: Pick<ModuleRow, 'start_date' | 'start_time
 }
 
 // isEducatorUser - validate educator profile relation
-function isEducatorUser(user: ModuleUserRow | null) {
+function isEducatorUser(user: AssessmentUserRow | null) {
   return user?.user_type?.trim().toLowerCase() === 'educator'
 }
 
@@ -260,11 +260,11 @@ function buildAttemptHistory(scores: ScoreRow[]) {
 }
 
 // getRetakeState - compute retake availability
-function getRetakeState(module: ModuleRow, scores: ScoreRow[], grantedRetakeCount: number) {
+function getRetakeState(assessment: AssessmentRow, scores: ScoreRow[], grantedRetakeCount: number) {
   const submittedScores = scores.filter((score) => Boolean(score.submitted_at))
   const submittedAttemptCount = submittedScores.length
-  const moduleRetakeCount = module.allow_retake ? module.retake_count : 0
-  const effectiveRetakeCount = Math.max(moduleRetakeCount + grantedRetakeCount, 0)
+  const assessmentRetakeCount = assessment.allow_retake ? assessment.retake_count : 0
+  const effectiveRetakeCount = Math.max(assessmentRetakeCount + grantedRetakeCount, 0)
   const allowRetake = effectiveRetakeCount > 0
   const maxAttempts = effectiveRetakeCount + 1
   const remainingRetakes = Math.max(
@@ -283,31 +283,31 @@ function getRetakeState(module: ModuleRow, scores: ScoreRow[], grantedRetakeCoun
   }
 }
 
-// mapModuleToStudentAssessment - convert module row into quiz ui data
-function mapModuleToStudentAssessment(
-  module: ModuleRow,
+// mapAssessmentToStudentAssessment - convert assessment row into quiz ui data
+function mapAssessmentToStudentAssessment(
+  assessment: AssessmentRow,
   index: number,
   quizRows: QuizRow[],
   scores: ScoreRow[],
   grantedRetakeCount: number
 ): StudentAssessmentRecord {
-  const subject = getSingleRelation(module.subject)
-  const section = getSingleRelation(module.section)
-  const educator = getSingleRelation(module.educator)
-  const term = getSingleRelation(module.academic_term)
+  const subject = getSingleRelation(assessment.subject)
+  const section = getSingleRelation(assessment.section)
+  const educator = getSingleRelation(assessment.educator)
+  const term = getSingleRelation(assessment.academic_term)
   const quizTypes = [...new Set(quizRows.map((quiz) => quiz.quiz_type))]
   const questionCount = quizRows.length
   const hasQuestions = questionCount > 0
   const submittedScores = scores.filter((score) => Boolean(score.submitted_at))
   const bestScore = getBestScore(submittedScores)
   const latestScore = [...submittedScores].sort((leftScore, rightScore) => rightScore.id - leftScore.id)[0] || null
-  const retakeState = getRetakeState(module, scores, grantedRetakeCount)
+  const retakeState = getRetakeState(assessment, scores, grantedRetakeCount)
   const hasExpiredOverride = grantedRetakeCount > 0
   const availability = getAssessmentAvailability({
-    startDate: module.start_date,
-    endDate: module.end_date,
-    startTime: module.start_time,
-    endTime: module.end_time,
+    startDate: assessment.start_date,
+    endDate: assessment.end_date,
+    startTime: assessment.start_time,
+    endTime: assessment.end_time,
     hasExpiredOverride,
   })
   const canTakeWithoutRetake = submittedScores.length === 0
@@ -315,24 +315,24 @@ function mapModuleToStudentAssessment(
   const statusLabel: StudentAssessmentRecord['statusLabel'] = isFinished ? 'finished' : 'pending'
 
   return {
-    id: String(module.id),
-    moduleRowId: module.id,
-    moduleCode: module.module_code,
+    id: String(assessment.id),
+    assessmentRowId: assessment.id,
+    assessmentCode: assessment.assessment_code,
     subjectName: subject?.subject_name || 'Unknown Subject',
     sectionName: section?.section_name || 'Unknown Section',
     educatorName: `${educator?.given_name || ''} ${educator?.surname || ''}`.trim() || 'Unknown Educator',
     educatorUserType: 'educator',
     termName: buildAcademicTermLabel(term),
-    schedule: formatModuleSchedule(module),
-    startDate: module.start_date,
-    endDate: module.end_date,
-    startTime: module.start_time,
-    endTime: module.end_time,
-    timeLimitMinutes: Number(module.time_limit) || 0,
+    schedule: formatAssessmentSchedule(assessment),
+    startDate: assessment.start_date,
+    endDate: assessment.end_date,
+    startTime: assessment.start_time,
+    endTime: assessment.end_time,
+    timeLimitMinutes: Number(assessment.time_limit) || 0,
     questionCount,
     quizTypeLabel: buildQuizTypeLabel(quizTypes),
     quizTypes,
-    isShuffle: module.is_shuffle,
+    isShuffle: assessment.is_shuffle,
     allowRetake: retakeState.allowRetake,
     retakeCount: retakeState.effectiveRetakeCount,
     grantedRetakeCount: retakeState.grantedRetakeCount,
@@ -358,12 +358,12 @@ function mapModuleToStudentAssessment(
     labels: [statusLabel],
     attachmentName: 'Study material coming soon',
     attachmentSize: 'Static',
-    attachmentLabel: 'Module Study Material',
+    attachmentLabel: 'Assessment Study Material',
     attemptHistory: buildAttemptHistory(submittedScores),
   }
 }
 
-// fetchStudentAssessments - load enrolled module assessments for a student
+// fetchStudentAssessments - load enrolled assessments for a student
 export async function fetchStudentAssessments(studentId: number) {
   const supabase = await createClient()
   const { data: enrollmentData, error: enrollmentError } = await supabase
@@ -405,10 +405,10 @@ export async function fetchStudentAssessments(studentId: number) {
   ]
   const educatorIds = [...new Set(enrollments.map((enrollment) => enrollment.educator_id))]
 
-  const { data: moduleData, error: moduleError } = await supabase
-    .from('tbl_modules')
+  const { data: assessmentData, error: assessmentError } = await supabase
+    .from('tbl_assessments')
     .select(
-      'id,module_code,subject_id,section_id,educator_id,time_limit,is_shuffle,allow_retake,retake_count,start_date,end_date,start_time,end_time,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester)'
+      'id,assessment_code,subject_id,section_id,educator_id,time_limit,is_shuffle,allow_retake,retake_count,start_date,end_date,start_time,end_time,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester)'
     )
     .in('subject_id', subjectIds)
     .in('section_id', sectionIds)
@@ -416,32 +416,32 @@ export async function fetchStudentAssessments(studentId: number) {
     .eq('is_active', true)
     .order('created_at', { ascending: false })
 
-  if (moduleError) {
-    throw new Error(getSupabaseErrorMessage(moduleError, 'Failed to load student assessments.'))
+  if (assessmentError) {
+    throw new Error(getSupabaseErrorMessage(assessmentError, 'Failed to load student assessments.'))
   }
 
-  const enrolledModules = ((moduleData || []) as ModuleRow[]).filter((module) =>
-    enrollmentKeys.has(`${module.subject_id}:${module.section_id}:${module.educator_id}`) &&
-    isEducatorUser(getSingleRelation(module.educator))
+  const enrolledAssessments = ((assessmentData || []) as AssessmentRow[]).filter((assessment) =>
+    enrollmentKeys.has(`${assessment.subject_id}:${assessment.section_id}:${assessment.educator_id}`) &&
+    isEducatorUser(getSingleRelation(assessment.educator))
   )
 
-  if (enrolledModules.length === 0) {
+  if (enrolledAssessments.length === 0) {
     return [] as StudentAssessmentRecord[]
   }
 
-  const moduleIds = enrolledModules.map((module) => module.id)
-  const retakeGrantMap = await fetchStudentModuleRetakeGrantMap(studentId, moduleIds)
+  const assessmentIds = enrolledAssessments.map((assessment) => assessment.id)
+  const retakeGrantMap = await fetchStudentAssessmentRetakeGrantMap(studentId, assessmentIds)
   const [{ data: quizData, error: quizError }, { data: scoreData, error: scoreError }] =
     await Promise.all([
       supabase
         .from('tbl_quizzes')
-        .select('id,module_id,quiz_type')
-        .in('module_id', moduleIds),
+        .select('id,assessment_id,quiz_type')
+        .in('assessment_id', assessmentIds),
       supabase
         .from('tbl_scores')
-        .select('id,module_id,score,total_questions,submitted_at,status')
+        .select('id,assessment_id,score,total_questions,submitted_at,status')
         .eq('student_id', studentId)
-        .in('module_id', moduleIds)
+        .in('assessment_id', assessmentIds)
         .order('id', { ascending: false }),
     ])
 
@@ -454,20 +454,20 @@ export async function fetchStudentAssessments(studentId: number) {
   }
 
   const quizMap = ((quizData || []) as QuizRow[]).reduce<Map<number, QuizRow[]>>((result, quiz) => {
-    const currentRows = result.get(quiz.module_id) || []
+    const currentRows = result.get(quiz.assessment_id) || []
     currentRows.push(quiz)
-    result.set(quiz.module_id, currentRows)
+    result.set(quiz.assessment_id, currentRows)
     return result
   }, new Map<number, QuizRow[]>())
   const scoreMap = ((scoreData || []) as ScoreRow[]).reduce<Map<number, ScoreRow[]>>((result, score) => {
-    const currentRows = result.get(score.module_id) || []
+    const currentRows = result.get(score.assessment_id) || []
     currentRows.push(score)
-    result.set(score.module_id, currentRows)
+    result.set(score.assessment_id, currentRows)
     return result
   }, new Map<number, ScoreRow[]>())
-  const sortedModules = [...enrolledModules].sort((leftModule, rightModule) => {
-    const leftScores = scoreMap.get(leftModule.id) || []
-    const rightScores = scoreMap.get(rightModule.id) || []
+  const sortedAssessments = [...enrolledAssessments].sort((leftAssessment, rightAssessment) => {
+    const leftScores = scoreMap.get(leftAssessment.id) || []
+    const rightScores = scoreMap.get(rightAssessment.id) || []
     const leftFinished = leftScores.some((score) => Boolean(score.submitted_at))
     const rightFinished = rightScores.some((score) => Boolean(score.submitted_at))
 
@@ -475,16 +475,17 @@ export async function fetchStudentAssessments(studentId: number) {
       return leftFinished ? 1 : -1
     }
 
-    return rightModule.id - leftModule.id
+    return rightAssessment.id - leftAssessment.id
   })
 
-  return sortedModules.map((module, index) =>
-    mapModuleToStudentAssessment(
-      module,
+  return sortedAssessments.map((assessment, index) =>
+    mapAssessmentToStudentAssessment(
+      assessment,
       index,
-      quizMap.get(module.id) || [],
-      scoreMap.get(module.id) || [],
-      retakeGrantMap.get(module.id) || 0
+      quizMap.get(assessment.id) || [],
+      scoreMap.get(assessment.id) || [],
+      retakeGrantMap.get(assessment.id) || 0
     )
   )
 }
+

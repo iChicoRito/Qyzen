@@ -1,4 +1,4 @@
-import { IconCheck, IconX } from '@tabler/icons-react'
+﻿import { IconCheck, IconX } from '@tabler/icons-react'
 
 import type { StudentRecentResult } from '@/lib/supabase/student-dashboard-types'
 import { Badge } from '@/components/ui/badge'
@@ -31,7 +31,7 @@ export function StudentRecentResultsCard({ results }: { results: StudentRecentRe
             <div key={result.id} className="rounded-lg border p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">{result.moduleCode}</div>
+                  <div className="truncate text-sm font-medium">{result.assessmentCode}</div>
                   <div className="text-sm text-muted-foreground">
                     {result.subjectName} in {result.sectionName}
                   </div>
@@ -60,3 +60,4 @@ export function StudentRecentResultsCard({ results }: { results: StudentRecentRe
     </Card>
   )
 }
+

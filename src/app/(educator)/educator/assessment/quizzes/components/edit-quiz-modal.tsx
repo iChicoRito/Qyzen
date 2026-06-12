@@ -39,7 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { fetchQuizModuleOptions, type QuizModuleOption } from '@/lib/supabase/quizzes'
+import { fetchQuizAssessmentOptions, type QuizAssessmentOption } from '@/lib/supabase/quizzes'
 import { buildQuizPayload, quizFormSchema, type QuizFormSchema } from '@/lib/validations/quiz.schema'
 
 import type { Quiz } from '../data/schema'
@@ -66,7 +66,7 @@ function getDefaultFormValues(quiz: Quiz): QuizFormSchema {
     : undefined
 
   return {
-    moduleId: String(quiz.moduleRowId),
+    assessmentId: String(quiz.assessmentRowId),
     quizType: quiz.quizType,
     question: quiz.question,
     correctChoice: selectedCorrectChoice,
@@ -94,9 +94,9 @@ export function EditQuizModal({
 }: EditQuizModalProps) {
   // ==================== STATE ====================
   const [internalOpen, setInternalOpen] = useState(false)
-  const [isLoadingModules, setIsLoadingModules] = useState(false)
+  const [isLoadingAssessments, setIsLoadingAssessments] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [moduleOptions, setModuleOptions] = useState<QuizModuleOption[]>([])
+  const [assessmentOptions, setAssessmentOptions] = useState<QuizAssessmentOption[]>([])
   const dialogOpen = open ?? internalOpen
 
   // ==================== FORM SETUP ====================
@@ -106,30 +106,30 @@ export function EditQuizModal({
   })
 
   const quizType = form.watch('quizType')
-  const selectedModuleId = form.watch('moduleId')
-  const selectedModule = moduleOptions.find((moduleOption) => String(moduleOption.id) === selectedModuleId)
+  const selectedAssessmentId = form.watch('assessmentId')
+  const selectedAssessment = assessmentOptions.find((assessmentOption) => String(assessmentOption.id) === selectedAssessmentId)
   const identificationAnswers = useFieldArray({
     control: form.control,
     name: 'identificationAnswers',
   })
 
-  // loadModuleOptions - fetch module dropdown options
-  const loadModuleOptions = async () => {
+  // loadAssessmentOptions - fetch assessment dropdown options
+  const loadAssessmentOptions = async () => {
     try {
-      setIsLoadingModules(true)
-      const options = await fetchQuizModuleOptions()
-      setModuleOptions(options)
+      setIsLoadingAssessments(true)
+      const options = await fetchQuizAssessmentOptions()
+      setAssessmentOptions(options)
       form.reset(getDefaultFormValues(quiz))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to load module options.')
+      toast.error(error instanceof Error ? error.message : 'Failed to load assessment options.')
     } finally {
-      setIsLoadingModules(false)
+      setIsLoadingAssessments(false)
     }
   }
 
   useEffect(() => {
     if (dialogOpen) {
-      loadModuleOptions()
+      loadAssessmentOptions()
       return
     }
 
@@ -157,8 +157,8 @@ export function EditQuizModal({
 
   // handleSubmit - update one quiz row
   const handleSubmit = async (values: QuizFormSchema) => {
-    if (!selectedModule) {
-      toast.error('Select a module first.')
+    if (!selectedAssessment) {
+      toast.error('Select an assessment first.')
       return
     }
 
@@ -169,14 +169,14 @@ export function EditQuizModal({
       const payload = buildQuizPayload(values)
       await onUpdateQuiz?.({
         ...quiz,
-        moduleRowId: selectedModule.id,
-        moduleId: selectedModule.moduleId,
-        moduleCode: selectedModule.moduleCode,
-        termName: selectedModule.termName,
-        subjectId: selectedModule.subjectId,
-        subjectName: selectedModule.subjectName,
-        sectionId: selectedModule.sectionId,
-        sectionName: selectedModule.sectionName,
+        assessmentRowId: selectedAssessment.id,
+        assessmentId: selectedAssessment.assessmentId,
+        assessmentCode: selectedAssessment.assessmentCode,
+        termName: selectedAssessment.termName,
+        subjectId: selectedAssessment.subjectId,
+        subjectName: selectedAssessment.subjectName,
+        sectionId: selectedAssessment.sectionId,
+        sectionName: selectedAssessment.sectionName,
         question: payload.question,
         quizType: payload.quizType,
         choices: payload.choices,
@@ -217,26 +217,26 @@ export function EditQuizModal({
             <ResponsiveDialogBody className="max-h-[68vh] space-y-6">
                 <FormField
                   control={form.control}
-                  name="moduleId"
+                  name="assessmentId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Choose Module</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingModules}>
+                      <FormLabel>Choose Assessment</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingAssessments}>
                         <FormControl>
                           <SelectTrigger className="w-full cursor-pointer">
                             <SelectValue
-                              placeholder={isLoadingModules ? 'Loading modules...' : 'Select module'}
+                              placeholder={isLoadingAssessments ? 'Loading assessments...' : 'Select assessment'}
                             />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {moduleOptions.map((moduleOption) => (
+                          {assessmentOptions.map((assessmentOption) => (
                             <SelectItem
-                              key={moduleOption.id}
-                              value={String(moduleOption.id)}
+                              key={assessmentOption.id}
+                              value={String(assessmentOption.id)}
                               className="cursor-pointer"
                             >
-                              {moduleOption.moduleCode} | {moduleOption.subjectName} | {moduleOption.sectionName}
+                              {assessmentOption.assessmentCode} | {assessmentOption.subjectName} | {assessmentOption.sectionName}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -391,7 +391,7 @@ export function EditQuizModal({
                 <Button
                   type="submit"
                   className="w-full cursor-pointer"
-                  disabled={isSubmitting || isLoadingModules}
+                  disabled={isSubmitting || isLoadingAssessments}
                 >
                   {isSubmitting ? (
                     <>
@@ -413,3 +413,4 @@ export function EditQuizModal({
     </ResponsiveDialog>
   )
 }
+

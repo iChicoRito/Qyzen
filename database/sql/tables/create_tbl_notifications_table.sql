@@ -1,4 +1,4 @@
--- ==================== CREATE TBL_NOTIFICATIONS TABLE ====================
+﻿-- ==================== CREATE TBL_NOTIFICATIONS TABLE ====================
 -- File: database/sql/tables/create_tbl_notifications_table.sql
 -- Created: 2026-04-03
 -- Purpose: Store educator and student dashboard notifications for real-time updates.
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS public.tbl_notifications (
   title TEXT NOT NULL,
   message TEXT NOT NULL,
   link_path TEXT,
-  module_id BIGINT REFERENCES public.tbl_modules(id) ON DELETE SET NULL,
+  assessment_id BIGINT REFERENCES public.tbl_assessments(id) ON DELETE SET NULL,
   subject_id BIGINT REFERENCES public.tbl_subjects(id) ON DELETE SET NULL,
   section_id BIGINT REFERENCES public.tbl_sections(id) ON DELETE SET NULL,
   metadata JSONB,
@@ -22,9 +22,9 @@ CREATE TABLE IF NOT EXISTS public.tbl_notifications (
   CONSTRAINT tbl_notifications_event_type_check CHECK (
     event_type = ANY (
       ARRAY[
-        'module_created'::TEXT,
-        'module_updated'::TEXT,
-        'module_deleted'::TEXT,
+        'assessment_created'::TEXT,
+        'assessment_updated'::TEXT,
+        'assessment_deleted'::TEXT,
         'learning_material_uploaded'::TEXT,
         'learning_material_deleted'::TEXT,
         'quiz_created'::TEXT,
@@ -43,3 +43,4 @@ CREATE TABLE IF NOT EXISTS public.tbl_notifications (
 
 -- Enable RLS
 ALTER TABLE public.tbl_notifications ENABLE ROW LEVEL SECURITY;
+

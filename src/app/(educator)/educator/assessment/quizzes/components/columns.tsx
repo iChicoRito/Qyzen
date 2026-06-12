@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import type { ColumnDef } from '@tanstack/react-table'
 
@@ -10,11 +10,11 @@ import { DataTableColumnHeader } from './data-table-column-header'
 import { DataTableRowActions } from './data-table-row-actions'
 
 interface ColumnsProps {
-  onDeleteModuleQuizzes?: (moduleRowId: number) => Promise<void> | void
+  onDeleteAssessmentQuizzes?: (assessmentRowId: number) => Promise<void> | void
 }
 
 // getColumns - build quiz table columns
-export function getColumns({ onDeleteModuleQuizzes }: ColumnsProps): ColumnDef<QuizGroup>[] {
+export function getColumns({ onDeleteAssessmentQuizzes }: ColumnsProps): ColumnDef<QuizGroup>[] {
   return [
   {
     id: "select",
@@ -41,11 +41,11 @@ export function getColumns({ onDeleteModuleQuizzes }: ColumnsProps): ColumnDef<Q
     enableHiding: false,
   },
   {
-    accessorKey: 'moduleCode',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Module" />,
+    accessorKey: 'assessmentCode',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Assessment" />,
     cell: ({ row }) => (
       <div className="min-w-[220px] whitespace-normal">
-        <p className="font-medium">{row.original.moduleCode}</p>
+        <p className="font-medium">{row.original.assessmentCode}</p>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <p className="text-sm text-muted-foreground">{row.original.subjectName}</p>
           <Badge variant="outline" className="rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500">
@@ -107,9 +107,10 @@ export function getColumns({ onDeleteModuleQuizzes }: ColumnsProps): ColumnDef<Q
     cell: ({ row }) => (
       <DataTableRowActions
         row={row}
-        onDeleteModuleQuizzes={onDeleteModuleQuizzes}
+        onDeleteAssessmentQuizzes={onDeleteAssessmentQuizzes}
       />
     ),
   },
   ]
 }
+

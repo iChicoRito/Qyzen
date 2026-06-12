@@ -76,13 +76,13 @@ function createSource() {
         is_active: true,
       },
     ],
-    modules: [
+    assessments: [
       {
         id: 300,
         educator_id: 10,
         subject_id: 200,
         section_id: 100,
-        module_code: 'MOD-1',
+        assessment_code: 'MOD-1',
         is_active: true,
       },
       {
@@ -90,7 +90,7 @@ function createSource() {
         educator_id: 10,
         subject_id: 200,
         section_id: 100,
-        module_code: 'MOD-2',
+        assessment_code: 'MOD-2',
         is_active: true,
       },
     ],
@@ -117,7 +117,7 @@ function createSource() {
         id: 500,
         student_id: 1,
         educator_id: 10,
-        module_id: 300,
+        assessment_id: 300,
         subject_id: 200,
         section_id: 100,
         score: 6,
@@ -131,7 +131,7 @@ function createSource() {
         id: 501,
         student_id: 1,
         educator_id: 10,
-        module_id: 300,
+        assessment_id: 300,
         subject_id: 200,
         section_id: 100,
         score: 9,
@@ -145,7 +145,7 @@ function createSource() {
         id: 502,
         student_id: 1,
         educator_id: 10,
-        module_id: 301,
+        assessment_id: 301,
         subject_id: 200,
         section_id: 100,
         score: 8,
@@ -159,7 +159,7 @@ function createSource() {
         id: 503,
         student_id: 2,
         educator_id: 10,
-        module_id: 300,
+        assessment_id: 300,
         subject_id: 200,
         section_id: 100,
         score: 7,
@@ -173,7 +173,7 @@ function createSource() {
         id: 504,
         student_id: 2,
         educator_id: 10,
-        module_id: 301,
+        assessment_id: 301,
         subject_id: 200,
         section_id: 100,
         score: 4,
@@ -192,10 +192,10 @@ function main() {
   const {
     buildAdminDashboardAnalytics,
     getLatestScoreContext,
-    getLatestScoresByStudentModule,
+    getLatestScoresByStudentAssessment,
   } = loadHelperModule()
 
-  const latestScoreMap = getLatestScoresByStudentModule(createSource().scores)
+  const latestScoreMap = getLatestScoresByStudentAssessment(createSource().scores)
   assert.equal(latestScoreMap.get('1:300').id, 501, 'latest score should win by id')
   assert.equal(getLatestScoreContext(latestScoreMap.get('1:301')).isFinished, true, 'submitted rows count as finished')
   assert.equal(getLatestScoreContext(latestScoreMap.get('1:301')).isPassed, false, 'submitted rows must not count as passed')
@@ -215,3 +215,4 @@ function main() {
 }
 
 main()
+

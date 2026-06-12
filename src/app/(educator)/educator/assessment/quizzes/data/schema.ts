@@ -1,4 +1,4 @@
-import { z } from 'zod'
+﻿import { z } from 'zod'
 
 const choiceValueSchema = z.object({
   key: z.enum(['A', 'B', 'C', 'D']),
@@ -8,9 +8,9 @@ const choiceValueSchema = z.object({
 // quizQuestionSchema - validate a single quiz question row
 export const quizQuestionSchema = z.object({
   id: z.number(),
-  moduleRowId: z.number(),
-  moduleId: z.string(),
-  moduleCode: z.string(),
+  assessmentRowId: z.number(),
+  assessmentId: z.string(),
+  assessmentCode: z.string(),
   termName: z.string(),
   subjectId: z.number(),
   subjectName: z.string(),
@@ -23,11 +23,11 @@ export const quizQuestionSchema = z.object({
   correctAnswers: z.array(z.string()),
 })
 
-// quizGroupSchema - validate grouped module quiz table rows
+// quizGroupSchema - validate grouped assessment quiz table rows
 export const quizGroupSchema = z.object({
-  moduleRowId: z.number(),
-  moduleId: z.string(),
-  moduleCode: z.string(),
+  assessmentRowId: z.number(),
+  assessmentId: z.string(),
+  assessmentCode: z.string(),
   termName: z.string(),
   subjectId: z.number(),
   subjectName: z.string(),
@@ -42,3 +42,4 @@ export const quizGroupSchema = z.object({
 
 export type Quiz = z.infer<typeof quizQuestionSchema>
 export type QuizGroup = z.infer<typeof quizGroupSchema>
+

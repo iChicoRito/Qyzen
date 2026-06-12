@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
+﻿import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type {
   NotificationInsertInput,
@@ -14,7 +14,7 @@ interface NotificationRow {
   title: string
   message: string
   link_path: string | null
-  module_id: number | null
+  assessment_id: number | null
   subject_id: number | null
   section_id: number | null
   metadata: unknown
@@ -56,7 +56,7 @@ function mapNotificationRow(row: NotificationRow): NotificationRecord {
     title: row.title,
     message: row.message,
     linkPath: row.link_path,
-    moduleId: row.module_id,
+    assessmentId: row.assessment_id,
     subjectId: row.subject_id,
     sectionId: row.section_id,
     metadata: normalizeNotificationMetadata(row.metadata),
@@ -76,7 +76,7 @@ export async function fetchRecentNotificationsWithClient(
   const { data, error } = await supabase
     .from('tbl_notifications')
     .select(
-      'id,recipient_user_id,actor_user_id,event_type,title,message,link_path,module_id,subject_id,section_id,metadata,is_read,read_at,created_at,updated_at'
+      'id,recipient_user_id,actor_user_id,event_type,title,message,link_path,assessment_id,subject_id,section_id,metadata,is_read,read_at,created_at,updated_at'
     )
     .eq('recipient_user_id', recipientUserId)
     .order('created_at', { ascending: false })
@@ -190,7 +190,7 @@ export async function insertNotificationsWithClient(
     title: input.title,
     message: input.message,
     link_path: input.linkPath,
-    module_id: input.moduleId ?? null,
+    assessment_id: input.assessmentId ?? null,
     subject_id: input.subjectId ?? null,
     section_id: input.sectionId ?? null,
     metadata: input.metadata ?? null,
@@ -206,3 +206,4 @@ export async function insertNotificationsWithClient(
     throw new Error(getSupabaseErrorMessage(error, 'Failed to save notifications.'))
   }
 }
+

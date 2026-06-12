@@ -36,12 +36,12 @@ export interface AdminSubjectRow {
   is_active: boolean
 }
 
-export interface AdminModuleRow {
+export interface AdminAssessmentRow {
   id: number
   educator_id: number
   subject_id: number
   section_id: number
-  module_code: string
+  assessment_code: string
   is_active: boolean
 }
 
@@ -58,7 +58,7 @@ export interface AdminScoreRow {
   id: number
   student_id: number
   educator_id: number
-  module_id: number
+  assessment_id: number
   subject_id: number
   section_id: number
   score: number | null
@@ -73,7 +73,7 @@ export interface AdminDashboardSource {
   users: AdminUserRow[]
   sections: AdminSectionRow[]
   subjects: AdminSubjectRow[]
-  modules: AdminModuleRow[]
+  assessments: AdminAssessmentRow[]
   enrollments: AdminEnrollmentRow[]
   scores: AdminScoreRow[]
 }
@@ -146,10 +146,10 @@ export function buildRecentMonthBuckets(monthCount: number, now = new Date()) {
   })
 }
 
-// getLatestScoresByStudentModule - keep the newest score row per student and module
-export function getLatestScoresByStudentModule(scores: AdminScoreRow[]) {
+// getLatestScoresByStudentAssessment - keep the newest score row per student and assessment
+export function getLatestScoresByStudentAssessment(scores: AdminScoreRow[]) {
   return scores.reduce<Map<string, AdminScoreRow>>((result, score) => {
-    const scoreKey = `${score.student_id}:${score.module_id}`
+    const scoreKey = `${score.student_id}:${score.assessment_id}`
     const currentScore = result.get(scoreKey)
 
     if (!currentScore || score.id > currentScore.id) {
@@ -240,16 +240,16 @@ export function buildAdminDashboardAnalytics(
   const activeEducators = activeUsers.filter((user) => user.user_type === 'educator')
   const activeSections = source.sections.filter((section) => section.is_active)
   const activeSubjects = source.subjects.filter((subject) => subject.is_active)
-  const activeModules = source.modules.filter((module) => module.is_active)
+  const activeAssessments = source.assessments.filter((assessment) => assessment.is_active)
   const activeEnrollments = source.enrollments.filter((enrollment) => enrollment.is_active)
 
   const studentMap = new Map(activeStudents.map((student) => [student.id, student]))
   const educatorMap = new Map(activeEducators.map((educator) => [educator.id, educator]))
   const sectionMap = new Map(activeSections.map((section) => [section.id, section]))
   const subjectMap = new Map(activeSubjects.map((subject) => [subject.id, subject]))
-  const moduleMap = new Map(activeModules.map((module) => [module.id, module]))
+  const assessmentMap = new Map(activeAssessments.map((assessment) => [assessment.id, assessment]))
 
-  const latestScoreMap = getLatestScoresByStudentModule(source.scores)
+  const latestScoreMap = getLatestScoresByStudentAssessment(source.scores)
   const latestScores = [...latestScoreMap.values()]
   const latestContexts = latestScores.map((score) => getLatestScoreContext(score))
 
@@ -486,23 +486,23 @@ export function buildAdminDashboardAnalytics(
     return result
   }, new Map<number, number>())
 
-  const assessmentInsights: AdminAssessmentInsightRow[] = activeModules
-    .map((module) => {
-      const educator = educatorMap.get(module.educator_id)
-      const subject = subjectMap.get(module.subject_id)
-      const section = sectionMap.get(module.section_id)
-      const moduleLatestScores = latestScores.filter((score) => score.module_id === module.id)
-      const finishedAssessmentCount = moduleLatestScores.filter((score) => getLatestScoreContext(score).isFinished).length
-      const passedAssessmentCount = moduleLatestScores.filter((score) => getLatestScoreContext(score).isPassed).length
-      const failedAssessmentCount = moduleLatestScores.filter((score) => getLatestScoreContext(score).isFailed).length
+  const assessmentInsights: AdminAssessmentInsightRow[] = activeAssessments
+    .map((assessment) => {
+      const educator = educatorMap.get(assessment.educator_id)
+      const subject = subjectMap.get(assessment.subject_id)
+      const section = sectionMap.get(assessment.section_id)
+      const assessmentLatestScores = latestScores.filter((score) => score.assessment_id === assessment.id)
+      const finishedAssessmentCount = assessmentLatestScores.filter((score) => getLatestScoreContext(score).isFinished).length
+      const passedAssessmentCount = assessmentLatestScores.filter((score) => getLatestScoreContext(score).isPassed).length
+      const failedAssessmentCount = assessmentLatestScores.filter((score) => getLatestScoreContext(score).isFailed).length
 
       return {
-        moduleId: module.id,
-        moduleCode: module.module_code,
+        assessmentId: assessment.id,
+        assessmentCode: assessment.assessment_code,
         subjectName: subject?.subject_name || 'Unknown Subject',
         sectionName: section?.section_name || 'Unknown Section',
         educatorName: educator ? getFullName(educator) : 'Unknown Educator',
-        enrolledStudentCount: enrolledCountBySubject.get(module.subject_id) || 0,
+        enrolledStudentCount: enrolledCountBySubject.get(assessment.subject_id) || 0,
         finishedAssessmentCount,
         passedAssessmentCount,
         failedAssessmentCount,
@@ -529,3 +529,4 @@ export function buildAdminDashboardAnalytics(
     assessmentInsights,
   }
 }
+

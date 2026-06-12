@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import * as React from 'react'
 import { formatDistanceToNow } from 'date-fns'
@@ -96,19 +96,19 @@ const notificationToneStyles = {
 } satisfies Record<string, NotificationToneStyles>
 
 const notificationVisualMap: Record<NotificationEventType, NotificationVisualConfig> = {
-  module_created: {
+  assessment_created: {
     icon: IconBook2,
-    eventLabel: 'Module Created',
+    eventLabel: 'Assessment Created',
     tone: 'green',
   },
-  module_updated: {
+  assessment_updated: {
     icon: IconRefresh,
-    eventLabel: 'Module Updated',
+    eventLabel: 'Assessment Updated',
     tone: 'yellow',
   },
-  module_deleted: {
+  assessment_deleted: {
     icon: IconTrash,
-    eventLabel: 'Module Removed',
+    eventLabel: 'Assessment Removed',
     tone: 'rose',
   },
   learning_material_uploaded: {
@@ -181,8 +181,8 @@ function getNotificationDetails(metadata: NotificationMetadata | null): Notifica
 
   const detailItems: NotificationDetailItem[] = []
 
-  if (metadata.moduleCode) {
-    detailItems.push({ label: 'Module', value: metadata.moduleCode })
+  if (metadata.assessmentCode) {
+    detailItems.push({ label: 'Assessment', value: metadata.assessmentCode })
   }
 
   if (metadata.subjectName) {
@@ -780,3 +780,4 @@ export function NotificationBell({ role, userId }: NotificationBellProps) {
     </>
   )
 }
+

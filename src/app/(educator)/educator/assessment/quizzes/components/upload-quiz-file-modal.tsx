@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/responsive-dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { readFirstWorksheetRows } from '@/lib/spreadsheets/xlsx-reader'
-import { fetchQuizModuleOptions, type QuizModuleOption } from '@/lib/supabase/quizzes'
+import { fetchQuizAssessmentOptions, type QuizAssessmentOption } from '@/lib/supabase/quizzes'
 
 import type { Quiz } from '../data/schema'
 
@@ -95,14 +95,14 @@ function buildTemplateRows() {
   ] as const
 }
 
-// formatModuleSelectionLabel - create a readable label for module choices
-function formatModuleSelectionLabel(moduleOption: QuizModuleOption) {
-  return `${moduleOption.subjectName} | ${moduleOption.sectionName}`
+// formatAssessmentSelectionLabel - create a readable label for assessment choices
+function formatAssessmentSelectionLabel(assessmentOption: QuizAssessmentOption) {
+  return `${assessmentOption.subjectName} | ${assessmentOption.sectionName}`
 }
 
-// formatModuleSelectionMeta - create supporting text for a module choice
-function formatModuleSelectionMeta(moduleOption: QuizModuleOption) {
-  return `${moduleOption.moduleCode} | ${moduleOption.termName}`
+// formatAssessmentSelectionMeta - create supporting text for an assessment choice
+function formatAssessmentSelectionMeta(assessmentOption: QuizAssessmentOption) {
+  return `${assessmentOption.assessmentCode} | ${assessmentOption.termName}`
 }
 
 // UploadQuizFileModal - upload quiz rows from xlsx files
@@ -111,49 +111,49 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
   const [open, setOpen] = useState(false)
   const [files, setFiles] = useState<File[]>([])
   const [isDragging, setIsDragging] = useState(false)
-  const [isLoadingModules, setIsLoadingModules] = useState(false)
+  const [isLoadingAssessments, setIsLoadingAssessments] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-  const [moduleOptions, setModuleOptions] = useState<QuizModuleOption[]>([])
-  const [selectedModuleIds, setSelectedModuleIds] = useState<number[]>([])
+  const [assessmentOptions, setAssessmentOptions] = useState<QuizAssessmentOption[]>([])
+  const [selectedAssessmentIds, setSelectedAssessmentIds] = useState<number[]>([])
 
   const acceptedLabel = useMemo(
     () => (files.length === 0 ? 'Drop .xlsx files here or browse your files' : `${files.length} file(s) ready`),
     [files.length]
   )
-  const selectedModules = useMemo(
-    () => moduleOptions.filter((moduleOption) => selectedModuleIds.includes(moduleOption.id)),
-    [moduleOptions, selectedModuleIds]
+  const selectedAssessments = useMemo(
+    () => assessmentOptions.filter((assessmentOption) => selectedAssessmentIds.includes(assessmentOption.id)),
+    [assessmentOptions, selectedAssessmentIds]
   )
-  const selectedModulesLabel = useMemo(() => {
-    if (selectedModules.length === 0) {
-      return 'Select one or more modules'
+  const selectedAssessmentsLabel = useMemo(() => {
+    if (selectedAssessments.length === 0) {
+      return 'Select one or more assessments'
     }
 
-    return `${selectedModules.length} module${selectedModules.length > 1 ? 's' : ''} selected`
-  }, [selectedModules.length])
+    return `${selectedAssessments.length} assessment${selectedAssessments.length > 1 ? 's' : ''} selected`
+  }, [selectedAssessments.length])
 
-  // loadModuleOptions - fetch modules used for upload matching
-  const loadModuleOptions = async () => {
+  // loadAssessmentOptions - fetch assessments used for upload matching
+  const loadAssessmentOptions = async () => {
     try {
-      setIsLoadingModules(true)
-      const options = await fetchQuizModuleOptions()
-      setModuleOptions(options)
+      setIsLoadingAssessments(true)
+      const options = await fetchQuizAssessmentOptions()
+      setAssessmentOptions(options)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to load module options.')
+      toast.error(error instanceof Error ? error.message : 'Failed to load assessment options.')
     } finally {
-      setIsLoadingModules(false)
+      setIsLoadingAssessments(false)
     }
   }
 
   useEffect(() => {
     if (open) {
-      loadModuleOptions()
+      loadAssessmentOptions()
       return
     }
 
     setFiles([])
     setIsDragging(false)
-    setSelectedModuleIds([])
+    setSelectedAssessmentIds([])
   }, [open])
 
   // handleFileSelection - merge selected xlsx files
@@ -183,24 +183,24 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
     )
   }
 
-  // handleModuleCheckedChange - toggle selected upload modules
-  const handleModuleCheckedChange = (moduleId: number, checked: boolean) => {
-    setSelectedModuleIds((currentIds) => {
+  // handleAssessmentCheckedChange - toggle selected upload assessments
+  const handleAssessmentCheckedChange = (assessmentId: number, checked: boolean) => {
+    setSelectedAssessmentIds((currentIds) => {
       if (checked) {
-        if (currentIds.includes(moduleId)) {
+        if (currentIds.includes(assessmentId)) {
           return currentIds
         }
 
-        return [...currentIds, moduleId]
+        return [...currentIds, assessmentId]
       }
 
-      return currentIds.filter((currentId) => currentId !== moduleId)
+      return currentIds.filter((currentId) => currentId !== assessmentId)
     })
   }
 
-  // handleModuleRemove - remove a selected module from the upload target list
-  const handleModuleRemove = (moduleId: number) => {
-    setSelectedModuleIds((currentIds) => currentIds.filter((currentId) => currentId !== moduleId))
+  // handleAssessmentRemove - remove a selected assessment from the upload target list
+  const handleAssessmentRemove = (assessmentId: number) => {
+    setSelectedAssessmentIds((currentIds) => currentIds.filter((currentId) => currentId !== assessmentId))
   }
 
   // handleDownloadTemplate - download the xlsx template
@@ -315,13 +315,13 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
       return
     }
 
-    if (moduleOptions.length === 0) {
-      toast.error('No modules are available for upload.')
+    if (assessmentOptions.length === 0) {
+      toast.error('No assessments are available for upload.')
       return
     }
 
-    if (selectedModules.length === 0) {
-      toast.error('Select at least one subject and section module.')
+    if (selectedAssessments.length === 0) {
+      toast.error('Select at least one subject and section assessment.')
       return
     }
 
@@ -353,7 +353,7 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
             throw new Error(`File "${file.name}", row ${rowIndex + 2}: question is required.`)
           }
 
-          selectedModules.forEach((matchedModule) => {
+          selectedAssessments.forEach((matchedAssessment) => {
             if (quizTypeValue === 'multiple_choice') {
               const choiceValues = [
                 normalizeValue(row.choice_a),
@@ -379,14 +379,14 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
               nextQuizId += 1
               uploadedQuizzes.push({
                 id: nextQuizId,
-                moduleRowId: matchedModule.id,
-                moduleId: matchedModule.moduleId,
-                moduleCode: matchedModule.moduleCode,
-                termName: matchedModule.termName,
-                subjectId: matchedModule.subjectId,
-                subjectName: matchedModule.subjectName,
-                sectionId: matchedModule.sectionId,
-                sectionName: matchedModule.sectionName,
+                assessmentRowId: matchedAssessment.id,
+                assessmentId: matchedAssessment.assessmentId,
+                assessmentCode: matchedAssessment.assessmentCode,
+                termName: matchedAssessment.termName,
+                subjectId: matchedAssessment.subjectId,
+                subjectName: matchedAssessment.subjectName,
+                sectionId: matchedAssessment.sectionId,
+                sectionName: matchedAssessment.sectionName,
                 question,
                 quizType: 'multiple_choice',
                 choices: [
@@ -415,14 +415,14 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
             nextQuizId += 1
             uploadedQuizzes.push({
               id: nextQuizId,
-              moduleRowId: matchedModule.id,
-              moduleId: matchedModule.moduleId,
-              moduleCode: matchedModule.moduleCode,
-              termName: matchedModule.termName,
-              subjectId: matchedModule.subjectId,
-              subjectName: matchedModule.subjectName,
-              sectionId: matchedModule.sectionId,
-              sectionName: matchedModule.sectionName,
+              assessmentRowId: matchedAssessment.id,
+              assessmentId: matchedAssessment.assessmentId,
+              assessmentCode: matchedAssessment.assessmentCode,
+              termName: matchedAssessment.termName,
+              subjectId: matchedAssessment.subjectId,
+              subjectName: matchedAssessment.subjectName,
+              sectionId: matchedAssessment.sectionId,
+              sectionName: matchedAssessment.sectionName,
               question,
               quizType: 'identification',
               choices: [],
@@ -463,7 +463,7 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
         <ResponsiveDialogHeader className="border-b">
           <ResponsiveDialogTitle>Upload Quiz Files</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            Drop one or more xlsx files, choose the target modules, and use the template so the upload matches the manual quiz fields.
+            Drop one or more xlsx files, choose the target assessments, and use the template so the upload matches the manual quiz fields.
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
@@ -483,15 +483,15 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
 
           <div className="space-y-4 rounded-md border p-4">
             <div className="space-y-1">
-              <p className="font-medium">Target Module</p>
+              <p className="font-medium">Target Assessment</p>
               <p className="text-sm text-muted-foreground">
-                Select every subject and section module that should receive the uploaded quiz rows.
+                Select every subject and section assessment that should receive the uploaded quiz rows.
               </p>
             </div>
             <Popover>
               <PopoverTrigger asChild>
                 <Button type="button" variant="outline" className="w-full justify-between">
-                  <span className="truncate text-left">{selectedModulesLabel}</span>
+                  <span className="truncate text-left">{selectedAssessmentsLabel}</span>
                   <IconChevronDown size={18} className="text-muted-foreground" />
                 </Button>
               </PopoverTrigger>
@@ -513,32 +513,32 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
                 }}
               >
                 <div className="space-y-2">
-                  {isLoadingModules ? (
-                    <p className="text-sm text-muted-foreground">Loading module options...</p>
-                  ) : moduleOptions.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No modules available.</p>
+                  {isLoadingAssessments ? (
+                    <p className="text-sm text-muted-foreground">Loading assessment options...</p>
+                  ) : assessmentOptions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No assessments available.</p>
                   ) : (
-                    moduleOptions.map((moduleOption) => {
-                      const isChecked = selectedModuleIds.includes(moduleOption.id)
+                    assessmentOptions.map((assessmentOption) => {
+                      const isChecked = selectedAssessmentIds.includes(assessmentOption.id)
 
                       return (
                         <label
-                          key={moduleOption.id}
+                          key={assessmentOption.id}
                           className="flex cursor-pointer items-start gap-3 rounded-md border p-3"
                         >
                           <Checkbox
                             checked={isChecked}
                             onCheckedChange={(checked) =>
-                              handleModuleCheckedChange(moduleOption.id, Boolean(checked))
+                              handleAssessmentCheckedChange(assessmentOption.id, Boolean(checked))
                             }
                             className="mt-0.5 cursor-pointer"
                           />
                           <div className="min-w-0 flex-1 space-y-1">
                             <p className="text-sm font-medium uppercase">
-                              {formatModuleSelectionLabel(moduleOption)}
+                              {formatAssessmentSelectionLabel(assessmentOption)}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {formatModuleSelectionMeta(moduleOption)}
+                              {formatAssessmentSelectionMeta(assessmentOption)}
                             </p>
                           </div>
                         </label>
@@ -549,23 +549,23 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
               </PopoverContent>
             </Popover>
 
-            {selectedModules.length > 0 ? (
+            {selectedAssessments.length > 0 ? (
               <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Selected Modules</p>
+                <p className="text-sm font-medium text-muted-foreground">Selected Assessments</p>
                 <div className="rounded-md border bg-card">
-                  {selectedModules.map((moduleOption, index) => (
-                    <div key={moduleOption.id}>
+                  {selectedAssessments.map((assessmentOption, index) => (
+                    <div key={assessmentOption.id}>
                       <div className="flex items-start justify-between gap-3 px-4 py-3 text-sm">
                         <div className="min-w-0 space-y-1">
-                          <p className="font-medium uppercase">{moduleOption.subjectName}</p>
+                          <p className="font-medium uppercase">{assessmentOption.subjectName}</p>
                           <Badge
                             variant="outline"
                             className="rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500"
                           >
-                            {moduleOption.sectionName}
+                            {assessmentOption.sectionName}
                           </Badge>
                           <p className="text-xs text-muted-foreground">
-                            {moduleOption.moduleCode} | {moduleOption.termName}
+                            {assessmentOption.assessmentCode} | {assessmentOption.termName}
                           </p>
                         </div>
                         <Button
@@ -573,20 +573,20 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
                           variant="ghost"
                           size="icon"
                           className="shrink-0 text-rose-500 hover:bg-rose-500/10 hover:text-rose-500"
-                          onClick={() => handleModuleRemove(moduleOption.id)}
-                          aria-label={`Remove ${moduleOption.subjectName} ${moduleOption.sectionName}`}
+                          onClick={() => handleAssessmentRemove(assessmentOption.id)}
+                          aria-label={`Remove ${assessmentOption.subjectName} ${assessmentOption.sectionName}`}
                         >
                           <IconTrash size={18} />
                         </Button>
                       </div>
-                      {index < selectedModules.length - 1 ? <div className="border-b" /> : null}
+                      {index < selectedAssessments.length - 1 ? <div className="border-b" /> : null}
                     </div>
                   ))}
                 </div>
               </div>
             ) : (
               <div className="rounded-md border px-4 py-3 text-sm text-muted-foreground">
-                No target modules selected.
+                No target assessments selected.
               </div>
             )}
           </div>
@@ -680,7 +680,7 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
               type="button"
               className="w-full cursor-pointer"
               onClick={handleUpload}
-              disabled={isUploading || isLoadingModules}
+              disabled={isUploading || isLoadingAssessments}
             >
               {isUploading ? (
                 <>
@@ -700,3 +700,4 @@ export function UploadQuizFileModal({ onUploadQuizzes, trigger }: UploadQuizFile
     </ResponsiveDialog>
   )
 }
+

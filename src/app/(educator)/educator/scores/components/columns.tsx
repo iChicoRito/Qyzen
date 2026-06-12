@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import type { ColumnDef } from '@tanstack/react-table'
 import { IconArrowUpRight } from '@tabler/icons-react'
@@ -24,7 +24,7 @@ export function columns(onScoresChanged: () => Promise<void>): ColumnDef<Educato
     {
       id: 'search',
       accessorFn: (row) =>
-        `${row.studentName} ${row.studentUserId} ${row.moduleCode} ${row.subjectName} ${row.sectionName} ${row.termName}`,
+        `${row.studentName} ${row.studentUserId} ${row.assessmentCode} ${row.subjectName} ${row.sectionName} ${row.termName}`,
       enableHiding: true,
       header: () => null,
       cell: () => null,
@@ -43,11 +43,11 @@ export function columns(onScoresChanged: () => Promise<void>): ColumnDef<Educato
       filterFn: (row, id, value) => row.getValue(id) === value,
     },
     {
-      accessorKey: 'moduleCode',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Module" />,
+      accessorKey: 'assessmentCode',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Assessment" />,
       cell: ({ row }) => (
         <div className="min-w-[180px] space-y-1">
-          <div className="font-medium whitespace-normal">{row.original.moduleCode}</div>
+          <div className="font-medium whitespace-normal">{row.original.assessmentCode}</div>
           <div className="text-muted-foreground text-sm whitespace-normal">{row.original.subjectName}</div>
         </div>
       ),
@@ -143,3 +143,4 @@ export function columns(onScoresChanged: () => Promise<void>): ColumnDef<Educato
     },
   ]
 }
+

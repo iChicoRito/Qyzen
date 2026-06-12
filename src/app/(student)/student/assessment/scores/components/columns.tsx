@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import type { ColumnDef } from '@tanstack/react-table'
 
@@ -20,7 +20,7 @@ function getStatusClassName(status: 'passed' | 'failed') {
 export const columns: ColumnDef<Score>[] = [
   {
     id: 'search',
-    accessorFn: (row) => `${row.moduleCode} ${row.subjectName} ${row.sectionName} ${row.termName}`,
+    accessorFn: (row) => `${row.assessmentCode} ${row.subjectName} ${row.sectionName} ${row.termName}`,
     enableHiding: true,
     header: () => null,
     cell: () => null,
@@ -28,10 +28,10 @@ export const columns: ColumnDef<Score>[] = [
       String(row.getValue(id)).toLowerCase().includes(String(value).toLowerCase()),
   },
   {
-    accessorKey: 'moduleCode',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Module" />,
+    accessorKey: 'assessmentCode',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Assessment" />,
     cell: ({ row }) => (
-      <div className="min-w-[120px] font-medium whitespace-normal">{row.original.moduleCode}</div>
+      <div className="min-w-[120px] font-medium whitespace-normal">{row.original.assessmentCode}</div>
     ),
     filterFn: (row, id, value) => row.getValue(id) === value,
   },
@@ -101,3 +101,4 @@ export const columns: ColumnDef<Score>[] = [
     cell: ({ row }) => <DataTableRowActions row={row} />,
   },
 ]
+

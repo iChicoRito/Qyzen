@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useRouter } from 'next/navigation'
 import { IconAlertTriangle } from '@tabler/icons-react'
@@ -15,11 +15,11 @@ import {
 } from '@/components/ui/dialog'
 
 interface RetakeAssessmentDialogProps {
-  moduleId: number
+  assessmentId: number
 }
 
 // RetakeAssessmentDialog - confirm whether the student wants to start a new retake attempt
-export function RetakeAssessmentDialog({ moduleId }: RetakeAssessmentDialogProps) {
+export function RetakeAssessmentDialog({ assessmentId }: RetakeAssessmentDialogProps) {
   const router = useRouter()
 
   return (
@@ -51,7 +51,7 @@ export function RetakeAssessmentDialog({ moduleId }: RetakeAssessmentDialogProps
               type="button"
               className="h-10 w-full cursor-pointer"
               onClick={() => {
-                router.push(`/student/assessment/take-quiz?moduleId=${moduleId}`)
+                router.push(`/student/assessment/take-quiz?assessmentId=${assessmentId}`)
               }}
             >
               Proceed
@@ -62,3 +62,4 @@ export function RetakeAssessmentDialog({ moduleId }: RetakeAssessmentDialogProps
     </Dialog>
   )
 }
+

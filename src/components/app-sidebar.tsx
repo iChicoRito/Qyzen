@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import * as React from 'react'
 import {
@@ -163,8 +163,8 @@ function getNavigationGroupsByRole(role: AppRole): SidebarNavGroup[] {
             icon: IconSubtitlesEdit,
             items: [
               {
-                title: 'Modules',
-                url: '/educator/assessment/modules',
+                title: 'Assessments',
+                url: '/educator/assessment/assessments',
               },
               {
                 title: 'Quizzes',
@@ -423,3 +423,4 @@ export function AppSidebar({ role = 'admin', roles, user, ...props }: AppSidebar
     </Sidebar>
   )
 }
+

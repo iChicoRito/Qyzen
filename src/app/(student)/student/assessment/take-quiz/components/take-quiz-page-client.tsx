@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -64,7 +64,7 @@ function shuffleArray<T>(items: T[]) {
   return clonedItems
 }
 
-// getOrderedQuestions - apply module shuffle rules
+// getOrderedQuestions - apply assessment shuffle rules
 function getOrderedQuestions(session: StudentQuizSession) {
   if (!session.isShuffle) {
     return session.questions
@@ -275,7 +275,7 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
   // ==================== SAVE ATTEMPT ====================
   const persistAttempt = async (mode: 'draft' | 'submit', nextWarningAttempts: number) => {
     const values = form.getValues()
-    const response = await fetch(`/api/student/assessment/scores/${session.moduleRowId}`, {
+    const response = await fetch(`/api/student/assessment/scores/${session.assessmentRowId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -627,7 +627,7 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
               <div>
                 <CardTitle>{session.subjectName}</CardTitle>
                 <CardDescription>
-                  {session.sectionName} - {session.moduleCode} - {session.termName}
+                  {session.sectionName} - {session.assessmentCode} - {session.termName}
                 </CardDescription>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -852,3 +852,4 @@ export function TakeQuizPageClient({ session }: TakeQuizPageClientProps) {
     </>
   )
 }
+

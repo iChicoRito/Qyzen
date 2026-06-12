@@ -1,4 +1,4 @@
-import { IconArrowUpRight, IconBook2, IconChecklist, IconSchool, IconUsersGroup } from '@tabler/icons-react'
+﻿import { IconArrowUpRight, IconBook2, IconChecklist, IconSchool, IconUsersGroup } from '@tabler/icons-react'
 
 import type { EducatorSummaryCard } from '@/lib/supabase/educator-dashboard-types'
 import { Badge } from '@/components/ui/badge'
@@ -7,7 +7,7 @@ import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } 
 const iconMap = {
   sections: IconSchool,
   subjects: IconBook2,
-  modules: IconChecklist,
+  assessments: IconChecklist,
   students: IconUsersGroup,
 } satisfies Record<EducatorSummaryCard['key'], typeof IconUsersGroup>
 
@@ -44,3 +44,4 @@ export function EducatorSummaryCards({ cards }: { cards: EducatorSummaryCard[] }
     </div>
   )
 }
+

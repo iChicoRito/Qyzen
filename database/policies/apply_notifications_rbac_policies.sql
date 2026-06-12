@@ -30,9 +30,9 @@ CREATE POLICY "Educator notification insert access" ON public.tbl_notifications
     AND actor_user_id = public.get_current_tbl_user_id()
     AND event_type = ANY (
       ARRAY[
-        'module_created'::TEXT,
-        'module_updated'::TEXT,
-        'module_deleted'::TEXT,
+        'assessment_created'::TEXT,
+        'assessment_updated'::TEXT,
+        'assessment_deleted'::TEXT,
         'learning_material_uploaded'::TEXT,
         'learning_material_deleted'::TEXT,
         'quiz_created'::TEXT,
@@ -83,13 +83,14 @@ CREATE POLICY "Student submission notification insert access" ON public.tbl_noti
     AND event_type = 'quiz_submitted'
     AND EXISTS (
       SELECT 1
-      FROM public.tbl_modules AS module_row
+      FROM public.tbl_assessments AS assessment_row
       JOIN public.tbl_enrolled AS enrolled
-        ON enrolled.educator_id = module_row.educator_id
-       AND enrolled.subject_id = module_row.subject_id
-      WHERE module_row.id = public.tbl_notifications.module_id
-        AND module_row.educator_id = public.tbl_notifications.recipient_user_id
+        ON enrolled.educator_id = assessment_row.educator_id
+       AND enrolled.subject_id = assessment_row.subject_id
+      WHERE assessment_row.id = public.tbl_notifications.assessment_id
+        AND assessment_row.educator_id = public.tbl_notifications.recipient_user_id
         AND enrolled.student_id = public.get_current_tbl_user_id()
         AND enrolled.is_active = true
     )
   );
+

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useMemo, useState } from "react"
 
@@ -34,29 +34,29 @@ function QuizTabsHeader() {
   )
 }
 
-// QuizFilterBar - renders the module filter
+// QuizFilterBar - renders the assessment filter
 function QuizFilterBar({
-  moduleFilter,
-  setModuleFilter,
-  moduleOptions,
+  assessmentFilter,
+  setAssessmentFilter,
+  assessmentOptions,
 }: {
-  moduleFilter: string;
-  setModuleFilter: (value: string) => void;
-  moduleOptions: string[];
+  assessmentFilter: string;
+  setAssessmentFilter: (value: string) => void;
+  assessmentOptions: string[];
 }) {
   return (
     <div className="bg-background/95 supports-[backdrop-filter]:bg-background/60 p-4 backdrop-blur">
       <div className="relative">
         <IconFilter size={18} className="text-muted-foreground pointer-events-none absolute top-2.5 left-3" />
-        <Select value={moduleFilter} onValueChange={setModuleFilter}>
+        <Select value={assessmentFilter} onValueChange={setAssessmentFilter}>
           <SelectTrigger className="w-full pl-9">
-            <SelectValue placeholder="Filter by module" />
+            <SelectValue placeholder="Filter by assessment" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Modules</SelectItem>
-            {moduleOptions.map((moduleCode) => (
-              <SelectItem key={moduleCode} value={moduleCode}>
-                {moduleCode}
+            <SelectItem value="all">All Assessments</SelectItem>
+            {assessmentOptions.map((assessmentCode) => (
+              <SelectItem key={assessmentCode} value={assessmentCode}>
+                {assessmentCode}
               </SelectItem>
             ))}
           </SelectContent>
@@ -73,14 +73,14 @@ export function Quiz({
 }: QuizProps) {
   // selected assessment state
   const [quiz, setQuiz] = useQuiz();
-  const [moduleFilter, setModuleFilter] = useState("all");
-  const moduleOptions = useMemo(
-    () => [...new Set(quizzes.map((item) => item.moduleCode))],
+  const [assessmentFilter, setAssessmentFilter] = useState("all");
+  const assessmentOptions = useMemo(
+    () => [...new Set(quizzes.map((item) => item.assessmentCode))],
     [quizzes]
   );
   const filteredQuizzes = useMemo(
-    () => quizzes.filter((item) => moduleFilter === "all" || item.moduleCode === moduleFilter),
-    [moduleFilter, quizzes]
+    () => quizzes.filter((item) => assessmentFilter === "all" || item.assessmentCode === assessmentFilter),
+    [assessmentFilter, quizzes]
   );
   const selectedQuiz = filteredQuizzes.find((item) => item.id === quiz.selected) || null;
 
@@ -104,9 +104,9 @@ export function Quiz({
           <QuizTabsHeader />
           <Separator />
           <QuizFilterBar
-            moduleFilter={moduleFilter}
-            setModuleFilter={setModuleFilter}
-            moduleOptions={moduleOptions}
+            assessmentFilter={assessmentFilter}
+            setAssessmentFilter={setAssessmentFilter}
+            assessmentOptions={assessmentOptions}
           />
           <Separator />
           <TabsContent value="pending" className="m-0 border-b">
@@ -133,9 +133,9 @@ export function Quiz({
               <QuizTabsHeader />
               <Separator />
               <QuizFilterBar
-                moduleFilter={moduleFilter}
-                setModuleFilter={setModuleFilter}
-                moduleOptions={moduleOptions}
+                assessmentFilter={assessmentFilter}
+                setAssessmentFilter={setAssessmentFilter}
+                assessmentOptions={assessmentOptions}
               />
               <TabsContent value="pending" className="m-0">
                 <QuizList items={filteredQuizzes.filter((item) => item.labels.includes("pending"))} />
@@ -154,3 +154,4 @@ export function Quiz({
     </TooltipProvider>
   );
 }
+

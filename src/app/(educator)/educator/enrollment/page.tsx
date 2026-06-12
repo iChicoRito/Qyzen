@@ -2,7 +2,7 @@ import { requireServerAuthContext } from '@/lib/auth/server'
 
 import { EnrollmentPageClient } from './components/enrollment-page-client'
 
-// EnrollmentPage - protect educator enrollment module
+// EnrollmentPage - protect educator enrollment page
 export default async function EnrollmentPage() {
   // ==================== LOAD CONTEXT ====================
   await requireServerAuthContext('educator')

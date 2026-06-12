@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import type { Row } from '@tanstack/react-table'
@@ -21,13 +21,13 @@ import { ViewQuizModal } from './view-quiz-modal'
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
-  onDeleteModuleQuizzes?: (moduleRowId: number) => Promise<void> | void
+  onDeleteAssessmentQuizzes?: (assessmentRowId: number) => Promise<void> | void
 }
 
 // DataTableRowActions - render quiz row actions
 export function DataTableRowActions<TData>({
   row,
-  onDeleteModuleQuizzes,
+  onDeleteAssessmentQuizzes,
 }: DataTableRowActionsProps<TData>) {
   const quizGroup = quizGroupSchema.parse(row.original)
   const [isViewOpen, setIsViewOpen] = useState(false)
@@ -72,8 +72,9 @@ export function DataTableRowActions<TData>({
         trigger={null}
         open={isDeleteOpen}
         onOpenChange={setIsDeleteOpen}
-        onQuizDeleted={onDeleteModuleQuizzes}
+        onQuizDeleted={onDeleteAssessmentQuizzes}
       />
     </>
   )
 }
+

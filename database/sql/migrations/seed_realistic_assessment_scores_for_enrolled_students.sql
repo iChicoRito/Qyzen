@@ -1,40 +1,40 @@
 -- ==================== SEED REALISTIC ASSESSMENT SCORES ====================
 -- File: database/sql/migrations/seed_realistic_assessment_scores_for_enrolled_students.sql
 -- Created: 2026-05-19
--- Purpose: Insert realistic submitted assessment scores for active enrolled students with active modules.
+-- Purpose: Insert realistic submitted assessment scores for active enrolled students with active assessments.
 
-WITH module_question_counts AS (
+WITH assessment_question_counts AS (
   SELECT
-    quiz.module_id,
+    quiz.assessment_id,
     COUNT(*)::integer AS total_questions
   FROM public.tbl_quizzes AS quiz
-  GROUP BY quiz.module_id
+  GROUP BY quiz.assessment_id
 ),
 eligible_pairs AS (
   SELECT
-    ROW_NUMBER() OVER (ORDER BY module_row.id, student_user.user_id)::integer AS pair_rank,
+    ROW_NUMBER() OVER (ORDER BY assessment_row.id, student_user.user_id)::integer AS pair_rank,
     enrolled.student_id,
     enrolled.educator_id,
-    module_row.id AS module_id,
-    module_row.subject_id,
-    module_row.section_id,
+    assessment_row.id AS assessment_id,
+    assessment_row.subject_id,
+    assessment_row.section_id,
     question_counts.total_questions,
     LEAST(
       question_counts.total_questions,
-      4 + ((enrolled.student_id + module_row.id) % 7)
+      4 + ((enrolled.student_id + assessment_row.id) % 7)
     )::integer AS target_score
   FROM public.tbl_enrolled AS enrolled
   INNER JOIN public.tbl_users AS student_user
     ON student_user.id = enrolled.student_id
   INNER JOIN public.tbl_subjects AS subject_row
     ON subject_row.id = enrolled.subject_id
-  INNER JOIN public.tbl_modules AS module_row
-    ON module_row.educator_id = enrolled.educator_id
-    AND module_row.subject_id = enrolled.subject_id
-    AND module_row.section_id = subject_row.sections_id
-    AND module_row.is_active = TRUE
-  INNER JOIN module_question_counts AS question_counts
-    ON question_counts.module_id = module_row.id
+  INNER JOIN public.tbl_assessments AS assessment_row
+    ON assessment_row.educator_id = enrolled.educator_id
+    AND assessment_row.subject_id = enrolled.subject_id
+    AND assessment_row.section_id = subject_row.sections_id
+    AND assessment_row.is_active = TRUE
+  INNER JOIN assessment_question_counts AS question_counts
+    ON question_counts.assessment_id = assessment_row.id
     AND question_counts.total_questions > 0
   WHERE enrolled.is_active = TRUE
     AND student_user.user_type = 'student'
@@ -44,14 +44,14 @@ eligible_pairs AS (
       SELECT 1
       FROM public.tbl_scores AS existing_score
       WHERE existing_score.student_id = enrolled.student_id
-        AND existing_score.module_id = module_row.id
+        AND existing_score.assessment_id = assessment_row.id
         AND existing_score.submitted_at IS NOT NULL
     )
 ),
 quiz_answers AS (
   SELECT
     eligible_pairs.student_id,
-    eligible_pairs.module_id,
+    eligible_pairs.assessment_id,
     JSONB_OBJECT_AGG(
       quiz_order.quiz_id::text,
       CASE
@@ -77,15 +77,15 @@ quiz_answers AS (
         ELSE 'Incorrect answer'
       END AS wrong_answer
     FROM public.tbl_quizzes AS quiz
-    WHERE quiz.module_id = eligible_pairs.module_id
+    WHERE quiz.assessment_id = eligible_pairs.assessment_id
   ) AS quiz_order ON TRUE
-  GROUP BY eligible_pairs.student_id, eligible_pairs.module_id
+  GROUP BY eligible_pairs.student_id, eligible_pairs.assessment_id
 ),
 score_payload AS (
   SELECT
     eligible_pairs.student_id,
     eligible_pairs.educator_id,
-    eligible_pairs.module_id,
+    eligible_pairs.assessment_id,
     eligible_pairs.subject_id,
     eligible_pairs.section_id,
     eligible_pairs.target_score AS score,
@@ -102,12 +102,12 @@ score_payload AS (
   FROM eligible_pairs
   INNER JOIN quiz_answers
     ON quiz_answers.student_id = eligible_pairs.student_id
-    AND quiz_answers.module_id = eligible_pairs.module_id
+    AND quiz_answers.assessment_id = eligible_pairs.assessment_id
 )
 INSERT INTO public.tbl_scores (
   student_id,
   educator_id,
-  module_id,
+  assessment_id,
   subject_id,
   section_id,
   score,
@@ -124,7 +124,7 @@ INSERT INTO public.tbl_scores (
 SELECT
   score_payload.student_id,
   score_payload.educator_id,
-  score_payload.module_id,
+  score_payload.assessment_id,
   score_payload.subject_id,
   score_payload.section_id,
   score_payload.score,
@@ -138,3 +138,4 @@ SELECT
   score_payload.submitted_at,
   score_payload.submitted_at
 FROM score_payload;
+

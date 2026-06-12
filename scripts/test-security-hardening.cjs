@@ -1,4 +1,4 @@
-const assert = require('node:assert/strict')
+﻿const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
 
@@ -55,7 +55,7 @@ function main() {
   expectIncludes('src/app/api/profile/settings/route.ts', 'auth.admin.updateUserById')
   expectIncludes('src/app/(profile)/profile/profile-settings-form.tsx', 'name="email"')
   expectIncludes('src/app/(profile)/profile/profile-settings-form.tsx', 'Students can update email and media only.')
-  expectIncludes('src/app/api/student/assessment/scores/[moduleId]/route.ts', 'const adminClient = createAdminClient()')
+  expectIncludes('src/app/api/student/assessment/scores/[assessmentId]/route.ts', 'const adminClient = createAdminClient()')
   expectIncludes('database/functions/export_public_schema_data.sql', 'DROP FUNCTION IF EXISTS public.export_public_schema_data();')
   expectExcludes('database/policies/apply_scores_rbac_policies.sql', 'CREATE POLICY "Student score create access"')
   expectExcludes('database/policies/apply_scores_rbac_policies.sql', 'CREATE POLICY "Student score update access"')
@@ -92,3 +92,4 @@ function main() {
 }
 
 main()
+

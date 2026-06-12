@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import type { ReactNode } from 'react'
 import { useState } from 'react'
@@ -157,7 +157,7 @@ export function ViewScoresModal({
       <ResponsiveDialogContent className="gap-0 p-0" desktopClassName="sm:max-w-[1080px]">
         <ResponsiveDialogHeader>
           <div className="flex flex-wrap items-center gap-2">
-            <ResponsiveDialogTitle>{score.moduleCode}</ResponsiveDialogTitle>
+            <ResponsiveDialogTitle>{score.assessmentCode}</ResponsiveDialogTitle>
             <Badge className={getStatusClassName(score.status)}>{score.status}</Badge>
           </div>
           <ResponsiveDialogDescription>
@@ -425,3 +425,4 @@ export function ViewScoresModal({
     </ResponsiveDialog>
   )
 }
+

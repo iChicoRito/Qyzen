@@ -1,4 +1,4 @@
-import type { EducatorSectionInsight } from '@/lib/supabase/educator-dashboard-types'
+﻿import type { EducatorSectionInsight } from '@/lib/supabase/educator-dashboard-types'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -22,7 +22,7 @@ export function EducatorSectionOverviewCard({ sections }: { sections: EducatorSe
     <Card className="flex h-full flex-col overflow-hidden">
       <CardHeader className="px-4 pt-4">
         <CardTitle>Section Overview</CardTitle>
-        <CardDescription>Student counts, module coverage, and performance by section.</CardDescription>
+        <CardDescription>Student counts, assessment coverage, and performance by section.</CardDescription>
       </CardHeader>
       <CardContent className="min-h-0 flex-1 px-4 pb-4">
         <div className="h-full overflow-auto">
@@ -31,7 +31,7 @@ export function EducatorSectionOverviewCard({ sections }: { sections: EducatorSe
               <TableRow>
                 <TableHead className="px-4 py-3 font-semibold">Section</TableHead>
                 <TableHead className="px-4 py-3 font-semibold">Subjects</TableHead>
-                <TableHead className="px-4 py-3 font-semibold">Modules</TableHead>
+                <TableHead className="px-4 py-3 font-semibold">Assessments</TableHead>
                 <TableHead className="px-4 py-3 font-semibold">Students</TableHead>
                 <TableHead className="px-4 py-3 font-semibold">Finished</TableHead>
                 <TableHead className="px-4 py-3 font-semibold">Pass Rate</TableHead>
@@ -44,7 +44,7 @@ export function EducatorSectionOverviewCard({ sections }: { sections: EducatorSe
                   <TableRow key={section.sectionId}>
                     <TableCell className="px-4 py-3 font-medium">{section.sectionName}</TableCell>
                     <TableCell className="px-4 py-3">{section.subjectCount}</TableCell>
-                    <TableCell className="px-4 py-3">{section.moduleCount}</TableCell>
+                    <TableCell className="px-4 py-3">{section.assessmentCount}</TableCell>
                     <TableCell className="px-4 py-3">{section.studentCount}</TableCell>
                     <TableCell className="px-4 py-3">{section.finishedAssessmentCount}</TableCell>
                     <TableCell className="px-4 py-3">
@@ -73,3 +73,4 @@ export function EducatorSectionOverviewCard({ sections }: { sections: EducatorSe
     </Card>
   )
 }
+

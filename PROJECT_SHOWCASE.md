@@ -32,7 +32,7 @@ Qyzen is organized around three connected portals that reflect how an academic a
 
 The **Admin Dashboard** gives administrators a system-wide view of users, roles, permissions, academic terms, academic years, sections, subjects, educators, students, and assessment activity. It supports governance, access control, and academic monitoring.
 
-The **Educator Portal** helps teachers manage the classroom layer. Educators can create sections and subjects, enroll students, prepare assessment modules, upload or manage quiz questions, share learning materials, review scores, allow retakes, create group chats, and monitor student presence in real time.
+The **Educator Portal** helps teachers manage the classroom layer. Educators can create sections and subjects, enroll students, prepare assessments, upload or manage quiz questions, share learning materials, review scores, allow retakes, create group chats, and monitor student presence in real time.
 
 The **Student Portal** focuses on the learner experience. Students can view available assessments, take quizzes, track scores and progress, access learning materials, join classroom group chats, and see retake or availability status from their dashboard.
 
@@ -56,7 +56,7 @@ The **Student Portal** focuses on the learner experience. Students can view avai
 | **Secure access control** | Protects routes, sessions, and records with role based permissions. |
 | **Academic management** | Manages users, roles, permissions, terms, and yearly settings centrally. |
 | **Classroom setup** | Helps educators organize sections, subjects, enrollments, and student records. |
-| **Assessment modules** | Configures timed modules with schedules, shuffling, hints, and retakes. |
+| **Assessments** | Configures timed assessments with schedules, shuffling, hints, and retakes. |
 | **Quiz management** | Supports manual quiz creation and Excel friendly spreadsheet uploads. |
 | **Student assessment flow** | Guides quiz attempts, submissions, warnings, scores, and result reviews. |
 | **Scores and retakes** | Lets educators review scores while students track retake opportunities. |
@@ -78,7 +78,7 @@ The interface uses reusable dashboard shells, data tables, modals, form componen
 
 ### Build Application
 
-The application was implemented as a full-stack Next.js App Router project. Supabase data loaders and helper modules shape dashboard analytics, classroom records, assessment data, learning materials, group chats, and notifications before passing them into the UI.
+The application was implemented as a full-stack Next.js App Router project. Supabase data loaders and helper assessments shape dashboard analytics, classroom records, assessment data, learning materials, group chats, and notifications before passing them into the UI.
 
 ### Secure and Verify
 
@@ -133,3 +133,4 @@ Qyzen uses shadcn/ui and Radix UI primitives for accessible dialogs, tabs, popov
 
 ![pnpm](https://img.shields.io/badge/pnpm-f69220?style=flat-square)
 ![ESLint](https://img.shields.io/badge/ESLint-4b32c3?style=flat-square)
+

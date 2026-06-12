@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -39,7 +39,7 @@ export function DashboardRealtimeShell({
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tbl_sections' }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tbl_subjects' }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tbl_enrolled' }, scheduleRefresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tbl_modules' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tbl_assessments' }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tbl_quizzes' }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tbl_scores' }, scheduleRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tbl_learning_materials' }, scheduleRefresh)
@@ -72,3 +72,4 @@ export function DashboardRealtimeShell({
     </div>
   )
 }
+

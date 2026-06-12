@@ -1,14 +1,14 @@
-'use client'
+﻿'use client'
 
 import type { NotificationInsertInput } from '@/types/notification'
 
 import { fetchActiveStudentRecipientIds, insertNotifications } from './notifications'
 import { createClient } from './client'
 
-export interface QuizModuleOption {
+export interface QuizAssessmentOption {
   id: number
-  moduleId: string
-  moduleCode: string
+  assessmentId: string
+  assessmentCode: string
   termName: string
   subjectId: number
   subjectName: string
@@ -18,9 +18,9 @@ export interface QuizModuleOption {
 
 export interface QuizRecord {
   id: number
-  moduleRowId: number
-  moduleId: string
-  moduleCode: string
+  assessmentRowId: number
+  assessmentId: string
+  assessmentCode: string
   termName: string
   subjectId: number
   subjectName: string
@@ -37,9 +37,9 @@ export interface QuizRecord {
 }
 
 export interface QuizGroupRecord {
-  moduleRowId: number
-  moduleId: string
-  moduleCode: string
+  assessmentRowId: number
+  assessmentId: string
+  assessmentCode: string
   termName: string
   subjectId: number
   subjectName: string
@@ -56,9 +56,9 @@ interface UserRow {
   id: number
 }
 
-interface QuizModuleRow {
+interface QuizAssessmentRow {
   id: number
-  module_code: string
+  assessment_code: string
   term: number
   subject_id: number
   section_id: number
@@ -72,14 +72,14 @@ interface QuizModuleRow {
 
 interface QuizRow {
   id: number
-  module_id: number
+  assessment_id: number
   question: string
   quiz_type: 'multiple_choice' | 'identification'
   choices: unknown
   correct_answer: string
-  module: {
+  assessment: {
     id: number
-    module_code: string
+    assessment_code: string
     term: number
     subject_id: number
     section_id: number
@@ -91,7 +91,7 @@ interface QuizRow {
     section: { section_name: string } | { section_name: string }[] | null
   } | Array<{
     id: number
-    module_code: string
+    assessment_code: string
     term: number
     subject_id: number
     section_id: number
@@ -109,8 +109,8 @@ interface SupabaseErrorResponse {
 }
 
 interface QuizNotificationContext {
-  moduleId: number
-  moduleCode: string
+  assessmentId: number
+  assessmentCode: string
   subjectId: number
   subjectName: string
   sectionId: number
@@ -163,22 +163,22 @@ function buildQuizNotificationMessage(
   context: QuizNotificationContext
 ) {
   if (action === 'created') {
-    return `A new quiz item was added to ${context.moduleCode} for ${context.subjectName}.`
+    return `A new quiz item was added to ${context.assessmentCode} for ${context.subjectName}.`
   }
 
   if (action === 'uploaded') {
-    return `${context.questionCount || 0} quiz items were uploaded to ${context.moduleCode} for ${context.subjectName}.`
+    return `${context.questionCount || 0} quiz items were uploaded to ${context.assessmentCode} for ${context.subjectName}.`
   }
 
   if (action === 'updated') {
-    return `A quiz item in ${context.moduleCode} for ${context.subjectName} has been updated.`
+    return `A quiz item in ${context.assessmentCode} for ${context.subjectName} has been updated.`
   }
 
   if ((context.questionCount || 0) > 1) {
-    return `${context.questionCount} quiz items were removed from ${context.moduleCode} for ${context.subjectName}.`
+    return `${context.questionCount} quiz items were removed from ${context.assessmentCode} for ${context.subjectName}.`
   }
 
-  return `A quiz item in ${context.moduleCode} for ${context.subjectName} has been removed.`
+  return `A quiz item in ${context.assessmentCode} for ${context.subjectName} has been removed.`
 }
 
 // createQuizNotificationInputs - build notification rows for active enrolled students
@@ -200,11 +200,11 @@ async function createQuizNotificationInputs(
         title: buildQuizNotificationTitle(action),
         message: buildQuizNotificationMessage(action, context),
         linkPath: '/student/assessment/quiz',
-        moduleId: context.moduleId,
+        assessmentId: context.assessmentId,
         subjectId: context.subjectId,
         sectionId: context.sectionId,
         metadata: {
-          moduleCode: context.moduleCode,
+          assessmentCode: context.assessmentCode,
           subjectName: context.subjectName,
           sectionName: context.sectionName,
           questionCount: context.questionCount,
@@ -236,7 +236,7 @@ async function fetchQuizNotificationContext(educatorId: number, quizId: number) 
   const { data, error } = await supabase
     .from('tbl_quizzes')
     .select(
-      'id,module_id,module:module_id(id,module_code,subject_id,section_id,subject:subject_id(subject_name),section:section_id(section_name))'
+      'id,assessment_id,assessment:assessment_id(id,assessment_code,subject_id,section_id,subject:subject_id(subject_name),section:section_id(section_name))'
     )
     .eq('educator_id', educatorId)
     .eq('id', quizId)
@@ -247,11 +247,11 @@ async function fetchQuizNotificationContext(educatorId: number, quizId: number) 
   }
 
   const row = data as {
-    module_id: number
-    module:
+    assessment_id: number
+    assessment:
       | {
           id: number
-          module_code: string
+          assessment_code: string
           subject_id: number
           section_id: number
           subject: { subject_name: string } | { subject_name: string }[] | null
@@ -259,7 +259,7 @@ async function fetchQuizNotificationContext(educatorId: number, quizId: number) 
         }
       | Array<{
           id: number
-          module_code: string
+          assessment_code: string
           subject_id: number
           section_id: number
           subject: { subject_name: string } | { subject_name: string }[] | null
@@ -267,53 +267,53 @@ async function fetchQuizNotificationContext(educatorId: number, quizId: number) 
         }>
       | null
   }
-  const moduleValue = Array.isArray(row.module) ? row.module[0] : row.module
-  const subject = Array.isArray(moduleValue?.subject) ? moduleValue?.subject[0] : moduleValue?.subject
-  const section = Array.isArray(moduleValue?.section) ? moduleValue?.section[0] : moduleValue?.section
+  const assessmentValue = Array.isArray(row.assessment) ? row.assessment[0] : row.assessment
+  const subject = Array.isArray(assessmentValue?.subject) ? assessmentValue?.subject[0] : assessmentValue?.subject
+  const section = Array.isArray(assessmentValue?.section) ? assessmentValue?.section[0] : assessmentValue?.section
 
   return {
-    moduleId: moduleValue?.id || row.module_id,
-    moduleCode: moduleValue?.module_code || 'Unknown Module',
-    subjectId: moduleValue?.subject_id || 0,
+    assessmentId: assessmentValue?.id || row.assessment_id,
+    assessmentCode: assessmentValue?.assessment_code || 'Unknown Assessment',
+    subjectId: assessmentValue?.subject_id || 0,
     subjectName: subject?.subject_name || 'Unknown Subject',
-    sectionId: moduleValue?.section_id || 0,
+    sectionId: assessmentValue?.section_id || 0,
     sectionName: section?.section_name || 'Unknown Section',
     questionCount: 1,
   } satisfies QuizNotificationContext
 }
 
-// fetchModuleQuizNotificationContext - load module quiz details before deleting all questions
-async function fetchModuleQuizNotificationContext(educatorId: number, moduleRowId: number) {
+// fetchAssessmentQuizNotificationContext - load assessment quiz details before deleting all questions
+async function fetchAssessmentQuizNotificationContext(educatorId: number, assessmentRowId: number) {
   const supabase = createClient()
-  const [{ data: moduleData, error: moduleError }, { count, error: countError }] = await Promise.all([
+  const [{ data: assessmentData, error: assessmentError }, { count, error: countError }] = await Promise.all([
     supabase
-      .from('tbl_modules')
-      .select('id,module_code,subject_id,section_id,subject:subject_id(subject_name),section:section_id(section_name)')
+      .from('tbl_assessments')
+      .select('id,assessment_code,subject_id,section_id,subject:subject_id(subject_name),section:section_id(section_name)')
       .eq('educator_id', educatorId)
-      .eq('id', moduleRowId)
+      .eq('id', assessmentRowId)
       .single(),
     supabase
       .from('tbl_quizzes')
       .select('id', { count: 'exact', head: true })
       .eq('educator_id', educatorId)
-      .eq('module_id', moduleRowId),
+      .eq('assessment_id', assessmentRowId),
   ])
 
-  if (moduleError) {
-    throw new Error(getSupabaseErrorMessage(moduleError, 'Failed to load quiz module details.'))
+  if (assessmentError) {
+    throw new Error(getSupabaseErrorMessage(assessmentError, 'Failed to load quiz assessment details.'))
   }
 
   if (countError) {
     throw new Error(getSupabaseErrorMessage(countError, 'Failed to count uploaded quiz items.'))
   }
 
-  const row = moduleData as QuizModuleRow
+  const row = assessmentData as QuizAssessmentRow
   const subject = Array.isArray(row.subject) ? row.subject[0] : row.subject
   const section = Array.isArray(row.section) ? row.section[0] : row.section
 
   return {
-    moduleId: row.id,
-    moduleCode: row.module_code,
+    assessmentId: row.id,
+    assessmentCode: row.assessment_code,
     subjectId: row.subject_id,
     subjectName: subject?.subject_name || 'Unknown Subject',
     sectionId: row.section_id,
@@ -414,22 +414,22 @@ function buildAcademicTermLabel(term: { term_name: string; semester: string }) {
 
 // mapQuizRow - convert supabase quiz row into app shape
 function mapQuizRow(row: QuizRow): QuizRecord {
-  const moduleValue = Array.isArray(row.module) ? row.module[0] : row.module
-  const academicTerm = Array.isArray(moduleValue?.academic_term)
-    ? moduleValue?.academic_term[0]
-    : moduleValue?.academic_term
-  const subject = Array.isArray(moduleValue?.subject) ? moduleValue?.subject[0] : moduleValue?.subject
-  const section = Array.isArray(moduleValue?.section) ? moduleValue?.section[0] : moduleValue?.section
+  const assessmentValue = Array.isArray(row.assessment) ? row.assessment[0] : row.assessment
+  const academicTerm = Array.isArray(assessmentValue?.academic_term)
+    ? assessmentValue?.academic_term[0]
+    : assessmentValue?.academic_term
+  const subject = Array.isArray(assessmentValue?.subject) ? assessmentValue?.subject[0] : assessmentValue?.subject
+  const section = Array.isArray(assessmentValue?.section) ? assessmentValue?.section[0] : assessmentValue?.section
 
   return {
     id: row.id,
-    moduleRowId: moduleValue?.id || row.module_id,
-    moduleId: moduleValue?.module_code || 'Unknown Module',
-    moduleCode: moduleValue?.module_code || 'Unknown Module',
+    assessmentRowId: assessmentValue?.id || row.assessment_id,
+    assessmentId: assessmentValue?.assessment_code || 'Unknown Assessment',
+    assessmentCode: assessmentValue?.assessment_code || 'Unknown Assessment',
     termName: academicTerm ? buildAcademicTermLabel(academicTerm) : 'No term',
-    subjectId: moduleValue?.subject_id || 0,
+    subjectId: assessmentValue?.subject_id || 0,
     subjectName: subject?.subject_name || 'Unknown Subject',
-    sectionId: moduleValue?.section_id || 0,
+    sectionId: assessmentValue?.section_id || 0,
     sectionName: section?.section_name || 'Unknown Section',
     question: row.question,
     quizType: row.quiz_type,
@@ -459,16 +459,16 @@ function buildQuizTypeLabel(questions: QuizRecord[]) {
   return 'No Questions'
 }
 
-// groupQuizRows - group question rows into one module row
+// groupQuizRows - group question rows into one assessment row
 function groupQuizRows(rows: QuizRecord[]) {
   const groupedRows = rows.reduce<Map<number, QuizGroupRecord>>((result, row) => {
-    const currentGroup = result.get(row.moduleRowId)
+    const currentGroup = result.get(row.assessmentRowId)
 
     if (!currentGroup) {
-      result.set(row.moduleRowId, {
-        moduleRowId: row.moduleRowId,
-        moduleId: row.moduleId,
-        moduleCode: row.moduleCode,
+      result.set(row.assessmentRowId, {
+        assessmentRowId: row.assessmentRowId,
+        assessmentId: row.assessmentId,
+        assessmentCode: row.assessmentCode,
         termName: row.termName,
         subjectId: row.subjectId,
         subjectName: row.subjectName,
@@ -484,7 +484,7 @@ function groupQuizRows(rows: QuizRecord[]) {
     }
 
     const nextQuestions = [...currentGroup.questions, row]
-    result.set(row.moduleRowId, {
+    result.set(row.assessmentRowId, {
       ...currentGroup,
       totalQuestions: nextQuestions.length,
       multipleChoiceCount:
@@ -498,40 +498,40 @@ function groupQuizRows(rows: QuizRecord[]) {
     return result
   }, new Map<number, QuizGroupRecord>())
 
-  return Array.from(groupedRows.values()).sort((leftRow, rightRow) => rightRow.moduleRowId - leftRow.moduleRowId)
+  return Array.from(groupedRows.values()).sort((leftRow, rightRow) => rightRow.assessmentRowId - leftRow.assessmentRowId)
 }
 
-// fetchQuizModuleOptions - load module options for the add quiz form
-export async function fetchQuizModuleOptions() {
+// fetchQuizAssessmentOptions - load assessment options for the add quiz form
+export async function fetchQuizAssessmentOptions() {
   const educatorId = await getCurrentEducatorId()
   const supabase = createClient()
   const { data, error } = await supabase
-    .from('tbl_modules')
+    .from('tbl_assessments')
     .select(
-      'id,module_code,term,subject_id,section_id,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(section_name)'
+      'id,assessment_code,term,subject_id,section_id,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(section_name)'
     )
     .eq('educator_id', educatorId)
     .order('created_at', { ascending: false })
 
   if (error) {
-    throw new Error(getSupabaseErrorMessage(error, 'Failed to load quiz module options.'))
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to load quiz assessment options.'))
   }
 
-  return ((data || []) as QuizModuleRow[]).map((row) => {
+  return ((data || []) as QuizAssessmentRow[]).map((row) => {
     const academicTerm = Array.isArray(row.academic_term) ? row.academic_term[0] : row.academic_term
     const subject = Array.isArray(row.subject) ? row.subject[0] : row.subject
     const section = Array.isArray(row.section) ? row.section[0] : row.section
 
     return {
       id: row.id,
-      moduleId: row.module_code,
-      moduleCode: row.module_code,
+      assessmentId: row.assessment_code,
+      assessmentCode: row.assessment_code,
       termName: academicTerm ? buildAcademicTermLabel(academicTerm) : 'No term',
       subjectId: row.subject_id,
       subjectName: subject?.subject_name || 'Unknown Subject',
       sectionId: row.section_id,
       sectionName: section?.section_name || 'Unknown Section',
-    } satisfies QuizModuleOption
+    } satisfies QuizAssessmentOption
   })
 }
 
@@ -542,7 +542,7 @@ export async function fetchQuizzes() {
   const { data, error } = await supabase
     .from('tbl_quizzes')
     .select(
-      'id,module_id,question,quiz_type,choices,correct_answer,module:module_id(id,module_code,term,subject_id,section_id,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(section_name))'
+      'id,assessment_id,question,quiz_type,choices,correct_answer,assessment:assessment_id(id,assessment_code,term,subject_id,section_id,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(section_name))'
     )
     .eq('educator_id', educatorId)
     .order('created_at', { ascending: false })
@@ -561,7 +561,7 @@ export async function createQuiz(input: QuizRecord) {
   const { data, error } = await supabase
     .from('tbl_quizzes')
     .insert({
-      module_id: input.moduleRowId,
+      assessment_id: input.assessmentRowId,
       subject_id: input.subjectId,
       section_id: input.sectionId,
       educator_id: educatorId,
@@ -571,7 +571,7 @@ export async function createQuiz(input: QuizRecord) {
       correct_answer: input.correctAnswer,
     })
     .select(
-      'id,module_id,question,quiz_type,choices,correct_answer,module:module_id(id,module_code,term,subject_id,section_id,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(section_name))'
+      'id,assessment_id,question,quiz_type,choices,correct_answer,assessment:assessment_id(id,assessment_code,term,subject_id,section_id,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(section_name))'
     )
     .single()
 
@@ -583,8 +583,8 @@ export async function createQuiz(input: QuizRecord) {
 
   await notifyStudentsAboutQuizChange(educatorId, 'created', [
     {
-      moduleId: createdQuiz.moduleRowId,
-      moduleCode: createdQuiz.moduleCode,
+      assessmentId: createdQuiz.assessmentRowId,
+      assessmentCode: createdQuiz.assessmentCode,
       subjectId: createdQuiz.subjectId,
       subjectName: createdQuiz.subjectName,
       sectionId: createdQuiz.sectionId,
@@ -605,7 +605,7 @@ export async function createQuizzes(inputs: QuizRecord[]) {
   const educatorId = await getCurrentEducatorId()
   const supabase = createClient()
   const rowsToInsert = inputs.map((input) => ({
-    module_id: input.moduleRowId,
+    assessment_id: input.assessmentRowId,
     subject_id: input.subjectId,
     section_id: input.sectionId,
     educator_id: educatorId,
@@ -621,12 +621,12 @@ export async function createQuizzes(inputs: QuizRecord[]) {
   }
 
   const uploadContextMap = inputs.reduce<Map<number, QuizNotificationContext>>((result, input) => {
-    const currentContext = result.get(input.moduleRowId)
+    const currentContext = result.get(input.assessmentRowId)
 
     if (!currentContext) {
-      result.set(input.moduleRowId, {
-        moduleId: input.moduleRowId,
-        moduleCode: input.moduleCode,
+      result.set(input.assessmentRowId, {
+        assessmentId: input.assessmentRowId,
+        assessmentCode: input.assessmentCode,
         subjectId: input.subjectId,
         subjectName: input.subjectName,
         sectionId: input.sectionId,
@@ -636,7 +636,7 @@ export async function createQuizzes(inputs: QuizRecord[]) {
       return result
     }
 
-    result.set(input.moduleRowId, {
+    result.set(input.assessmentRowId, {
       ...currentContext,
       questionCount: (currentContext.questionCount || 0) + 1,
     })
@@ -654,7 +654,7 @@ export async function updateQuiz(input: QuizRecord) {
   const { data, error } = await supabase
     .from('tbl_quizzes')
     .update({
-      module_id: input.moduleRowId,
+      assessment_id: input.assessmentRowId,
       subject_id: input.subjectId,
       section_id: input.sectionId,
       question: input.question.trim(),
@@ -665,7 +665,7 @@ export async function updateQuiz(input: QuizRecord) {
     .eq('educator_id', educatorId)
     .eq('id', input.id)
     .select(
-      'id,module_id,question,quiz_type,choices,correct_answer,module:module_id(id,module_code,term,subject_id,section_id,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(section_name))'
+      'id,assessment_id,question,quiz_type,choices,correct_answer,assessment:assessment_id(id,assessment_code,term,subject_id,section_id,academic_term:term(id,term_name,semester),subject:subject_id(subject_name),section:section_id(section_name))'
     )
     .single()
 
@@ -677,8 +677,8 @@ export async function updateQuiz(input: QuizRecord) {
 
   await notifyStudentsAboutQuizChange(educatorId, 'updated', [
     {
-      moduleId: updatedQuiz.moduleRowId,
-      moduleCode: updatedQuiz.moduleCode,
+      assessmentId: updatedQuiz.assessmentRowId,
+      assessmentCode: updatedQuiz.assessmentCode,
       subjectId: updatedQuiz.subjectId,
       subjectName: updatedQuiz.subjectName,
       sectionId: updatedQuiz.sectionId,
@@ -708,20 +708,21 @@ export async function deleteQuiz(quizId: number) {
   await notifyStudentsAboutQuizChange(educatorId, 'deleted', [notificationContext])
 }
 
-// deleteQuizzesByModule - delete all quiz rows in one module
-export async function deleteQuizzesByModule(moduleRowId: number) {
+// deleteQuizzesByAssessment - delete all quiz rows in one assessment
+export async function deleteQuizzesByAssessment(assessmentRowId: number) {
   const educatorId = await getCurrentEducatorId()
-  const notificationContext = await fetchModuleQuizNotificationContext(educatorId, moduleRowId)
+  const notificationContext = await fetchAssessmentQuizNotificationContext(educatorId, assessmentRowId)
   const supabase = createClient()
   const { error } = await supabase
     .from('tbl_quizzes')
     .delete()
     .eq('educator_id', educatorId)
-    .eq('module_id', moduleRowId)
+    .eq('assessment_id', assessmentRowId)
 
   if (error) {
-    throw new Error(getSupabaseErrorMessage(error, 'Failed to delete quizzes for this module.'))
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to delete quizzes for this assessment.'))
   }
 
   await notifyStudentsAboutQuizChange(educatorId, 'deleted', [notificationContext])
 }
+

@@ -66,13 +66,13 @@ CREATE TABLE public.tbl_subjects (
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
-CREATE SEQUENCE IF NOT EXISTS tbl_modules_id_seq;
-CREATE TABLE public.tbl_modules (
-  id bigint DEFAULT nextval('tbl_modules_id_seq'::regclass) NOT NULL,
+CREATE SEQUENCE IF NOT EXISTS tbl_assessments_id_seq;
+CREATE TABLE public.tbl_assessments (
+  id bigint DEFAULT nextval('tbl_assessments_id_seq'::regclass) NOT NULL,
   educator_id bigint NOT NULL,
   subject_id bigint NOT NULL,
   section_id bigint NOT NULL,
-  module_code text NOT NULL,
+  assessment_code text NOT NULL,
   term bigint NOT NULL,
   time_limit text NOT NULL,
   cheating_attempts integer DEFAULT 0 NOT NULL,
@@ -94,7 +94,7 @@ CREATE TABLE public.tbl_modules (
 CREATE SEQUENCE IF NOT EXISTS tbl_quizzes_id_seq;
 CREATE TABLE public.tbl_quizzes (
   id bigint DEFAULT nextval('tbl_quizzes_id_seq'::regclass) NOT NULL,
-  module_id bigint NOT NULL,
+  assessment_id bigint NOT NULL,
   subject_id bigint NOT NULL,
   section_id bigint NOT NULL,
   educator_id bigint NOT NULL,
@@ -122,7 +122,7 @@ CREATE TABLE public.tbl_scores (
   id bigint DEFAULT nextval('tbl_scores_id_seq'::regclass) NOT NULL,
   student_id bigint NOT NULL,
   educator_id bigint NOT NULL,
-  module_id bigint NOT NULL,
+  assessment_id bigint NOT NULL,
   subject_id bigint NOT NULL,
   section_id bigint NOT NULL,
   score integer,
@@ -148,12 +148,12 @@ CREATE TABLE public.tbl_student_presence (
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
-CREATE SEQUENCE IF NOT EXISTS tbl_student_module_retakes_id_seq;
-CREATE TABLE public.tbl_student_module_retakes (
-  id bigint DEFAULT nextval('tbl_student_module_retakes_id_seq'::regclass) NOT NULL,
+CREATE SEQUENCE IF NOT EXISTS tbl_student_assessment_retakes_id_seq;
+CREATE TABLE public.tbl_student_assessment_retakes (
+  id bigint DEFAULT nextval('tbl_student_assessment_retakes_id_seq'::regclass) NOT NULL,
   educator_id bigint NOT NULL,
   student_id bigint NOT NULL,
-  module_id bigint NOT NULL,
+  assessment_id bigint NOT NULL,
   extra_retake_count integer DEFAULT 0 NOT NULL,
   is_active boolean DEFAULT true NOT NULL,
   created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -169,7 +169,7 @@ CREATE TABLE public.tbl_notifications (
   title text NOT NULL,
   message text NOT NULL,
   link_path text,
-  module_id bigint,
+  assessment_id bigint,
   subject_id bigint,
   section_id bigint,
   metadata jsonb,
@@ -177,7 +177,7 @@ CREATE TABLE public.tbl_notifications (
   read_at timestamp with time zone,
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   updated_at timestamp with time zone DEFAULT now() NOT NULL,
-  CONSTRAINT tbl_notifications_event_type_check CHECK ((event_type = ANY (ARRAY['module_created'::text, 'module_updated'::text, 'module_deleted'::text, 'learning_material_uploaded'::text, 'learning_material_deleted'::text, 'quiz_created'::text, 'quiz_uploaded'::text, 'quiz_updated'::text, 'quiz_deleted'::text, 'enrollment_created'::text, 'enrollment_updated'::text, 'enrollment_deleted'::text, 'retake_updated'::text, 'quiz_submitted'::text])))
+  CONSTRAINT tbl_notifications_event_type_check CHECK ((event_type = ANY (ARRAY['assessment_created'::text, 'assessment_updated'::text, 'assessment_deleted'::text, 'learning_material_uploaded'::text, 'learning_material_deleted'::text, 'quiz_created'::text, 'quiz_uploaded'::text, 'quiz_updated'::text, 'quiz_deleted'::text, 'enrollment_created'::text, 'enrollment_updated'::text, 'enrollment_deleted'::text, 'retake_updated'::text, 'quiz_submitted'::text])))
 );
 
 CREATE SEQUENCE IF NOT EXISTS tbl_user_roles_id_seq;
@@ -244,12 +244,12 @@ ALTER TABLE public.tbl_roles ADD CONSTRAINT roles_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_sections ADD CONSTRAINT tbl_sections_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_sections_term ADD CONSTRAINT tbl_sections_term_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_subjects ADD CONSTRAINT tbl_subjects_pkey PRIMARY KEY (id);
-ALTER TABLE public.tbl_modules ADD CONSTRAINT tbl_modules_pkey PRIMARY KEY (id);
+ALTER TABLE public.tbl_assessments ADD CONSTRAINT tbl_assessments_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_quizzes ADD CONSTRAINT tbl_quizzes_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_scores ADD CONSTRAINT tbl_scores_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_student_presence ADD CONSTRAINT tbl_student_presence_pkey PRIMARY KEY (id);
-ALTER TABLE public.tbl_student_module_retakes ADD CONSTRAINT tbl_student_module_retakes_pkey PRIMARY KEY (id);
+ALTER TABLE public.tbl_student_assessment_retakes ADD CONSTRAINT tbl_student_assessment_retakes_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_notifications ADD CONSTRAINT tbl_notifications_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_user_roles ADD CONSTRAINT user_roles_pkey PRIMARY KEY (id);
 ALTER TABLE public.tbl_users ADD CONSTRAINT users_pkey PRIMARY KEY (id);
@@ -268,11 +268,11 @@ ALTER TABLE public.tbl_sections_term ADD CONSTRAINT tbl_sections_term_academic_t
 ALTER TABLE public.tbl_sections_term ADD CONSTRAINT tbl_sections_term_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.tbl_sections(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_subjects ADD CONSTRAINT tbl_subjects_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_subjects ADD CONSTRAINT tbl_subjects_sections_id_fkey FOREIGN KEY (sections_id) REFERENCES public.tbl_sections(id) ON DELETE CASCADE;
-ALTER TABLE public.tbl_modules ADD CONSTRAINT tbl_modules_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
-ALTER TABLE public.tbl_modules ADD CONSTRAINT tbl_modules_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.tbl_subjects(id) ON DELETE CASCADE;
-ALTER TABLE public.tbl_modules ADD CONSTRAINT tbl_modules_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.tbl_sections(id) ON DELETE CASCADE;
-ALTER TABLE public.tbl_modules ADD CONSTRAINT tbl_modules_term_fkey FOREIGN KEY (term) REFERENCES public.tbl_academic_term(id) ON DELETE CASCADE;
-ALTER TABLE public.tbl_quizzes ADD CONSTRAINT tbl_quizzes_module_id_fkey FOREIGN KEY (module_id) REFERENCES public.tbl_modules(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_assessments ADD CONSTRAINT tbl_assessments_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_assessments ADD CONSTRAINT tbl_assessments_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.tbl_subjects(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_assessments ADD CONSTRAINT tbl_assessments_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.tbl_sections(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_assessments ADD CONSTRAINT tbl_assessments_term_fkey FOREIGN KEY (term) REFERENCES public.tbl_academic_term(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_quizzes ADD CONSTRAINT tbl_quizzes_assessment_id_fkey FOREIGN KEY (assessment_id) REFERENCES public.tbl_assessments(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_quizzes ADD CONSTRAINT tbl_quizzes_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.tbl_subjects(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_quizzes ADD CONSTRAINT tbl_quizzes_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.tbl_sections(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_quizzes ADD CONSTRAINT tbl_quizzes_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
@@ -281,16 +281,16 @@ ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_educator_id_fkey FOR
 ALTER TABLE public.tbl_enrolled ADD CONSTRAINT tbl_enrolled_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.tbl_subjects(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_scores ADD CONSTRAINT tbl_scores_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_scores ADD CONSTRAINT tbl_scores_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
-ALTER TABLE public.tbl_scores ADD CONSTRAINT tbl_scores_module_id_fkey FOREIGN KEY (module_id) REFERENCES public.tbl_modules(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_scores ADD CONSTRAINT tbl_scores_assessment_id_fkey FOREIGN KEY (assessment_id) REFERENCES public.tbl_assessments(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_scores ADD CONSTRAINT tbl_scores_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.tbl_subjects(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_scores ADD CONSTRAINT tbl_scores_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.tbl_sections(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_student_presence ADD CONSTRAINT tbl_student_presence_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
-ALTER TABLE public.tbl_student_module_retakes ADD CONSTRAINT tbl_student_module_retakes_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
-ALTER TABLE public.tbl_student_module_retakes ADD CONSTRAINT tbl_student_module_retakes_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
-ALTER TABLE public.tbl_student_module_retakes ADD CONSTRAINT tbl_student_module_retakes_module_id_fkey FOREIGN KEY (module_id) REFERENCES public.tbl_modules(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_student_assessment_retakes ADD CONSTRAINT tbl_student_assessment_retakes_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_student_assessment_retakes ADD CONSTRAINT tbl_student_assessment_retakes_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
+ALTER TABLE public.tbl_student_assessment_retakes ADD CONSTRAINT tbl_student_assessment_retakes_assessment_id_fkey FOREIGN KEY (assessment_id) REFERENCES public.tbl_assessments(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_notifications ADD CONSTRAINT tbl_notifications_recipient_user_id_fkey FOREIGN KEY (recipient_user_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
 ALTER TABLE public.tbl_notifications ADD CONSTRAINT tbl_notifications_actor_user_id_fkey FOREIGN KEY (actor_user_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE;
-ALTER TABLE public.tbl_notifications ADD CONSTRAINT tbl_notifications_module_id_fkey FOREIGN KEY (module_id) REFERENCES public.tbl_modules(id) ON DELETE SET NULL;
+ALTER TABLE public.tbl_notifications ADD CONSTRAINT tbl_notifications_assessment_id_fkey FOREIGN KEY (assessment_id) REFERENCES public.tbl_assessments(id) ON DELETE SET NULL;
 ALTER TABLE public.tbl_notifications ADD CONSTRAINT tbl_notifications_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.tbl_subjects(id) ON DELETE SET NULL;
 ALTER TABLE public.tbl_notifications ADD CONSTRAINT tbl_notifications_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.tbl_sections(id) ON DELETE SET NULL;
 ALTER TABLE public.tbl_user_roles ADD CONSTRAINT user_roles_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.tbl_roles(id) ON DELETE CASCADE;
@@ -330,14 +330,14 @@ CREATE INDEX idx_tbl_subjects_educator_id ON public.tbl_subjects USING btree (ed
 CREATE INDEX idx_tbl_subjects_sections_id ON public.tbl_subjects USING btree (sections_id);
 CREATE INDEX idx_tbl_subjects_subject_code ON public.tbl_subjects USING btree (subject_code);
 CREATE INDEX idx_tbl_subjects_subject_name ON public.tbl_subjects USING btree (subject_name);
-CREATE UNIQUE INDEX tbl_modules_unique_code_per_subject_section_term ON public.tbl_modules USING btree (module_code, subject_id, section_id, term);
-CREATE INDEX idx_tbl_modules_educator_id ON public.tbl_modules USING btree (educator_id);
-CREATE INDEX idx_tbl_modules_subject_id ON public.tbl_modules USING btree (subject_id);
-CREATE INDEX idx_tbl_modules_section_id ON public.tbl_modules USING btree (section_id);
-CREATE INDEX idx_tbl_modules_term ON public.tbl_modules USING btree (term);
-CREATE INDEX idx_tbl_modules_module_code ON public.tbl_modules USING btree (module_code);
-CREATE INDEX idx_tbl_modules_start_date ON public.tbl_modules USING btree (start_date);
-CREATE INDEX idx_tbl_quizzes_module_id ON public.tbl_quizzes USING btree (module_id);
+CREATE UNIQUE INDEX tbl_assessments_unique_code_per_subject_section_term ON public.tbl_assessments USING btree (assessment_code, subject_id, section_id, term);
+CREATE INDEX idx_tbl_assessments_educator_id ON public.tbl_assessments USING btree (educator_id);
+CREATE INDEX idx_tbl_assessments_subject_id ON public.tbl_assessments USING btree (subject_id);
+CREATE INDEX idx_tbl_assessments_section_id ON public.tbl_assessments USING btree (section_id);
+CREATE INDEX idx_tbl_assessments_term ON public.tbl_assessments USING btree (term);
+CREATE INDEX idx_tbl_assessments_assessment_code ON public.tbl_assessments USING btree (assessment_code);
+CREATE INDEX idx_tbl_assessments_start_date ON public.tbl_assessments USING btree (start_date);
+CREATE INDEX idx_tbl_quizzes_assessment_id ON public.tbl_quizzes USING btree (assessment_id);
 CREATE INDEX idx_tbl_quizzes_subject_id ON public.tbl_quizzes USING btree (subject_id);
 CREATE INDEX idx_tbl_quizzes_section_id ON public.tbl_quizzes USING btree (section_id);
 CREATE INDEX idx_tbl_quizzes_educator_id ON public.tbl_quizzes USING btree (educator_id);
@@ -346,22 +346,22 @@ CREATE UNIQUE INDEX tbl_enrolled_unique_student_subject_per_educator ON public.t
 CREATE INDEX idx_tbl_enrolled_educator_id ON public.tbl_enrolled USING btree (educator_id);
 CREATE INDEX idx_tbl_enrolled_student_id ON public.tbl_enrolled USING btree (student_id);
 CREATE INDEX idx_tbl_enrolled_subject_id ON public.tbl_enrolled USING btree (subject_id);
-CREATE INDEX idx_tbl_scores_student_module ON public.tbl_scores USING btree (student_id, module_id);
+CREATE INDEX idx_tbl_scores_student_assessment ON public.tbl_scores USING btree (student_id, assessment_id);
 CREATE INDEX idx_tbl_scores_student_id ON public.tbl_scores USING btree (student_id);
-CREATE INDEX idx_tbl_scores_module_id ON public.tbl_scores USING btree (module_id);
+CREATE INDEX idx_tbl_scores_assessment_id ON public.tbl_scores USING btree (assessment_id);
 CREATE INDEX idx_tbl_scores_subject_id ON public.tbl_scores USING btree (subject_id);
 CREATE INDEX idx_tbl_scores_section_id ON public.tbl_scores USING btree (section_id);
 CREATE INDEX idx_tbl_scores_status ON public.tbl_scores USING btree (status);
 CREATE UNIQUE INDEX idx_tbl_student_presence_student_id ON public.tbl_student_presence USING btree (student_id);
 CREATE INDEX idx_tbl_student_presence_last_seen_at ON public.tbl_student_presence USING btree (last_seen_at);
-CREATE UNIQUE INDEX idx_tbl_student_module_retakes_unique_pair ON public.tbl_student_module_retakes USING btree (educator_id, student_id, module_id);
-CREATE INDEX idx_tbl_student_module_retakes_student_module ON public.tbl_student_module_retakes USING btree (student_id, module_id);
-CREATE INDEX idx_tbl_student_module_retakes_educator_id ON public.tbl_student_module_retakes USING btree (educator_id);
-CREATE INDEX idx_tbl_student_module_retakes_module_id ON public.tbl_student_module_retakes USING btree (module_id);
+CREATE UNIQUE INDEX idx_tbl_student_assessment_retakes_unique_pair ON public.tbl_student_assessment_retakes USING btree (educator_id, student_id, assessment_id);
+CREATE INDEX idx_tbl_student_assessment_retakes_student_assessment ON public.tbl_student_assessment_retakes USING btree (student_id, assessment_id);
+CREATE INDEX idx_tbl_student_assessment_retakes_educator_id ON public.tbl_student_assessment_retakes USING btree (educator_id);
+CREATE INDEX idx_tbl_student_assessment_retakes_assessment_id ON public.tbl_student_assessment_retakes USING btree (assessment_id);
 CREATE INDEX idx_tbl_notifications_recipient_unread_created_at ON public.tbl_notifications USING btree (recipient_user_id, is_read, created_at DESC);
 CREATE INDEX idx_tbl_notifications_recipient_created_at ON public.tbl_notifications USING btree (recipient_user_id, created_at DESC);
 CREATE INDEX idx_tbl_notifications_actor_user_id ON public.tbl_notifications USING btree (actor_user_id);
-CREATE INDEX idx_tbl_notifications_module_id ON public.tbl_notifications USING btree (module_id);
+CREATE INDEX idx_tbl_notifications_assessment_id ON public.tbl_notifications USING btree (assessment_id);
 CREATE UNIQUE INDEX tbl_group_chats_unique_classroom ON public.tbl_group_chats USING btree (educator_id, subject_id, section_id);
 CREATE INDEX idx_tbl_group_chats_educator_id ON public.tbl_group_chats USING btree (educator_id);
 CREATE INDEX idx_tbl_group_chats_subject_id ON public.tbl_group_chats USING btree (subject_id);
@@ -384,12 +384,12 @@ ALTER TABLE public.tbl_user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_sections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_sections_term ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_subjects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.tbl_modules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tbl_assessments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_quizzes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_enrolled ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_student_presence ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.tbl_student_module_retakes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tbl_student_assessment_retakes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_group_chats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tbl_group_chat_messages ENABLE ROW LEVEL SECURITY;
@@ -488,7 +488,7 @@ CREATE POLICY "Admin full access on tbl_subjects" ON public.tbl_subjects AS PERM
   USING (has_role('admin'::text))
   WITH CHECK (has_role('admin'::text));
 
-CREATE POLICY "Admin full access on tbl_modules" ON public.tbl_modules AS PERMISSIVE FOR ALL TO authenticated
+CREATE POLICY "Admin full access on tbl_assessments" ON public.tbl_assessments AS PERMISSIVE FOR ALL TO authenticated
   USING (has_role('admin'::text))
   WITH CHECK (has_role('admin'::text));
 
@@ -504,7 +504,7 @@ CREATE POLICY "Admin full access on tbl_student_presence" ON public.tbl_student_
   USING (has_role('admin'::text))
   WITH CHECK (has_role('admin'::text));
 
-CREATE POLICY "Admin full access on tbl_student_module_retakes" ON public.tbl_student_module_retakes AS PERMISSIVE FOR ALL TO authenticated
+CREATE POLICY "Admin full access on tbl_student_assessment_retakes" ON public.tbl_student_assessment_retakes AS PERMISSIVE FOR ALL TO authenticated
   USING (has_role('admin'::text))
   WITH CHECK (has_role('admin'::text));
 
@@ -572,23 +572,23 @@ CREATE POLICY "Student subject view access" ON public.tbl_subjects AS PERMISSIVE
    FROM tbl_enrolled enrolled
   WHERE ((enrolled.student_id = get_current_tbl_user_id()) AND (enrolled.educator_id = tbl_subjects.educator_id) AND (enrolled.subject_id = tbl_subjects.id) AND (enrolled.is_active = true))))));
 
-CREATE POLICY "Educator module view access" ON public.tbl_modules AS PERMISSIVE FOR SELECT TO authenticated
+CREATE POLICY "Educator assessment view access" ON public.tbl_assessments AS PERMISSIVE FOR SELECT TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
 
-CREATE POLICY "Educator module create access" ON public.tbl_modules AS PERMISSIVE FOR INSERT TO authenticated
+CREATE POLICY "Educator assessment create access" ON public.tbl_assessments AS PERMISSIVE FOR INSERT TO authenticated
   WITH CHECK ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
 
-CREATE POLICY "Educator module update access" ON public.tbl_modules AS PERMISSIVE FOR UPDATE TO authenticated
+CREATE POLICY "Educator assessment update access" ON public.tbl_assessments AS PERMISSIVE FOR UPDATE TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())))
   WITH CHECK ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
 
-CREATE POLICY "Educator module delete access" ON public.tbl_modules AS PERMISSIVE FOR DELETE TO authenticated
+CREATE POLICY "Educator assessment delete access" ON public.tbl_assessments AS PERMISSIVE FOR DELETE TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
 
-CREATE POLICY "Student module view access" ON public.tbl_modules AS PERMISSIVE FOR SELECT TO authenticated
+CREATE POLICY "Student assessment view access" ON public.tbl_assessments AS PERMISSIVE FOR SELECT TO authenticated
   USING ((has_role('student'::text) AND (EXISTS ( SELECT 1
    FROM tbl_enrolled enrolled
-  WHERE ((enrolled.student_id = get_current_tbl_user_id()) AND (enrolled.educator_id = tbl_modules.educator_id) AND (enrolled.subject_id = tbl_modules.subject_id) AND (enrolled.is_active = true))))));
+  WHERE ((enrolled.student_id = get_current_tbl_user_id()) AND (enrolled.educator_id = tbl_assessments.educator_id) AND (enrolled.subject_id = tbl_assessments.subject_id) AND (enrolled.is_active = true))))));
 
 CREATE POLICY "Educator enrollment view access" ON public.tbl_enrolled AS PERMISSIVE FOR SELECT TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
@@ -630,20 +630,20 @@ CREATE POLICY "Student own presence update access" ON public.tbl_student_presenc
 CREATE POLICY "Student own presence delete access" ON public.tbl_student_presence AS PERMISSIVE FOR DELETE TO authenticated
   USING ((has_role('student'::text) AND (student_id = get_current_tbl_user_id())));
 
-CREATE POLICY "Educator student retake view access" ON public.tbl_student_module_retakes AS PERMISSIVE FOR SELECT TO authenticated
+CREATE POLICY "Educator student retake view access" ON public.tbl_student_assessment_retakes AS PERMISSIVE FOR SELECT TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
 
-CREATE POLICY "Educator student retake create access" ON public.tbl_student_module_retakes AS PERMISSIVE FOR INSERT TO authenticated
+CREATE POLICY "Educator student retake create access" ON public.tbl_student_assessment_retakes AS PERMISSIVE FOR INSERT TO authenticated
   WITH CHECK ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
 
-CREATE POLICY "Educator student retake update access" ON public.tbl_student_module_retakes AS PERMISSIVE FOR UPDATE TO authenticated
+CREATE POLICY "Educator student retake update access" ON public.tbl_student_assessment_retakes AS PERMISSIVE FOR UPDATE TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())))
   WITH CHECK ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
 
-CREATE POLICY "Educator student retake delete access" ON public.tbl_student_module_retakes AS PERMISSIVE FOR DELETE TO authenticated
+CREATE POLICY "Educator student retake delete access" ON public.tbl_student_assessment_retakes AS PERMISSIVE FOR DELETE TO authenticated
   USING ((has_role('educator'::text) AND (educator_id = get_current_tbl_user_id())));
 
-CREATE POLICY "Student retake grant view access" ON public.tbl_student_module_retakes AS PERMISSIVE FOR SELECT TO authenticated
+CREATE POLICY "Student retake grant view access" ON public.tbl_student_assessment_retakes AS PERMISSIVE FOR SELECT TO authenticated
   USING ((has_role('student'::text) AND (student_id = get_current_tbl_user_id())));
 
 CREATE POLICY "Recipients can view own notifications" ON public.tbl_notifications AS PERMISSIVE FOR SELECT TO authenticated
@@ -654,7 +654,7 @@ CREATE POLICY "Recipients can update own notifications" ON public.tbl_notificati
   WITH CHECK ((recipient_user_id = get_current_tbl_user_id()));
 
 CREATE POLICY "Educator notification insert access" ON public.tbl_notifications AS PERMISSIVE FOR INSERT TO authenticated
-  WITH CHECK ((has_role('educator'::text) AND (actor_user_id = get_current_tbl_user_id()) AND (event_type = ANY (ARRAY['module_created'::text, 'module_updated'::text, 'module_deleted'::text, 'learning_material_uploaded'::text, 'learning_material_deleted'::text, 'quiz_created'::text, 'quiz_uploaded'::text, 'quiz_updated'::text, 'quiz_deleted'::text, 'enrollment_created'::text, 'enrollment_updated'::text, 'enrollment_deleted'::text, 'retake_updated'::text])) AND (EXISTS ( SELECT 1
+  WITH CHECK ((has_role('educator'::text) AND (actor_user_id = get_current_tbl_user_id()) AND (event_type = ANY (ARRAY['assessment_created'::text, 'assessment_updated'::text, 'assessment_deleted'::text, 'learning_material_uploaded'::text, 'learning_material_deleted'::text, 'quiz_created'::text, 'quiz_uploaded'::text, 'quiz_updated'::text, 'quiz_deleted'::text, 'enrollment_created'::text, 'enrollment_updated'::text, 'enrollment_deleted'::text, 'retake_updated'::text])) AND (EXISTS ( SELECT 1
    FROM tbl_users student_user
   WHERE ((student_user.id = tbl_notifications.recipient_user_id) AND (student_user.user_type = 'student'::text) AND (student_user.deleted_at IS NULL)))) AND (((event_type = 'enrollment_deleted'::text) AND (EXISTS ( SELECT 1
    FROM tbl_subjects subject_row
@@ -664,9 +664,9 @@ CREATE POLICY "Educator notification insert access" ON public.tbl_notifications 
 
 CREATE POLICY "Student submission notification insert access" ON public.tbl_notifications AS PERMISSIVE FOR INSERT TO authenticated
   WITH CHECK ((has_role('student'::text) AND (actor_user_id = get_current_tbl_user_id()) AND (event_type = 'quiz_submitted'::text) AND (EXISTS ( SELECT 1
-   FROM (tbl_modules module_row
-     JOIN tbl_enrolled enrolled ON (((enrolled.educator_id = module_row.educator_id) AND (enrolled.subject_id = module_row.subject_id))))
-  WHERE ((module_row.id = tbl_notifications.module_id) AND (module_row.educator_id = tbl_notifications.recipient_user_id) AND (enrolled.student_id = get_current_tbl_user_id()) AND (enrolled.is_active = true))))));
+   FROM (tbl_assessments assessment_row
+     JOIN tbl_enrolled enrolled ON (((enrolled.educator_id = assessment_row.educator_id) AND (enrolled.subject_id = assessment_row.subject_id))))
+  WHERE ((assessment_row.id = tbl_notifications.assessment_id) AND (assessment_row.educator_id = tbl_notifications.recipient_user_id) AND (enrolled.student_id = get_current_tbl_user_id()) AND (enrolled.is_active = true))))));
 
 CREATE POLICY "Admin full access on tbl_group_chats" ON public.tbl_group_chats AS PERMISSIVE FOR ALL TO authenticated
   USING (has_role('admin'::text))
@@ -832,3 +832,4 @@ CREATE POLICY "Student learning material view access" ON public.tbl_learning_mat
   USING ((has_role('student'::text) AND (is_active = true) AND (EXISTS ( SELECT 1
    FROM tbl_enrolled enrolled
   WHERE ((enrolled.student_id = get_current_tbl_user_id()) AND (enrolled.educator_id = tbl_learning_materials.educator_id) AND (enrolled.subject_id = tbl_learning_materials.subject_id) AND (enrolled.is_active = true))))));
+

@@ -6,7 +6,7 @@ import { getSubjectPermissions } from '@/lib/auth/subject-permissions'
 
 import { SubjectsPageClient } from './components/subjects-page-client'
 
-// SubjectsPage - protect educator subject module by rbac
+// SubjectsPage - protect educator subject page by rbac
 export default async function SubjectsPage() {
   // ==================== LOAD CONTEXT ====================
   const context = await requireServerAuthContext('educator')

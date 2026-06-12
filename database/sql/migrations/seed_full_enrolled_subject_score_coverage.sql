@@ -3,7 +3,7 @@
 -- Created: 2026-05-19
 -- Purpose: Create missing demo assessments and submitted scores for every active enrolled subject.
 
-WITH missing_module_pairs AS (
+WITH missing_assessment_pairs AS (
   SELECT DISTINCT
     enrolled.educator_id,
     enrolled.subject_id,
@@ -17,19 +17,19 @@ WITH missing_module_pairs AS (
   WHERE enrolled.is_active = TRUE
     AND NOT EXISTS (
       SELECT 1
-      FROM public.tbl_modules AS existing_module
-      WHERE existing_module.educator_id = enrolled.educator_id
-        AND existing_module.subject_id = enrolled.subject_id
-        AND existing_module.section_id = subject_row.sections_id
-        AND existing_module.is_active = TRUE
+      FROM public.tbl_assessments AS existing_assessment
+      WHERE existing_assessment.educator_id = enrolled.educator_id
+        AND existing_assessment.subject_id = enrolled.subject_id
+        AND existing_assessment.section_id = subject_row.sections_id
+        AND existing_assessment.is_active = TRUE
     )
 ),
-inserted_modules AS (
-  INSERT INTO public.tbl_modules (
+inserted_assessments AS (
+  INSERT INTO public.tbl_assessments (
     educator_id,
     subject_id,
     section_id,
-    module_code,
+    assessment_code,
     term,
     time_limit,
     cheating_attempts,
@@ -48,11 +48,11 @@ inserted_modules AS (
     updated_at
   )
   SELECT
-    missing_module_pairs.educator_id,
-    missing_module_pairs.subject_id,
-    missing_module_pairs.section_id,
+    missing_assessment_pairs.educator_id,
+    missing_assessment_pairs.subject_id,
+    missing_assessment_pairs.section_id,
     'Written Exam',
-    missing_module_pairs.term,
+    missing_assessment_pairs.term,
     '30',
     5,
     TRUE,
@@ -68,27 +68,27 @@ inserted_modules AS (
     TIME '13:00:00',
     NOW(),
     NOW()
-  FROM missing_module_pairs
-  ON CONFLICT (module_code, subject_id, section_id, term)
+  FROM missing_assessment_pairs
+  ON CONFLICT (assessment_code, subject_id, section_id, term)
   DO NOTHING
   RETURNING id, educator_id, subject_id, section_id
 ),
-all_modules AS (
+all_assessments AS (
   SELECT
-    module_row.id,
-    module_row.educator_id,
-    module_row.subject_id,
-    module_row.section_id,
-    module_row.is_active
-  FROM public.tbl_modules AS module_row
+    assessment_row.id,
+    assessment_row.educator_id,
+    assessment_row.subject_id,
+    assessment_row.section_id,
+    assessment_row.is_active
+  FROM public.tbl_assessments AS assessment_row
   UNION ALL
   SELECT
-    inserted_modules.id,
-    inserted_modules.educator_id,
-    inserted_modules.subject_id,
-    inserted_modules.section_id,
+    inserted_assessments.id,
+    inserted_assessments.educator_id,
+    inserted_assessments.subject_id,
+    inserted_assessments.section_id,
     TRUE AS is_active
-  FROM inserted_modules
+  FROM inserted_assessments
 ),
 question_bank AS (
   SELECT *
@@ -116,44 +116,44 @@ question_bank AS (
       ('IT204', 10, 'Which header identifies the media type of a response body?', '[{"key":"A","value":"Content-Type"},{"key":"B","value":"User-Agent"},{"key":"C","value":"Host"},{"key":"D","value":"Referer"}]'::jsonb, 'Content-Type')
   ) AS questions(subject_code, question_order, question, choices, correct_answer)
 ),
-modules_needing_questions AS (
+assessments_needing_questions AS (
   SELECT
-    module_row.id AS module_id,
-    module_row.educator_id,
-    module_row.subject_id,
-    module_row.section_id,
+    assessment_row.id AS assessment_id,
+    assessment_row.educator_id,
+    assessment_row.subject_id,
+    assessment_row.section_id,
     subject_row.subject_code
-  FROM all_modules AS module_row
+  FROM all_assessments AS assessment_row
   INNER JOIN public.tbl_subjects AS subject_row
-    ON subject_row.id = module_row.subject_id
-  WHERE module_row.is_active = TRUE
+    ON subject_row.id = assessment_row.subject_id
+  WHERE assessment_row.is_active = TRUE
     AND subject_row.subject_code IN ('IT203', 'IT204')
     AND EXISTS (
       SELECT 1
       FROM public.tbl_enrolled AS enrolled
-      WHERE enrolled.educator_id = module_row.educator_id
-        AND enrolled.subject_id = module_row.subject_id
+      WHERE enrolled.educator_id = assessment_row.educator_id
+        AND enrolled.subject_id = assessment_row.subject_id
         AND enrolled.is_active = TRUE
     )
     AND NOT EXISTS (
       SELECT 1
       FROM public.tbl_quizzes AS existing_quiz
-      WHERE existing_quiz.module_id = module_row.id
+      WHERE existing_quiz.assessment_id = assessment_row.id
     )
   UNION
   SELECT
-    inserted_modules.id AS module_id,
-    inserted_modules.educator_id,
-    inserted_modules.subject_id,
-    inserted_modules.section_id,
+    inserted_assessments.id AS assessment_id,
+    inserted_assessments.educator_id,
+    inserted_assessments.subject_id,
+    inserted_assessments.section_id,
     subject_row.subject_code
-  FROM inserted_modules
+  FROM inserted_assessments
   INNER JOIN public.tbl_subjects AS subject_row
-    ON subject_row.id = inserted_modules.subject_id
+    ON subject_row.id = inserted_assessments.subject_id
 ),
 inserted_quizzes AS (
   INSERT INTO public.tbl_quizzes (
-    module_id,
+    assessment_id,
     subject_id,
     section_id,
     educator_id,
@@ -165,68 +165,68 @@ inserted_quizzes AS (
     updated_at
   )
   SELECT
-    modules_needing_questions.module_id,
-    modules_needing_questions.subject_id,
-    modules_needing_questions.section_id,
-    modules_needing_questions.educator_id,
+    assessments_needing_questions.assessment_id,
+    assessments_needing_questions.subject_id,
+    assessments_needing_questions.section_id,
+    assessments_needing_questions.educator_id,
     question_bank.question,
     'multiple_choice',
     question_bank.choices,
     question_bank.correct_answer,
     NOW(),
     NOW()
-  FROM modules_needing_questions
+  FROM assessments_needing_questions
   INNER JOIN question_bank
-    ON question_bank.subject_code = modules_needing_questions.subject_code
-  RETURNING id, module_id, correct_answer, choices
+    ON question_bank.subject_code = assessments_needing_questions.subject_code
+  RETURNING id, assessment_id, correct_answer, choices
 ),
 all_quizzes AS (
   SELECT
     quiz.id,
-    quiz.module_id,
+    quiz.assessment_id,
     quiz.correct_answer,
     quiz.choices
   FROM public.tbl_quizzes AS quiz
   UNION ALL
   SELECT
     inserted_quizzes.id,
-    inserted_quizzes.module_id,
+    inserted_quizzes.assessment_id,
     inserted_quizzes.correct_answer,
     inserted_quizzes.choices
   FROM inserted_quizzes
 ),
-module_question_counts AS (
+assessment_question_counts AS (
   SELECT
-    all_quizzes.module_id,
+    all_quizzes.assessment_id,
     COUNT(*)::integer AS total_questions
   FROM all_quizzes
-  GROUP BY all_quizzes.module_id
+  GROUP BY all_quizzes.assessment_id
 ),
 eligible_pairs AS (
   SELECT
-    ROW_NUMBER() OVER (ORDER BY module_row.id, student_user.user_id)::integer AS pair_rank,
+    ROW_NUMBER() OVER (ORDER BY assessment_row.id, student_user.user_id)::integer AS pair_rank,
     enrolled.student_id,
     enrolled.educator_id,
-    module_row.id AS module_id,
-    module_row.subject_id,
-    module_row.section_id,
+    assessment_row.id AS assessment_id,
+    assessment_row.subject_id,
+    assessment_row.section_id,
     question_counts.total_questions,
     LEAST(
       question_counts.total_questions,
-      4 + ((enrolled.student_id + module_row.id) % 7)
+      4 + ((enrolled.student_id + assessment_row.id) % 7)
     )::integer AS target_score
   FROM public.tbl_enrolled AS enrolled
   INNER JOIN public.tbl_users AS student_user
     ON student_user.id = enrolled.student_id
   INNER JOIN public.tbl_subjects AS subject_row
     ON subject_row.id = enrolled.subject_id
-  INNER JOIN all_modules AS module_row
-    ON module_row.educator_id = enrolled.educator_id
-    AND module_row.subject_id = enrolled.subject_id
-    AND module_row.section_id = subject_row.sections_id
-    AND module_row.is_active = TRUE
-  INNER JOIN module_question_counts AS question_counts
-    ON question_counts.module_id = module_row.id
+  INNER JOIN all_assessments AS assessment_row
+    ON assessment_row.educator_id = enrolled.educator_id
+    AND assessment_row.subject_id = enrolled.subject_id
+    AND assessment_row.section_id = subject_row.sections_id
+    AND assessment_row.is_active = TRUE
+  INNER JOIN assessment_question_counts AS question_counts
+    ON question_counts.assessment_id = assessment_row.id
     AND question_counts.total_questions > 0
   WHERE enrolled.is_active = TRUE
     AND student_user.user_type = 'student'
@@ -236,14 +236,14 @@ eligible_pairs AS (
       SELECT 1
       FROM public.tbl_scores AS existing_score
       WHERE existing_score.student_id = enrolled.student_id
-        AND existing_score.module_id = module_row.id
+        AND existing_score.assessment_id = assessment_row.id
         AND existing_score.submitted_at IS NOT NULL
     )
 ),
 quiz_answers AS (
   SELECT
     eligible_pairs.student_id,
-    eligible_pairs.module_id,
+    eligible_pairs.assessment_id,
     JSONB_OBJECT_AGG(
       quiz_order.quiz_id::text,
       CASE
@@ -269,15 +269,15 @@ quiz_answers AS (
         'Incorrect answer'
       ) AS wrong_answer
     FROM all_quizzes AS quiz
-    WHERE quiz.module_id = eligible_pairs.module_id
+    WHERE quiz.assessment_id = eligible_pairs.assessment_id
   ) AS quiz_order ON TRUE
-  GROUP BY eligible_pairs.student_id, eligible_pairs.module_id
+  GROUP BY eligible_pairs.student_id, eligible_pairs.assessment_id
 ),
 score_payload AS (
   SELECT
     eligible_pairs.student_id,
     eligible_pairs.educator_id,
-    eligible_pairs.module_id,
+    eligible_pairs.assessment_id,
     eligible_pairs.subject_id,
     eligible_pairs.section_id,
     eligible_pairs.target_score AS score,
@@ -294,12 +294,12 @@ score_payload AS (
   FROM eligible_pairs
   INNER JOIN quiz_answers
     ON quiz_answers.student_id = eligible_pairs.student_id
-    AND quiz_answers.module_id = eligible_pairs.module_id
+    AND quiz_answers.assessment_id = eligible_pairs.assessment_id
 )
 INSERT INTO public.tbl_scores (
   student_id,
   educator_id,
-  module_id,
+  assessment_id,
   subject_id,
   section_id,
   score,
@@ -316,7 +316,7 @@ INSERT INTO public.tbl_scores (
 SELECT
   score_payload.student_id,
   score_payload.educator_id,
-  score_payload.module_id,
+  score_payload.assessment_id,
   score_payload.subject_id,
   score_payload.section_id,
   score_payload.score,
@@ -330,3 +330,4 @@ SELECT
   score_payload.submitted_at,
   score_payload.submitted_at
 FROM score_payload;
+

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 
@@ -143,7 +143,7 @@ export function QuizList({ items, isMobile = false }: QuizListProps) {
                     quiz.selected === item.id ? "text-foreground" : "text-muted-foreground"
                   )}
                 >
-                  {item.moduleCode}
+                  {item.assessmentCode}
                 </div>
               </div>
               <div className="text-xs font-medium break-words">
@@ -175,3 +175,4 @@ export function QuizList({ items, isMobile = false }: QuizListProps) {
     </ScrollArea>
   );
 }
+

@@ -1,5 +1,5 @@
 export interface EducatorSummaryCard {
-  key: 'sections' | 'subjects' | 'modules' | 'students'
+  key: 'sections' | 'subjects' | 'assessments' | 'students'
   label: string
   value: number
   helper: string
@@ -7,7 +7,7 @@ export interface EducatorSummaryCard {
 
 export interface EducatorAssessmentOverview {
   enrolledStudents: number
-  activeModules: number
+  activeAssessments: number
   quizQuestions: number
   finishedAssessments: number
   inProgressAssessments: number
@@ -22,15 +22,15 @@ export interface EducatorSectionInsight {
   sectionName: string
   status: 'active' | 'inactive'
   subjectCount: number
-  moduleCount: number
+  assessmentCount: number
   studentCount: number
   finishedAssessmentCount: number
   passRate: number
 }
 
-export interface EducatorModuleInsight {
-  moduleId: number
-  moduleCode: string
+export interface EducatorAssessmentInsight {
+  assessmentId: number
+  assessmentCode: string
   subjectName: string
   sectionName: string
   termName: string
@@ -60,6 +60,7 @@ export interface EducatorDashboardAnalytics {
   summaryCards: EducatorSummaryCard[]
   assessmentOverview: EducatorAssessmentOverview
   sectionInsights: EducatorSectionInsight[]
-  moduleInsights: EducatorModuleInsight[]
+  assessmentInsights: EducatorAssessmentInsight[]
   topStudents: EducatorTopStudentRow[]
 }
+

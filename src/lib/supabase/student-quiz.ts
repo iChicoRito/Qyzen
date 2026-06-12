@@ -1,6 +1,6 @@
 import { createClient } from './server'
 import { getAssessmentAvailability } from './assessment-availability'
-import { fetchStudentModuleRetakeGrant, fetchStudentModuleRetakeGrantMap } from './student-retakes'
+import { fetchStudentAssessmentRetakeGrant, fetchStudentAssessmentRetakeGrantMap } from './student-retakes'
 
 export const QUIZ_RESULT_PASSING_PERCENTAGE = 75
 
@@ -36,9 +36,9 @@ export interface StudentQuizAttemptHistoryItem {
 }
 
 export interface StudentQuizSession {
-  moduleRowId: number
-  moduleId: string
-  moduleCode: string
+  assessmentRowId: number
+  assessmentId: string
+  assessmentCode: string
   subjectId: number
   subjectName: string
   sectionId: number
@@ -100,8 +100,8 @@ export interface StudentQuizGradingSession extends Omit<StudentQuizSession, 'que
 
 export interface StudentQuizResult {
   scoreId: number
-  moduleRowId: number
-  moduleCode: string
+  assessmentRowId: number
+  assessmentCode: string
   subjectName: string
   sectionName: string
   educatorName: string
@@ -157,28 +157,28 @@ interface EnrollmentRow {
   is_active: boolean
 }
 
-interface ModuleSubjectRow {
+interface AssessmentSubjectRow {
   subject_name: string
 }
 
-interface ModuleSectionRow {
+interface AssessmentSectionRow {
   section_name: string
 }
 
-interface ModuleEducatorRow {
+interface AssessmentEducatorRow {
   given_name: string
   surname: string
   user_type: string
 }
 
-interface ModuleTermRow {
+interface AssessmentTermRow {
   term_name: string
   semester: string
 }
 
-interface ModuleRow {
+interface AssessmentRow {
   id: number
-  module_code: string
+  assessment_code: string
   subject_id: number
   section_id: number
   educator_id: number
@@ -194,10 +194,10 @@ interface ModuleRow {
   end_date: string
   start_time: string
   end_time: string
-  subject: ModuleSubjectRow | ModuleSubjectRow[] | null
-  section: ModuleSectionRow | ModuleSectionRow[] | null
-  educator: ModuleEducatorRow | ModuleEducatorRow[] | null
-  academic_term: ModuleTermRow | ModuleTermRow[] | null
+  subject: AssessmentSubjectRow | AssessmentSubjectRow[] | null
+  section: AssessmentSectionRow | AssessmentSectionRow[] | null
+  educator: AssessmentEducatorRow | AssessmentEducatorRow[] | null
+  academic_term: AssessmentTermRow | AssessmentTermRow[] | null
 }
 
 interface QuizRow {
@@ -210,7 +210,7 @@ interface QuizRow {
 
 interface ScoreRow {
   id: number
-  module_id: number
+  assessment_id: number
   score: number | null
   total_questions: number | null
   student_answer: unknown
@@ -222,11 +222,11 @@ interface ScoreRow {
 }
 
 interface ScoreResultRow extends ScoreRow {
-  module: ModuleResultRow | ModuleResultRow[] | null
+  assessment: AssessmentResultRow | AssessmentResultRow[] | null
 }
 
-interface ModuleResultRow {
-  module_code: string
+interface AssessmentResultRow {
+  assessment_code: string
   start_date: string
   end_date: string
   start_time: string
@@ -236,10 +236,10 @@ interface ModuleResultRow {
   allow_review: boolean
   allow_retake: boolean
   retake_count: number
-  subject: ModuleSubjectRow | ModuleSubjectRow[] | null
-  section: ModuleSectionRow | ModuleSectionRow[] | null
-  educator: ModuleEducatorRow | ModuleEducatorRow[] | null
-  academic_term: ModuleTermRow | ModuleTermRow[] | null
+  subject: AssessmentSubjectRow | AssessmentSubjectRow[] | null
+  section: AssessmentSectionRow | AssessmentSectionRow[] | null
+  educator: AssessmentEducatorRow | AssessmentEducatorRow[] | null
+  academic_term: AssessmentTermRow | AssessmentTermRow[] | null
 }
 
 interface ScoreReviewRow extends ScoreResultRow {}
@@ -259,7 +259,7 @@ function getSingleRelation<T>(value: T | T[] | null) {
 }
 
 // buildAcademicTermLabel - format term label
-function buildAcademicTermLabel(term: ModuleTermRow | null) {
+function buildAcademicTermLabel(term: AssessmentTermRow | null) {
   if (!term) {
     return 'No term'
   }
@@ -268,7 +268,7 @@ function buildAcademicTermLabel(term: ModuleTermRow | null) {
 }
 
 // isEducatorUser - validate educator profile relation
-function isEducatorUser(user: ModuleEducatorRow | null) {
+function isEducatorUser(user: AssessmentEducatorRow | null) {
   return user?.user_type?.trim().toLowerCase() === 'educator'
 }
 
@@ -447,13 +447,13 @@ function getCurrentDraftScore(scores: ScoreRow[]) {
 
 // getRetakeState - compute retake availability
 function getRetakeState(
-  module: Pick<ModuleRow, 'allow_retake' | 'retake_count'>,
+  assessment: Pick<AssessmentRow, 'allow_retake' | 'retake_count'>,
   submittedScores: ScoreRow[],
   grantedRetakeCount: number
 ) {
   const submittedAttemptCount = submittedScores.length
-  const moduleRetakeCount = module.allow_retake ? module.retake_count : 0
-  const effectiveRetakeCount = Math.max(moduleRetakeCount + grantedRetakeCount, 0)
+  const assessmentRetakeCount = assessment.allow_retake ? assessment.retake_count : 0
+  const effectiveRetakeCount = Math.max(assessmentRetakeCount + grantedRetakeCount, 0)
   const allowRetake = effectiveRetakeCount > 0
   const maxAttempts = effectiveRetakeCount + 1
   const remainingRetakes = Math.max(
@@ -474,64 +474,64 @@ function getRetakeState(
 
 // buildSessionRecord - map database rows to quiz session
 function buildSessionRecord(
-  module: ModuleRow,
+  assessment: AssessmentRow,
   quizzes: QuizRow[],
   scores: ScoreRow[],
   grantedRetakeCount: number
 ): StudentQuizGradingSession {
   const questionRecords = quizzes.map(buildQuestionRecord)
-  const subject = getSingleRelation(module.subject)
-  const section = getSingleRelation(module.section)
-  const educator = getSingleRelation(module.educator)
-  const term = getSingleRelation(module.academic_term)
+  const subject = getSingleRelation(assessment.subject)
+  const section = getSingleRelation(assessment.section)
+  const educator = getSingleRelation(assessment.educator)
+  const term = getSingleRelation(assessment.academic_term)
   const submittedScores = scores.filter((score) => Boolean(score.submitted_at))
   const bestSubmittedScore = getBestSubmittedScore(submittedScores)
   const latestSubmittedScore = [...submittedScores].sort((leftScore, rightScore) => rightScore.id - leftScore.id)[0] || null
   const currentDraftScore = getCurrentDraftScore(scores)
   const attemptHistory = buildAttemptHistory(submittedScores)
-  const retakeState = getRetakeState(module, submittedScores, grantedRetakeCount)
+  const retakeState = getRetakeState(assessment, submittedScores, grantedRetakeCount)
   const availability = getAssessmentAvailability({
-    startDate: module.start_date,
-    endDate: module.end_date,
-    startTime: module.start_time,
-    endTime: module.end_time,
+    startDate: assessment.start_date,
+    endDate: assessment.end_date,
+    startTime: assessment.start_time,
+    endTime: assessment.end_time,
     hasExpiredOverride: grantedRetakeCount > 0,
   })
   const canTakeWithoutRetake = submittedScores.length === 0
   const hasInProgressAttempt = Boolean(currentDraftScore)
 
   if (!educator || !isEducatorUser(educator)) {
-    throw new Error('Module educator was not found.')
+    throw new Error('Assessment educator was not found.')
   }
 
   const educatorRecord = educator
 
   return {
-    moduleRowId: module.id,
-    moduleId: module.module_code,
-    moduleCode: module.module_code,
-    subjectId: module.subject_id,
+    assessmentRowId: assessment.id,
+    assessmentId: assessment.assessment_code,
+    assessmentCode: assessment.assessment_code,
+    subjectId: assessment.subject_id,
     subjectName: subject?.subject_name || 'Unknown Subject',
-    sectionId: module.section_id,
+    sectionId: assessment.section_id,
     sectionName: section?.section_name || 'Unknown Section',
-    educatorId: module.educator_id,
+    educatorId: assessment.educator_id,
     educatorName: `${educatorRecord.given_name} ${educatorRecord.surname}`.trim(),
     educatorUserType: 'educator',
     termName: buildAcademicTermLabel(term),
-    timeLimitMinutes: Number(module.time_limit) || 0,
-    cheatingAttempts: module.cheating_attempts,
-    isShuffle: module.is_shuffle,
-    allowReview: module.allow_review,
+    timeLimitMinutes: Number(assessment.time_limit) || 0,
+    cheatingAttempts: assessment.cheating_attempts,
+    isShuffle: assessment.is_shuffle,
+    allowReview: assessment.allow_review,
     allowRetake: retakeState.allowRetake,
     retakeCount: retakeState.effectiveRetakeCount,
     grantedRetakeCount: retakeState.grantedRetakeCount,
     effectiveRetakeCount: retakeState.effectiveRetakeCount,
-    allowHint: module.allow_hint,
-    hintCount: module.hint_count,
-    startDate: module.start_date,
-    endDate: module.end_date,
-    startTime: module.start_time,
-    endTime: module.end_time,
+    allowHint: assessment.allow_hint,
+    hintCount: assessment.hint_count,
+    startDate: assessment.start_date,
+    endDate: assessment.end_date,
+    startTime: assessment.start_time,
+    endTime: assessment.end_time,
     questions: questionRecords,
     hints: questionRecords.map((question) => ({
       questionId: question.id,
@@ -567,15 +567,15 @@ function buildSessionRecord(
   }
 }
 
-// ensureStudentModuleAccess - verify enrolled student can access module
-async function ensureStudentModuleAccess(studentId: number, module: ModuleRow) {
+// ensureStudentAssessmentAccess - verify enrolled student can access assessment
+async function ensureStudentAssessmentAccess(studentId: number, assessment: AssessmentRow) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('tbl_enrolled')
     .select('student_id,educator_id,subject_id,is_active')
     .eq('student_id', studentId)
-    .eq('educator_id', module.educator_id)
-    .eq('subject_id', module.subject_id)
+    .eq('educator_id', assessment.educator_id)
+    .eq('subject_id', assessment.subject_id)
     .eq('is_active', true)
     .limit(1)
 
@@ -590,38 +590,38 @@ async function ensureStudentModuleAccess(studentId: number, module: ModuleRow) {
   }
 }
 
-// fetchModuleRow - load one student-accessible module row
-async function fetchModuleRow(moduleId: number) {
+// fetchAssessmentRow - load one student-accessible assessment row
+async function fetchAssessmentRow(assessmentId: number) {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('tbl_modules')
+    .from('tbl_assessments')
     .select(
-      'id,module_code,subject_id,section_id,educator_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_retake,retake_count,allow_hint,hint_count,start_date,end_date,start_time,end_time,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester)'
+      'id,assessment_code,subject_id,section_id,educator_id,time_limit,cheating_attempts,is_shuffle,allow_review,allow_retake,retake_count,allow_hint,hint_count,start_date,end_date,start_time,end_time,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester)'
     )
-    .eq('id', moduleId)
+    .eq('id', assessmentId)
     .eq('is_active', true)
     .limit(1)
 
   if (error) {
-    throw new Error(getSupabaseErrorMessage(error, 'Failed to load quiz module.'))
+    throw new Error(getSupabaseErrorMessage(error, 'Failed to load quiz assessment.'))
   }
 
-  const moduleRow = ((data || []) as ModuleRow[])[0]
+  const assessmentRow = ((data || []) as AssessmentRow[])[0]
 
-  if (!moduleRow) {
-    throw new Error('Assessment module was not found.')
+  if (!assessmentRow) {
+    throw new Error('Assessment was not found.')
   }
 
-  return moduleRow
+  return assessmentRow
 }
 
-// fetchModuleQuizzes - load student-accessible quiz rows
-async function fetchModuleQuizzes(moduleId: number) {
+// fetchAssessmentQuizzes - load student-accessible quiz rows
+async function fetchAssessmentQuizzes(assessmentId: number) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('tbl_quizzes')
     .select('id,question,quiz_type,choices,correct_answer')
-    .eq('module_id', moduleId)
+    .eq('assessment_id', assessmentId)
     .order('id', { ascending: true })
 
   if (error) {
@@ -631,16 +631,16 @@ async function fetchModuleQuizzes(moduleId: number) {
   return (data || []) as QuizRow[]
 }
 
-// fetchModuleScores - load student score rows for a module
-async function fetchModuleScores(studentId: number, moduleId: number) {
+// fetchAssessmentScores - load student score rows for an assessment
+async function fetchAssessmentScores(studentId: number, assessmentId: number) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('tbl_scores')
     .select(
-      'id,module_id,score,total_questions,student_answer,warning_attempts,taken_at,submitted_at,status,is_passed'
+      'id,assessment_id,score,total_questions,student_answer,warning_attempts,taken_at,submitted_at,status,is_passed'
     )
     .eq('student_id', studentId)
-    .eq('module_id', moduleId)
+    .eq('assessment_id', assessmentId)
     .order('id', { ascending: false })
 
   if (error) {
@@ -651,25 +651,25 @@ async function fetchModuleScores(studentId: number, moduleId: number) {
 }
 
 // fetchStudentQuizGradingSession - load quiz session with answer key
-export async function fetchStudentQuizGradingSession(studentId: number, moduleId: number) {
-  const module = await fetchModuleRow(moduleId)
-  await ensureStudentModuleAccess(studentId, module)
+export async function fetchStudentQuizGradingSession(studentId: number, assessmentId: number) {
+  const assessment = await fetchAssessmentRow(assessmentId)
+  await ensureStudentAssessmentAccess(studentId, assessment)
   const [quizzes, scores, grantedRetakeCount] = await Promise.all([
-    fetchModuleQuizzes(module.id),
-    fetchModuleScores(studentId, module.id),
-    fetchStudentModuleRetakeGrant(studentId, module.id),
+    fetchAssessmentQuizzes(assessment.id),
+    fetchAssessmentScores(studentId, assessment.id),
+    fetchStudentAssessmentRetakeGrant(studentId, assessment.id),
   ])
 
   if (quizzes.length === 0) {
     throw new Error('This assessment has no quiz questions yet.')
   }
 
-  return buildSessionRecord(module, quizzes, scores, grantedRetakeCount)
+  return buildSessionRecord(assessment, quizzes, scores, grantedRetakeCount)
 }
 
 // fetchStudentQuizSession - load quiz session without answer key
-export async function fetchStudentQuizSession(studentId: number, moduleId: number): Promise<StudentQuizSession> {
-  const session = await fetchStudentQuizGradingSession(studentId, moduleId)
+export async function fetchStudentQuizSession(studentId: number, assessmentId: number): Promise<StudentQuizSession> {
+  const session = await fetchStudentQuizGradingSession(studentId, assessmentId)
 
   return {
     ...session,
@@ -680,21 +680,21 @@ export async function fetchStudentQuizSession(studentId: number, moduleId: numbe
 // buildStudentQuizResult - map submitted score rows into result payload
 function buildStudentQuizResult(
   targetScore: ScoreRow,
-  module: ModuleResultRow,
+  assessment: AssessmentResultRow,
   submittedScores: ScoreRow[],
   grantedRetakeCount: number
 ): StudentQuizResult {
-  const subject = getSingleRelation(module.subject)
-  const section = getSingleRelation(module.section)
-  const educator = getSingleRelation(module.educator)
-  const term = getSingleRelation(module.academic_term)
+  const subject = getSingleRelation(assessment.subject)
+  const section = getSingleRelation(assessment.section)
+  const educator = getSingleRelation(assessment.educator)
+  const term = getSingleRelation(assessment.academic_term)
   const attemptHistory = buildAttemptHistory(submittedScores)
   const bestScore = getBestSubmittedScore(submittedScores)
   const latestSubmittedScore = [...submittedScores].sort((leftScore, rightScore) => rightScore.id - leftScore.id)[0] || null
   const retakeState = getRetakeState(
     {
-      allow_retake: module.allow_retake,
-      retake_count: module.retake_count,
+      allow_retake: assessment.allow_retake,
+      retake_count: assessment.retake_count,
     },
     submittedScores,
     grantedRetakeCount
@@ -702,8 +702,8 @@ function buildStudentQuizResult(
 
   return {
     scoreId: targetScore.id,
-    moduleRowId: targetScore.module_id,
-    moduleCode: module.module_code || 'Unknown Module',
+    assessmentRowId: targetScore.assessment_id,
+    assessmentCode: assessment.assessment_code || 'Unknown Assessment',
     subjectName: subject?.subject_name || 'Unknown Subject',
     sectionName: section?.section_name || 'Unknown Section',
     educatorName: `${educator?.given_name || ''} ${educator?.surname || ''}`.trim() || 'Unknown Educator',
@@ -735,7 +735,7 @@ export async function fetchStudentScoreResult(studentId: number, scoreId?: numbe
   let scoreQuery = supabase
     .from('tbl_scores')
     .select(
-      'id,module_id,score,total_questions,student_answer,taken_at,submitted_at,status,is_passed,warning_attempts,module:module_id(module_code,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester))'
+      'id,assessment_id,score,total_questions,student_answer,taken_at,submitted_at,status,is_passed,warning_attempts,assessment:assessment_id(assessment_code,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester))'
     )
     .eq('student_id', studentId)
     .not('submitted_at', 'is', null)
@@ -759,9 +759,9 @@ export async function fetchStudentScoreResult(studentId: number, scoreId?: numbe
 
   const { data: historyData, error: historyError } = await supabase
     .from('tbl_scores')
-    .select('id,module_id,score,total_questions,student_answer,taken_at,submitted_at,status,is_passed,warning_attempts')
+    .select('id,assessment_id,score,total_questions,student_answer,taken_at,submitted_at,status,is_passed,warning_attempts')
     .eq('student_id', studentId)
-    .eq('module_id', targetScore.module_id)
+    .eq('assessment_id', targetScore.assessment_id)
     .not('submitted_at', 'is', null)
     .order('submitted_at', { ascending: true })
 
@@ -769,17 +769,17 @@ export async function fetchStudentScoreResult(studentId: number, scoreId?: numbe
     throw new Error(getSupabaseErrorMessage(historyError, 'Failed to load score history.'))
   }
 
-  const module = getSingleRelation(targetScore.module)
+  const assessment = getSingleRelation(targetScore.assessment)
 
-  if (!module) {
+  if (!assessment) {
     return null
   }
 
-  const grantedRetakeCount = await fetchStudentModuleRetakeGrant(studentId, targetScore.module_id)
+  const grantedRetakeCount = await fetchStudentAssessmentRetakeGrant(studentId, targetScore.assessment_id)
 
   return buildStudentQuizResult(
     targetScore,
-    module,
+    assessment,
     (historyData || []) as ScoreRow[],
     grantedRetakeCount
   )
@@ -804,7 +804,7 @@ export async function fetchStudentQuizReviewResult(studentId: number, scoreId: n
   const { data, error } = await supabase
     .from('tbl_scores')
     .select(
-      'id,module_id,score,total_questions,student_answer,taken_at,submitted_at,status,is_passed,warning_attempts,module:module_id(module_code,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester))'
+      'id,assessment_id,score,total_questions,student_answer,taken_at,submitted_at,status,is_passed,warning_attempts,assessment:assessment_id(assessment_code,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester))'
     )
     .eq('student_id', studentId)
     .eq('id', scoreId)
@@ -821,11 +821,11 @@ export async function fetchStudentQuizReviewResult(studentId: number, scoreId: n
     return null
   }
 
-  const module = await fetchModuleRow(scoreRow.module_id)
-  await ensureStudentModuleAccess(studentId, module)
+  const assessment = await fetchAssessmentRow(scoreRow.assessment_id)
+  await ensureStudentAssessmentAccess(studentId, assessment)
   const [quizzes, scoreHistory, baseResult] = await Promise.all([
-    fetchModuleQuizzes(scoreRow.module_id),
-    fetchModuleScores(studentId, scoreRow.module_id),
+    fetchAssessmentQuizzes(scoreRow.assessment_id),
+    fetchAssessmentScores(studentId, scoreRow.assessment_id),
     fetchStudentScoreResult(studentId, scoreId),
   ])
 
@@ -839,13 +839,13 @@ export async function fetchStudentQuizReviewResult(studentId: number, scoreId: n
 
   return {
     ...baseResult,
-    startDate: module.start_date,
-    endDate: module.end_date,
-    startTime: module.start_time,
-    endTime: module.end_time,
-    timeLimitMinutes: Number(module.time_limit) || 0,
-    isShuffle: module.is_shuffle,
-    allowReview: module.allow_review,
+    startDate: assessment.start_date,
+    endDate: assessment.end_date,
+    startTime: assessment.start_time,
+    endTime: assessment.end_time,
+    timeLimitMinutes: Number(assessment.time_limit) || 0,
+    isShuffle: assessment.is_shuffle,
+    allowReview: assessment.allow_review,
     warningAttempts: scoreRow.warning_attempts ?? 0,
     attemptHistory: buildAttemptHistory(submittedHistory),
     questions: questionRecords.map((question) => {
@@ -870,7 +870,7 @@ export async function fetchStudentQuizReviewList(studentId: number) {
   const { data, error } = await supabase
     .from('tbl_scores')
     .select(
-      'id,module_id,score,total_questions,student_answer,taken_at,submitted_at,status,is_passed,warning_attempts,module:module_id(module_code,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester))'
+      'id,assessment_id,score,total_questions,student_answer,taken_at,submitted_at,status,is_passed,warning_attempts,assessment:assessment_id(assessment_code,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),educator:educator_id(given_name,surname,user_type),academic_term:term(term_name,semester))'
     )
     .eq('student_id', studentId)
     .not('submitted_at', 'is', null)
@@ -881,44 +881,44 @@ export async function fetchStudentQuizReviewList(studentId: number) {
   }
 
   const scoreRows = (data || []) as ScoreReviewRow[]
-  const retakeGrantMap = await fetchStudentModuleRetakeGrantMap(
+  const retakeGrantMap = await fetchStudentAssessmentRetakeGrantMap(
     studentId,
-    [...new Set(scoreRows.map((scoreRow) => scoreRow.module_id))]
+    [...new Set(scoreRows.map((scoreRow) => scoreRow.assessment_id))]
   )
   const scoreHistoryMap = scoreRows.reduce<Map<number, ScoreRow[]>>((result, scoreRow) => {
-    const currentRows = result.get(scoreRow.module_id) || []
+    const currentRows = result.get(scoreRow.assessment_id) || []
     currentRows.push(scoreRow)
-    result.set(scoreRow.module_id, currentRows)
+    result.set(scoreRow.assessment_id, currentRows)
     return result
   }, new Map<number, ScoreRow[]>())
 
   const reviewResults = await Promise.all(
     scoreRows.map(async (scoreRow) => {
-      const module = getSingleRelation(scoreRow.module)
+      const assessment = getSingleRelation(scoreRow.assessment)
 
-      if (!module) {
-        throw new Error('Assessment module was not found for this score.')
+      if (!assessment) {
+        throw new Error('Assessment was not found for this score.')
       }
 
-      const quizzes = await fetchModuleQuizzes(scoreRow.module_id)
+      const quizzes = await fetchAssessmentQuizzes(scoreRow.assessment_id)
       const questionRecords = quizzes.map(buildQuestionRecord)
       const studentAnswers = normalizeStoredAnswers(scoreRow.student_answer)
       const baseResult = buildStudentQuizResult(
         scoreRow,
-        module,
-        scoreHistoryMap.get(scoreRow.module_id) || [],
-        retakeGrantMap.get(scoreRow.module_id) || 0
+        assessment,
+        scoreHistoryMap.get(scoreRow.assessment_id) || [],
+        retakeGrantMap.get(scoreRow.assessment_id) || 0
       )
 
       return {
         ...baseResult,
-        startDate: module.start_date || '',
-        endDate: module.end_date || '',
-        startTime: module.start_time || '',
-        endTime: module.end_time || '',
-        timeLimitMinutes: Number(module.time_limit) || 0,
-        isShuffle: Boolean(module.is_shuffle),
-        allowReview: Boolean(module.allow_review),
+        startDate: assessment.start_date || '',
+        endDate: assessment.end_date || '',
+        startTime: assessment.start_time || '',
+        endTime: assessment.end_time || '',
+        timeLimitMinutes: Number(assessment.time_limit) || 0,
+        isShuffle: Boolean(assessment.is_shuffle),
+        allowReview: Boolean(assessment.allow_review),
         warningAttempts: scoreRow.warning_attempts ?? 0,
         questions: questionRecords.map((question) => {
           const studentAnswer = studentAnswers[String(question.id)] || ''
@@ -939,3 +939,4 @@ export async function fetchStudentQuizReviewList(studentId: number) {
 
   return reviewResults
 }
+

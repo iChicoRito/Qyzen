@@ -1,4 +1,4 @@
-import { z } from 'zod'
+﻿import { z } from 'zod'
 
 // studentMonitoringStatusSchema - validate the live student status values
 export const studentMonitoringStatusSchema = z.enum(['OFFLINE', 'ONLINE', 'ANSWERING', 'FINISHED'])
@@ -31,11 +31,11 @@ export const educatorRealtimeMonitoringStudentSchema = z.object({
   warningAttempts: z.number(),
 })
 
-// educatorRealtimeMonitoringRowSchema - validate one module monitoring row
+// educatorRealtimeMonitoringRowSchema - validate one assessment monitoring row
 export const educatorRealtimeMonitoringRowSchema = z.object({
-  moduleRowId: z.number(),
-  moduleId: z.string(),
-  moduleCode: z.string(),
+  assessmentRowId: z.number(),
+  assessmentId: z.string(),
+  assessmentCode: z.string(),
   subjectId: z.number(),
   subjectName: z.string(),
   sectionId: z.number(),
@@ -59,3 +59,4 @@ export type StudentPresenceStatus = z.infer<typeof studentPresenceStatusSchema>
 export type StudentAssessmentStatus = z.infer<typeof studentAssessmentStatusSchema>
 export type EducatorRealtimeMonitoringStudent = z.infer<typeof educatorRealtimeMonitoringStudentSchema>
 export type EducatorRealtimeMonitoringRow = z.infer<typeof educatorRealtimeMonitoringRowSchema>
+

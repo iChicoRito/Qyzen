@@ -1,4 +1,4 @@
-import { z } from 'zod'
+﻿import { z } from 'zod'
 
 export const quizTypeOptions = ['multiple_choice', 'identification'] as const
 
@@ -14,7 +14,7 @@ const identificationAnswerSchema = z.object({
 // quizFormSchema - validate quiz form values
 export const quizFormSchema = z
   .object({
-    moduleId: z.string().min(1, 'Module is required.'),
+    assessmentId: z.string().min(1, 'Assessment is required.'),
     quizType: z.enum(quizTypeOptions),
     question: z.string().min(1, 'Question is required.'),
     correctChoice: z.enum(['A', 'B', 'C', 'D']).optional(),
@@ -81,7 +81,7 @@ export function buildQuizPayload(values: QuizFormSchema) {
     const selectedChoice = normalizedChoices.find((choice) => choice.key === values.correctChoice)
 
     return {
-      moduleId: Number(values.moduleId),
+      assessmentId: Number(values.assessmentId),
       quizType: values.quizType,
       question: normalizedQuestion,
       choices: normalizedChoices,
@@ -95,7 +95,7 @@ export function buildQuizPayload(values: QuizFormSchema) {
     .filter(Boolean)
 
   return {
-    moduleId: Number(values.moduleId),
+    assessmentId: Number(values.assessmentId),
     quizType: values.quizType,
     question: normalizedQuestion,
     choices: [],
@@ -103,3 +103,4 @@ export function buildQuizPayload(values: QuizFormSchema) {
     correctAnswers: normalizedAnswers,
   }
 }
+

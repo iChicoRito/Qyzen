@@ -26,9 +26,9 @@ export interface EducatorRealtimeMonitoringStudent {
 }
 
 export interface EducatorRealtimeMonitoringRow {
-  moduleRowId: number
-  moduleId: string
-  moduleCode: string
+  assessmentRowId: number
+  assessmentId: string
+  assessmentCode: string
   subjectId: number
   subjectName: string
   sectionId: number
@@ -65,28 +65,28 @@ interface EnrollmentRow {
   student: StudentRow | StudentRow[] | null
 }
 
-interface ModuleSubjectRow {
+interface AssessmentSubjectRow {
   subject_name: string
 }
 
-interface ModuleSectionRow {
+interface AssessmentSectionRow {
   section_name: string
 }
 
-interface ModuleTermRow {
+interface AssessmentTermRow {
   term_name: string
   semester: string
 }
 
-interface ModuleRow {
+interface AssessmentRow {
   id: number
-  module_code: string
+  assessment_code: string
   subject_id: number
   section_id: number
   time_limit: string
-  subject: ModuleSubjectRow | ModuleSubjectRow[] | null
-  section: ModuleSectionRow | ModuleSectionRow[] | null
-  academic_term: ModuleTermRow | ModuleTermRow[] | null
+  subject: AssessmentSubjectRow | AssessmentSubjectRow[] | null
+  section: AssessmentSectionRow | AssessmentSectionRow[] | null
+  academic_term: AssessmentTermRow | AssessmentTermRow[] | null
 }
 
 interface PresenceRow {
@@ -99,7 +99,7 @@ interface PresenceRow {
 interface ScoreRow {
   id: number
   student_id: number
-  module_id: number
+  assessment_id: number
   score: number | null
   total_questions: number | null
   warning_attempts: number | null
@@ -110,7 +110,7 @@ interface ScoreRow {
 
 interface QuizRow {
   id: number
-  module_id: number
+  assessment_id: number
 }
 
 interface SupabaseErrorResponse {
@@ -141,7 +141,7 @@ function getSingleRelation<T>(value: T | T[] | null) {
 }
 
 // buildAcademicTermLabel - format the academic term text
-function buildAcademicTermLabel(term: ModuleTermRow | null) {
+function buildAcademicTermLabel(term: AssessmentTermRow | null) {
   if (!term) {
     return 'No term'
   }
@@ -196,17 +196,17 @@ function isPresenceFresh(lastSeenAt: string | null) {
   return Date.now() - lastSeenTime <= STUDENT_PRESENCE_FRESHNESS_MS
 }
 
-// getLatestScoreRow - pick the newest score row for one student module
+// getLatestScoreRow - pick the newest score row for one student assessment
 function getLatestScoreRow(scores: ScoreRow[]) {
   return [...scores].sort((leftScore, rightScore) => rightScore.id - leftScore.id)[0] || null
 }
 
-// hasSubmittedAttempt - check whether the student already finished a module attempt
+// hasSubmittedAttempt - check whether the student already finished an assessment attempt
 function hasSubmittedAttempt(scores: ScoreRow[]) {
   return scores.some((score) => Boolean(score.submitted_at))
 }
 
-// getStudentMonitoringStatus - derive the live monitoring status for one student module
+// getStudentMonitoringStatus - derive the live monitoring status for one student assessment
 function getStudentMonitoringStatus(
   assessmentStatus: StudentAssessmentStatus,
   presenceStatus: StudentPresenceStatus
@@ -231,7 +231,7 @@ function getStudentPresenceStatus(lastSeenAt: string | null): StudentPresenceSta
   return isPresenceFresh(lastSeenAt) ? 'ONLINE' : 'OFFLINE'
 }
 
-// getStudentAssessmentStatus - derive the assessment progress for one student module
+// getStudentAssessmentStatus - derive the assessment progress for one student assessment
 function getStudentAssessmentStatus(scores: ScoreRow[]): StudentAssessmentStatus {
   const latestScore = getLatestScoreRow(scores)
 
@@ -269,7 +269,7 @@ function getLatestAttemptStatus(scores: ScoreRow[]) {
   return 'NOT_STARTED' as const
 }
 
-// getRowStatus - resolve the summary status for one module row
+// getRowStatus - resolve the summary status for one assessment row
 function getRowStatus(
   rowAssessmentStatus: StudentAssessmentStatus,
   rowPresenceStatus: StudentPresenceStatus
@@ -277,12 +277,12 @@ function getRowStatus(
   return getStudentMonitoringStatus(rowAssessmentStatus, rowPresenceStatus)
 }
 
-// getRowPresenceStatus - resolve the summary presence state for one module row
+// getRowPresenceStatus - resolve the summary presence state for one assessment row
 function getRowPresenceStatus(onlineCount: number): StudentPresenceStatus {
   return onlineCount > 0 ? 'ONLINE' : 'OFFLINE'
 }
 
-// getRowAssessmentStatus - resolve the summary assessment state for one module row
+// getRowAssessmentStatus - resolve the summary assessment state for one assessment row
 function getRowAssessmentStatus(answeringCount: number, finishedCount: number): StudentAssessmentStatus {
   if (answeringCount > 0) {
     return 'ANSWERING'
@@ -321,7 +321,7 @@ function sortStudents(students: EducatorRealtimeMonitoringStudent[]) {
 export async function fetchEducatorRealtimeMonitoringList() {
   const supabase = createClient()
   const educatorId = await getCurrentEducatorId()
-  const [{ data: enrollmentData, error: enrollmentError }, { data: moduleData, error: moduleError }] =
+  const [{ data: enrollmentData, error: enrollmentError }, { data: assessmentData, error: assessmentError }] =
     await Promise.all([
       supabase
         .from('tbl_enrolled')
@@ -329,9 +329,9 @@ export async function fetchEducatorRealtimeMonitoringList() {
         .eq('educator_id', educatorId)
         .eq('is_active', true),
       supabase
-        .from('tbl_modules')
+        .from('tbl_assessments')
         .select(
-          'id,module_code,subject_id,section_id,time_limit,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
+          'id,assessment_code,subject_id,section_id,time_limit,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
         )
         .eq('educator_id', educatorId)
         .eq('is_active', true)
@@ -342,20 +342,20 @@ export async function fetchEducatorRealtimeMonitoringList() {
     throw new Error(getSupabaseErrorMessage(enrollmentError, 'Failed to load educator enrollments.'))
   }
 
-  if (moduleError) {
-    throw new Error(getSupabaseErrorMessage(moduleError, 'Failed to load monitoring modules.'))
+  if (assessmentError) {
+    throw new Error(getSupabaseErrorMessage(assessmentError, 'Failed to load monitoring assessments.'))
   }
 
   const enrollments = ((enrollmentData || []) as EnrollmentRow[]).filter((enrollment) =>
     Boolean(getSingleRelation(enrollment.student)?.is_active)
   )
-  const modules = (moduleData || []) as ModuleRow[]
+  const assessments = (assessmentData || []) as AssessmentRow[]
 
-  if (enrollments.length === 0 || modules.length === 0) {
+  if (enrollments.length === 0 || assessments.length === 0) {
     return [] as EducatorRealtimeMonitoringRow[]
   }
 
-  const moduleIds = modules.map((module) => module.id)
+  const assessmentIds = assessments.map((assessment) => assessment.id)
   const studentIds = [...new Set(enrollments.map((enrollment) => enrollment.student_id))]
   const [{ data: presenceData, error: presenceError }, { data: scoreData, error: scoreError }, { data: quizData, error: quizError }] =
     await Promise.all([
@@ -365,15 +365,15 @@ export async function fetchEducatorRealtimeMonitoringList() {
         .in('student_id', studentIds),
       supabase
         .from('tbl_scores')
-        .select('id,student_id,module_id,score,total_questions,warning_attempts,status,taken_at,submitted_at')
+        .select('id,student_id,assessment_id,score,total_questions,warning_attempts,status,taken_at,submitted_at')
         .eq('educator_id', educatorId)
         .in('student_id', studentIds)
-        .in('module_id', moduleIds)
+        .in('assessment_id', assessmentIds)
         .order('id', { ascending: false }),
       supabase
         .from('tbl_quizzes')
-        .select('id,module_id')
-        .in('module_id', moduleIds),
+        .select('id,assessment_id')
+        .in('assessment_id', assessmentIds),
     ])
 
   if (presenceError) {
@@ -385,7 +385,7 @@ export async function fetchEducatorRealtimeMonitoringList() {
   }
 
   if (quizError) {
-    throw new Error(getSupabaseErrorMessage(quizError, 'Failed to load module quiz counts.'))
+    throw new Error(getSupabaseErrorMessage(quizError, 'Failed to load assessment quiz counts.'))
   }
 
   const presenceMap = ((presenceData || []) as PresenceRow[]).reduce<Map<number, PresenceRow>>(
@@ -409,14 +409,14 @@ export async function fetchEducatorRealtimeMonitoringList() {
     new Map<number, PresenceRow>()
   )
   const scoreMap = ((scoreData || []) as ScoreRow[]).reduce<Map<string, ScoreRow[]>>((result, row) => {
-    const scoreKey = `${row.student_id}:${row.module_id}`
+    const scoreKey = `${row.student_id}:${row.assessment_id}`
     const currentRows = result.get(scoreKey) || []
     currentRows.push(row)
     result.set(scoreKey, currentRows)
     return result
   }, new Map<string, ScoreRow[]>())
   const questionCountMap = ((quizData || []) as QuizRow[]).reduce<Map<number, number>>((result, row) => {
-    result.set(row.module_id, (result.get(row.module_id) || 0) + 1)
+    result.set(row.assessment_id, (result.get(row.assessment_id) || 0) + 1)
     return result
   }, new Map<number, number>())
   const studentsBySubjectMap = enrollments.reduce<Map<number, EducatorRealtimeMonitoringStudent[]>>(
@@ -451,20 +451,20 @@ export async function fetchEducatorRealtimeMonitoringList() {
     new Map<number, EducatorRealtimeMonitoringStudent[]>()
   )
 
-  return modules
-    .map((module) => {
-      const subject = getSingleRelation(module.subject)
-      const section = getSingleRelation(module.section)
-      const term = getSingleRelation(module.academic_term)
-      const subjectStudents = studentsBySubjectMap.get(module.subject_id) || []
+  return assessments
+    .map((assessment) => {
+      const subject = getSingleRelation(assessment.subject)
+      const section = getSingleRelation(assessment.section)
+      const term = getSingleRelation(assessment.academic_term)
+      const subjectStudents = studentsBySubjectMap.get(assessment.subject_id) || []
       const students = sortStudents(
         subjectStudents.map((student) => {
-          const scoreKey = `${student.studentId}:${module.id}`
-          const moduleScores = scoreMap.get(scoreKey) || []
-          const latestScore = getLatestScoreRow(moduleScores)
+          const scoreKey = `${student.studentId}:${assessment.id}`
+          const assessmentScores = scoreMap.get(scoreKey) || []
+          const latestScore = getLatestScoreRow(assessmentScores)
           const presence = presenceMap.get(student.studentId) || null
           const presenceStatus = getStudentPresenceStatus(presence?.last_seen_at || null)
-          const assessmentStatus = getStudentAssessmentStatus(moduleScores)
+          const assessmentStatus = getStudentAssessmentStatus(assessmentScores)
           const status = getStudentMonitoringStatus(assessmentStatus, presenceStatus)
 
           return {
@@ -474,7 +474,7 @@ export async function fetchEducatorRealtimeMonitoringList() {
             assessmentStatus,
             lastSeenAt: presence?.last_seen_at || null,
             currentPath: presence?.current_path || null,
-            latestAttemptStatus: getLatestAttemptStatus(moduleScores),
+            latestAttemptStatus: getLatestAttemptStatus(assessmentScores),
             latestScoreId: latestScore?.id ?? null,
             latestScore: latestScore?.score ?? null,
             latestTotalQuestions: latestScore?.total_questions ?? null,
@@ -494,16 +494,16 @@ export async function fetchEducatorRealtimeMonitoringList() {
       const rowAssessmentStatus = getRowAssessmentStatus(answeringCount, finishedCount)
 
       return {
-        moduleRowId: module.id,
-        moduleId: module.module_code,
-        moduleCode: module.module_code,
-        subjectId: module.subject_id,
+        assessmentRowId: assessment.id,
+        assessmentId: assessment.assessment_code,
+        assessmentCode: assessment.assessment_code,
+        subjectId: assessment.subject_id,
         subjectName: subject?.subject_name || 'Unknown Subject',
-        sectionId: module.section_id,
+        sectionId: assessment.section_id,
         sectionName: section?.section_name || 'Unknown Section',
         termName: buildAcademicTermLabel(term),
-        timeLimitMinutes: Number(module.time_limit) || 0,
-        questionCount: questionCountMap.get(module.id) || 0,
+        timeLimitMinutes: Number(assessment.time_limit) || 0,
+        questionCount: questionCountMap.get(assessment.id) || 0,
         enrolledCount: students.length,
         offlineCount: disconnectedCount,
         onlineCount: connectedCount,
@@ -524,6 +524,7 @@ export async function fetchEducatorRealtimeMonitoringList() {
         return priorityDifference
       }
 
-      return rightRow.moduleRowId - leftRow.moduleRowId
+      return rightRow.assessmentRowId - leftRow.assessmentRowId
     })
 }
+

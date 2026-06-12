@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import * as React from 'react'
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
@@ -99,7 +99,7 @@ export function StudentPerformanceTrendCard({
             {averageScore.toFixed(1)}% avg
           </Badge>
           <span className="text-muted-foreground">
-            {latestPoint ? `Latest: ${latestPoint.moduleCode} at ${latestPoint.label}` : 'No recent score available'}
+            {latestPoint ? `Latest: ${latestPoint.assessmentCode} at ${latestPoint.label}` : 'No recent score available'}
           </span>
         </div>
         <p className="leading-none text-muted-foreground">Showing the latest 6 finished assessments.</p>
@@ -107,3 +107,4 @@ export function StudentPerformanceTrendCard({
     </Card>
   )
 }
+

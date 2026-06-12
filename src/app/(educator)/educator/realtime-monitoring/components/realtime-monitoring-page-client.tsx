@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -32,7 +32,7 @@ export function RealtimeMonitoringPageClient() {
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [selectedModuleRowId, setSelectedModuleRowId] = useState<number | null>(null)
+  const [selectedAssessmentRowId, setSelectedAssessmentRowId] = useState<number | null>(null)
   const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false)
   const loadRowsRef = useRef<(mode?: 'initial' | 'refresh' | 'background') => Promise<void>>(async () => {})
 
@@ -157,11 +157,11 @@ export function RealtimeMonitoringPageClient() {
   const totalOnlineCount = rows.reduce((total, row) => total + row.onlineCount, 0)
   const totalFinishedCount = rows.reduce((total, row) => total + row.finishedCount, 0)
   const selectedRow =
-    rows.find((row) => row.moduleRowId === selectedModuleRowId) || null
+    rows.find((row) => row.assessmentRowId === selectedAssessmentRowId) || null
 
   // ==================== MODAL ACTIONS ====================
-  const handleMonitorStudents = (moduleRowId: number) => {
-    setSelectedModuleRowId(moduleRowId)
+  const handleMonitorStudents = (assessmentRowId: number) => {
+    setSelectedAssessmentRowId(assessmentRowId)
     setIsStudentsModalOpen(true)
   }
 
@@ -169,7 +169,7 @@ export function RealtimeMonitoringPageClient() {
     setIsStudentsModalOpen(open)
 
     if (!open) {
-      setSelectedModuleRowId(null)
+      setSelectedAssessmentRowId(null)
     }
   }
 
@@ -178,7 +178,7 @@ export function RealtimeMonitoringPageClient() {
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">Real-Time Assessment Monitoring</h1>
         <p className="text-muted-foreground">
-          Monitor enrolled students live by module and review whether they are offline, online, answering, or finished.
+          Monitor enrolled students live by assessment and review whether they are offline, online, answering, or finished.
         </p>
       </div>
 
@@ -268,7 +268,7 @@ export function RealtimeMonitoringPageClient() {
         <CardHeader>
           <CardTitle>Assessment Monitoring Table</CardTitle>
           <CardDescription>
-            Browse live monitoring rows, filter modules, and open student activity details.
+            Browse live monitoring rows, filter assessments, and open student activity details.
           </CardDescription>
         </CardHeader>
         <CardContent className="min-w-0 px-3 pb-4 sm:px-6">
@@ -291,3 +291,4 @@ export function RealtimeMonitoringPageClient() {
     </div>
   )
 }
+

@@ -1,4 +1,4 @@
-import { z } from 'zod'
+﻿import { z } from 'zod'
 
 const scoreChoiceSchema = z.object({
   key: z.enum(['A', 'B', 'C', 'D']),
@@ -31,8 +31,8 @@ const scoreAttemptHistorySchema = z.object({
 // scoreSchema - validate student score review rows
 export const scoreSchema = z.object({
   scoreId: z.number(),
-  moduleRowId: z.number(),
-  moduleCode: z.string(),
+  assessmentRowId: z.number(),
+  assessmentCode: z.string(),
   subjectName: z.string(),
   sectionName: z.string(),
   educatorName: z.string(),
@@ -67,3 +67,4 @@ export const scoreSchema = z.object({
 })
 
 export type Score = z.infer<typeof scoreSchema>
+

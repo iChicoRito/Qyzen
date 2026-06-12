@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { IconEye } from '@tabler/icons-react'
@@ -36,7 +36,7 @@ function getQuizTypeClassName(quizType: 'multiple_choice' | 'identification') {
   return 'rounded-md border-0 bg-yellow-500/10 px-2.5 py-0.5 text-yellow-500'
 }
 
-// ViewQuizModal - view grouped module quiz details
+// ViewQuizModal - view grouped assessment quiz details
 export function ViewQuizModal({
   quizGroup,
   trigger,
@@ -61,15 +61,15 @@ export function ViewQuizModal({
       ) : null}
       <ResponsiveDialogContent className="gap-0 p-0" desktopClassName="sm:max-w-[760px]">
         <ResponsiveDialogHeader>
-          <ResponsiveDialogTitle>{quizGroup.moduleCode}</ResponsiveDialogTitle>
-          <ResponsiveDialogDescription>All quiz questions stored under this module.</ResponsiveDialogDescription>
+          <ResponsiveDialogTitle>{quizGroup.assessmentCode}</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>All quiz questions stored under this assessment.</ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
         <ResponsiveDialogBody className="max-h-[68vh] space-y-6 border-t border-b">
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
-              <p className="font-semibold">Module Code</p>
-              <p className="text-muted-foreground">{quizGroup.moduleCode}</p>
+              <p className="font-semibold">Assessment Code</p>
+              <p className="text-muted-foreground">{quizGroup.assessmentCode}</p>
             </div>
             <div className="space-y-2">
               <p className="font-semibold">Class</p>
@@ -173,3 +173,4 @@ export function ViewQuizModal({
     </ResponsiveDialog>
   )
 }
+

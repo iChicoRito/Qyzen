@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -64,7 +64,7 @@ function getUniqueOptions<T>(items: T[], getKey: (item: T) => string, getLabel: 
 
 // buildFileName - create the downloaded file name
 function buildFileName(summary: EducatorScoreExportResult['summary']) {
-  const safeValue = `${summary.subjectName}-${summary.sectionName}-${summary.moduleCode}-${summary.termName}`
+  const safeValue = `${summary.subjectName}-${summary.sectionName}-${summary.assessmentCode}-${summary.termName}`
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
@@ -103,14 +103,14 @@ export function DownloadGradesModal({
     defaultValues: {
       subjectId: '',
       sectionId: '',
-      moduleRowId: '',
+      assessmentRowId: '',
       termId: '',
     },
   })
 
   const subjectId = form.watch('subjectId')
   const sectionId = form.watch('sectionId')
-  const moduleRowId = form.watch('moduleRowId')
+  const assessmentRowId = form.watch('assessmentRowId')
   const termId = form.watch('termId')
 
   const subjectOptions = useMemo(
@@ -130,28 +130,28 @@ export function DownloadGradesModal({
       ),
     [filteredSectionSource]
   )
-  const filteredModuleSource = useMemo(
+  const filteredAssessmentSource = useMemo(
     () =>
       filteredSectionSource.filter(
         (option) => !sectionId || String(option.sectionId) === sectionId
       ),
     [filteredSectionSource, sectionId]
   )
-  const moduleOptions = useMemo(
+  const assessmentOptions = useMemo(
     () =>
       getUniqueOptions(
-        filteredModuleSource,
-        (option) => String(option.moduleRowId),
-        (option) => option.moduleCode
+        filteredAssessmentSource,
+        (option) => String(option.assessmentRowId),
+        (option) => option.assessmentCode
       ),
-    [filteredModuleSource]
+    [filteredAssessmentSource]
   )
   const filteredTermSource = useMemo(
     () =>
-      filteredModuleSource.filter(
-        (option) => !moduleRowId || String(option.moduleRowId) === moduleRowId
+      filteredAssessmentSource.filter(
+        (option) => !assessmentRowId || String(option.assessmentRowId) === assessmentRowId
       ),
-    [filteredModuleSource, moduleRowId]
+    [filteredAssessmentSource, assessmentRowId]
   )
   const termOptions = useMemo(
     () => getUniqueOptions(filteredTermSource, (option) => String(option.termId), (option) => option.termName),
@@ -180,7 +180,7 @@ export function DownloadGradesModal({
       'Student ID',
       'Subject',
       'Section',
-      'Module Code',
+      'Assessment Code',
       'Academic Term',
       'Highest Score',
       'Total Questions',
@@ -204,8 +204,8 @@ export function DownloadGradesModal({
     worksheet.getCell('B3').value = result.summary.subjectName
     worksheet.getCell('A4').value = 'Section'
     worksheet.getCell('B4').value = result.summary.sectionName
-    worksheet.getCell('A5').value = 'Module Code'
-    worksheet.getCell('B5').value = result.summary.moduleCode
+    worksheet.getCell('A5').value = 'Assessment Code'
+    worksheet.getCell('B5').value = result.summary.assessmentCode
     worksheet.getCell('A6').value = 'Academic Term'
     worksheet.getCell('B6').value = result.summary.termName
     worksheet.getCell('D3').value = 'Total Enrolled'
@@ -251,7 +251,7 @@ export function DownloadGradesModal({
         rowData.studentUserId,
         rowData.subjectName,
         rowData.sectionName,
-        rowData.moduleCode,
+        rowData.assessmentCode,
         rowData.termName,
         rowData.highestScore,
         rowData.totalQuestions,
@@ -283,7 +283,7 @@ export function DownloadGradesModal({
       { key: 'student_id', width: 20 },
       { key: 'subject', width: 28 },
       { key: 'section', width: 20 },
-      { key: 'module_code', width: 18 },
+      { key: 'assessment_code', width: 18 },
       { key: 'term_name', width: 24 },
       { key: 'highest_score', width: 14 },
       { key: 'total_questions', width: 16 },
@@ -323,7 +323,7 @@ export function DownloadGradesModal({
     form.reset({
       subjectId: '',
       sectionId: '',
-      moduleRowId: '',
+      assessmentRowId: '',
       termId: '',
     })
     setPreviewData(null)
@@ -331,13 +331,13 @@ export function DownloadGradesModal({
 
   useEffect(() => {
     form.setValue('sectionId', '')
-    form.setValue('moduleRowId', '')
+    form.setValue('assessmentRowId', '')
     form.setValue('termId', '')
     setPreviewData(null)
   }, [form, subjectId])
 
   useEffect(() => {
-    form.setValue('moduleRowId', '')
+    form.setValue('assessmentRowId', '')
     form.setValue('termId', '')
     setPreviewData(null)
   }, [form, sectionId])
@@ -345,10 +345,10 @@ export function DownloadGradesModal({
   useEffect(() => {
     form.setValue('termId', '')
     setPreviewData(null)
-  }, [form, moduleRowId])
+  }, [form, assessmentRowId])
 
   useEffect(() => {
-    const shouldLoadPreview = open && subjectId && sectionId && moduleRowId && termId
+    const shouldLoadPreview = open && subjectId && sectionId && assessmentRowId && termId
 
     if (!shouldLoadPreview) {
       setPreviewData(null)
@@ -361,7 +361,7 @@ export function DownloadGradesModal({
         const exportData = await fetchEducatorScoreExportData({
           subjectId: Number(subjectId),
           sectionId: Number(sectionId),
-          moduleRowId: Number(moduleRowId),
+          assessmentRowId: Number(assessmentRowId),
           termId: Number(termId),
         })
         setPreviewData(exportData)
@@ -374,7 +374,7 @@ export function DownloadGradesModal({
     }
 
     loadPreview()
-  }, [moduleRowId, open, sectionId, subjectId, termId])
+  }, [assessmentRowId, open, sectionId, subjectId, termId])
 
   // ==================== RENDER ====================
   return (
@@ -383,7 +383,7 @@ export function DownloadGradesModal({
         <ResponsiveDialogHeader className="pb-0">
           <ResponsiveDialogTitle>Download Grades</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            Choose the subject, section, module, and term before downloading the formatted grade sheet.
+            Choose the subject, section, assessment, and term before downloading the formatted grade sheet.
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
@@ -447,10 +447,10 @@ export function DownloadGradesModal({
 
                 <FormField
                   control={form.control}
-                  name="moduleRowId"
+                  name="assessmentRowId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Module Code</FormLabel>
+                      <FormLabel>Assessment Code</FormLabel>
                       <Select
                         value={field.value}
                         onValueChange={field.onChange}
@@ -458,11 +458,11 @@ export function DownloadGradesModal({
                       >
                         <FormControl>
                           <SelectTrigger className="w-full cursor-pointer">
-                            <SelectValue placeholder="Select module" />
+                            <SelectValue placeholder="Select assessment" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {moduleOptions.map((option) => (
+                          {assessmentOptions.map((option) => (
                             <SelectItem key={option.value} value={option.value} className="cursor-pointer">
                               {option.label}
                             </SelectItem>
@@ -483,7 +483,7 @@ export function DownloadGradesModal({
                       <Select
                         value={field.value}
                         onValueChange={field.onChange}
-                        disabled={isLoadingOptions || !moduleRowId}
+                        disabled={isLoadingOptions || !assessmentRowId}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full cursor-pointer">
@@ -524,7 +524,7 @@ export function DownloadGradesModal({
                           <div className="text-muted-foreground text-xs">
                             Selected Export
                           </div>
-                          <div className="font-semibold">{previewData.summary.moduleCode}</div>
+                          <div className="font-semibold">{previewData.summary.assessmentCode}</div>
                           <div className="text-muted-foreground text-sm">
                             {previewData.summary.subjectName} | {previewData.summary.sectionName}
                           </div>
@@ -570,8 +570,8 @@ export function DownloadGradesModal({
                         <div className="mt-1 text-sm font-medium">{previewData.summary.sectionName}</div>
                       </div>
                       <div>
-                        <div className="text-muted-foreground text-xs">Module Code</div>
-                        <div className="mt-1 text-sm font-medium">{previewData.summary.moduleCode}</div>
+                        <div className="text-muted-foreground text-xs">Assessment Code</div>
+                        <div className="mt-1 text-sm font-medium">{previewData.summary.assessmentCode}</div>
                       </div>
                       <div>
                         <div className="text-muted-foreground text-xs">Academic Term</div>
@@ -615,3 +615,4 @@ export function DownloadGradesModal({
     </ResponsiveDialog>
   )
 }
+

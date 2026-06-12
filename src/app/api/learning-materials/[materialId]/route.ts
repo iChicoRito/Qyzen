@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 
 import { fetchAuthContext } from '@/lib/auth/auth-context'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -418,7 +418,7 @@ export async function DELETE(
           title: notificationRow.title,
           message: notificationRow.message,
           link_path: notificationRow.linkPath,
-          module_id: null,
+          assessment_id: null,
           subject_id: notificationRow.subjectId ?? null,
           section_id: notificationRow.sectionId ?? null,
           metadata: notificationRow.metadata ?? null,
@@ -444,3 +444,4 @@ export async function DELETE(
     return NextResponse.json({ message }, { status })
   }
 }
+

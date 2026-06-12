@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import type { Row } from '@tanstack/react-table'
 import { IconDotsVertical, IconEye } from '@tabler/icons-react'
@@ -15,10 +15,10 @@ import { educatorRealtimeMonitoringRowSchema } from '../data/schema'
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>
-  onMonitorStudents: (moduleRowId: number) => void
+  onMonitorStudents: (assessmentRowId: number) => void
 }
 
-// DataTableRowActions - render row actions for one monitored module
+// DataTableRowActions - render row actions for one monitored assessment
 export function DataTableRowActions<TData>({
   row,
   onMonitorStudents,
@@ -39,7 +39,7 @@ export function DataTableRowActions<TData>({
       <DropdownMenuContent align="end" className="w-[190px]">
         <DropdownMenuItem
           className="cursor-pointer"
-          onSelect={() => onMonitorStudents(monitoringRow.moduleRowId)}
+          onSelect={() => onMonitorStudents(monitoringRow.assessmentRowId)}
         >
           <IconEye size={16} className="mr-0" />
           Monitor Students
@@ -48,3 +48,4 @@ export function DataTableRowActions<TData>({
     </DropdownMenu>
   )
 }
+

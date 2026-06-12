@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 import {
   IconChecklist,
   IconClock,
@@ -54,7 +54,7 @@ export function StudentNextAssessmentCard({ nextAssessment }: { nextAssessment: 
                 <span className="text-sm font-medium text-muted-foreground">{nextAssessment.quizTypeLabel}</span>
               </div>
               <div className="mt-3 space-y-1">
-                <div className="text-xl font-semibold tracking-tight">{nextAssessment.moduleCode}</div>
+                <div className="text-xl font-semibold tracking-tight">{nextAssessment.assessmentCode}</div>
                 <div className="text-sm text-muted-foreground">
                   {nextAssessment.subjectName} in {nextAssessment.sectionName}
                 </div>
@@ -119,3 +119,4 @@ export function StudentNextAssessmentCard({ nextAssessment }: { nextAssessment: 
     </Card>
   )
 }
+

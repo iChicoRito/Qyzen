@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import type { NotificationInsertInput } from '@/types/notification'
 
@@ -38,8 +38,8 @@ export interface EducatorScoreReviewItem {
   studentId: number
   studentUserId: string
   studentName: string
-  moduleRowId: number
-  moduleCode: string
+  assessmentRowId: number
+  assessmentCode: string
   subjectId: number
   subjectName: string
   sectionId: number
@@ -81,9 +81,9 @@ export interface EducatorScoreReviewItem {
 }
 
 export interface EducatorScoreExportOption {
-  moduleRowId: number
-  moduleId: string
-  moduleCode: string
+  assessmentRowId: number
+  assessmentId: string
+  assessmentCode: string
   termId: number
   termName: string
   subjectId: number
@@ -98,7 +98,7 @@ export interface EducatorScoreExportRow {
   studentName: string
   subjectName: string
   sectionName: string
-  moduleCode: string
+  assessmentCode: string
   termName: string
   highestScore: number
   totalQuestions: number
@@ -111,7 +111,7 @@ export interface EducatorScoreExportRow {
 export interface EducatorScoreExportSummary {
   subjectName: string
   sectionName: string
-  moduleCode: string
+  assessmentCode: string
   termName: string
   totalEnrolled: number
   studentsWithSubmission: number
@@ -126,8 +126,8 @@ export interface EducatorScoreExportResult {
 interface RetakeNotificationContext {
   studentId: number
   studentName: string
-  moduleRowId: number
-  moduleCode: string
+  assessmentRowId: number
+  assessmentCode: string
   subjectId: number
   subjectName: string
   sectionId: number
@@ -138,13 +138,13 @@ interface RetakeNotificationContext {
 export interface FetchEducatorScoreExportInput {
   subjectId: number
   sectionId: number
-  moduleRowId: number
+  assessmentRowId: number
   termId: number
 }
 
 export interface UpdateEducatorRetakeGrantInput {
   studentId: number
-  moduleRowId: number
+  assessmentRowId: number
   subjectId: number
   retakeCount: number
 }
@@ -171,22 +171,22 @@ interface StudentRow {
   is_active: boolean
 }
 
-interface ModuleSubjectRow {
+interface AssessmentSubjectRow {
   subject_name: string
 }
 
-interface ModuleSectionRow {
+interface AssessmentSectionRow {
   section_name: string
 }
 
-interface ModuleTermRow {
+interface AssessmentTermRow {
   term_name: string
   semester: string
 }
 
-interface ModuleRow {
+interface AssessmentRow {
   id?: number
-  module_code: string
+  assessment_code: string
   term?: number
   subject_id: number
   section_id: number
@@ -199,15 +199,15 @@ interface ModuleRow {
   allow_review: boolean
   allow_retake: boolean
   retake_count: number
-  subject: ModuleSubjectRow | ModuleSubjectRow[] | null
-  section: ModuleSectionRow | ModuleSectionRow[] | null
-  academic_term: ModuleTermRow | ModuleTermRow[] | null
+  subject: AssessmentSubjectRow | AssessmentSubjectRow[] | null
+  section: AssessmentSectionRow | AssessmentSectionRow[] | null
+  academic_term: AssessmentTermRow | AssessmentTermRow[] | null
 }
 
 interface ScoreSnapshot {
   id: number
   student_id: number
-  module_id: number
+  assessment_id: number
   subject_id: number
   section_id: number
   score: number | null
@@ -221,22 +221,22 @@ interface ScoreSnapshot {
 }
 
 interface ScoreRow extends ScoreSnapshot {
-  module: ModuleRow | ModuleRow[] | null
+  assessment: AssessmentRow | AssessmentRow[] | null
   student: StudentRow | StudentRow[] | null
 }
 
 interface QuizRow {
   id: number
-  module_id: number
+  assessment_id: number
   question: string
   quiz_type: 'multiple_choice' | 'identification'
   choices: unknown
   correct_answer: string
 }
 
-interface StudentModuleRetakeRow {
+interface StudentAssessmentRetakeRow {
   student_id: number
-  module_id: number
+  assessment_id: number
   extra_retake_count: number
   is_active: boolean
 }
@@ -288,7 +288,7 @@ async function getCurrentEducatorId() {
 }
 
 // buildAcademicTermLabel - format academic term text
-function buildAcademicTermLabel(term: ModuleTermRow | null) {
+function buildAcademicTermLabel(term: AssessmentTermRow | null) {
   if (!term) {
     return 'No term'
   }
@@ -447,9 +447,9 @@ function buildAttemptHistory(submittedScores: ScoreSnapshot[]) {
 }
 
 // getRetakeState - compute effective retake values
-function getRetakeState(module: ModuleRow, submittedScores: ScoreRow[], grantedRetakeCount: number) {
-  const moduleRetakeCount = module.allow_retake ? module.retake_count : 0
-  const effectiveRetakeCount = Math.max(moduleRetakeCount + grantedRetakeCount, 0)
+function getRetakeState(assessment: AssessmentRow, submittedScores: ScoreRow[], grantedRetakeCount: number) {
+  const assessmentRetakeCount = assessment.allow_retake ? assessment.retake_count : 0
+  const effectiveRetakeCount = Math.max(assessmentRetakeCount + grantedRetakeCount, 0)
   const allowRetake = effectiveRetakeCount > 0
   const submittedAttemptCount = submittedScores.length
   const maxAttempts = effectiveRetakeCount + 1
@@ -469,17 +469,17 @@ function getRetakeState(module: ModuleRow, submittedScores: ScoreRow[], grantedR
   }
 }
 
-// getModuleExportOptions - normalize module rows for export options
-function getModuleExportOptions(moduleRows: ModuleRow[]) {
-  return moduleRows.map((row) => {
+// getAssessmentExportOptions - normalize assessment rows for export options
+function getAssessmentExportOptions(assessmentRows: AssessmentRow[]) {
+  return assessmentRows.map((row) => {
     const subject = getSingleRelation(row.subject)
     const section = getSingleRelation(row.section)
     const term = getSingleRelation(row.academic_term)
 
     return {
-      moduleRowId: row.id || 0,
-      moduleId: row.module_code || 'Unknown Module',
-      moduleCode: row.module_code,
+      assessmentRowId: row.id || 0,
+      assessmentId: row.assessment_code || 'Unknown Assessment',
+      assessmentCode: row.assessment_code,
       termId: row.term || 0,
       termName: buildAcademicTermLabel(term),
       subjectId: row.subject_id,
@@ -490,14 +490,14 @@ function getModuleExportOptions(moduleRows: ModuleRow[]) {
   })
 }
 
-// fetchEducatorScoreExportOptions - load module options for download selections
+// fetchEducatorScoreExportOptions - load assessment options for download selections
 export async function fetchEducatorScoreExportOptions() {
   const supabase = createClient()
   const educatorId = await getCurrentEducatorId()
   const { data, error } = await supabase
-    .from('tbl_modules')
+    .from('tbl_assessments')
     .select(
-      'id,module_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
+      'id,assessment_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
     )
     .eq('educator_id', educatorId)
     .order('created_at', { ascending: false })
@@ -506,22 +506,22 @@ export async function fetchEducatorScoreExportOptions() {
     throw new Error(getSupabaseErrorMessage(error, 'Failed to load score export options.'))
   }
 
-  return getModuleExportOptions((data || []) as ModuleRow[])
+  return getAssessmentExportOptions((data || []) as AssessmentRow[])
 }
 
 // fetchEducatorScoreExportData - load selected export summary and rows
 export async function fetchEducatorScoreExportData(input: FetchEducatorScoreExportInput) {
   const supabase = createClient()
   const educatorId = await getCurrentEducatorId()
-  const [{ data: moduleData, error: moduleError }, { data: enrollmentData, error: enrollmentError }, { data: scoreData, error: scoreError }, { data: quizData, error: quizError }] =
+  const [{ data: assessmentData, error: assessmentError }, { data: enrollmentData, error: enrollmentError }, { data: scoreData, error: scoreError }, { data: quizData, error: quizError }] =
     await Promise.all([
       supabase
-        .from('tbl_modules')
+        .from('tbl_assessments')
         .select(
-          'id,module_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
+          'id,assessment_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
         )
         .eq('educator_id', educatorId)
-        .eq('id', input.moduleRowId)
+        .eq('id', input.assessmentRowId)
         .eq('subject_id', input.subjectId)
         .eq('section_id', input.sectionId)
         .eq('term', input.termId)
@@ -534,19 +534,19 @@ export async function fetchEducatorScoreExportData(input: FetchEducatorScoreExpo
         .eq('is_active', true),
       supabase
         .from('tbl_scores')
-        .select('id,student_id,module_id,subject_id,section_id,score,total_questions,student_answer,warning_attempts,taken_at,submitted_at,status,is_passed')
+        .select('id,student_id,assessment_id,subject_id,section_id,score,total_questions,student_answer,warning_attempts,taken_at,submitted_at,status,is_passed')
         .eq('educator_id', educatorId)
         .eq('subject_id', input.subjectId)
-        .eq('module_id', input.moduleRowId)
+        .eq('assessment_id', input.assessmentRowId)
         .not('submitted_at', 'is', null),
       supabase
         .from('tbl_quizzes')
-        .select('id,module_id')
-        .eq('module_id', input.moduleRowId),
+        .select('id,assessment_id')
+        .eq('assessment_id', input.assessmentRowId),
     ])
 
-  if (moduleError) {
-    throw new Error(getSupabaseErrorMessage(moduleError, 'Failed to load export module details.'))
+  if (assessmentError) {
+    throw new Error(getSupabaseErrorMessage(assessmentError, 'Failed to load export assessment details.'))
   }
 
   if (enrollmentError) {
@@ -558,12 +558,12 @@ export async function fetchEducatorScoreExportData(input: FetchEducatorScoreExpo
   }
 
   if (quizError) {
-    throw new Error(getSupabaseErrorMessage(quizError, 'Failed to load module quiz details.'))
+    throw new Error(getSupabaseErrorMessage(quizError, 'Failed to load assessment quiz details.'))
   }
 
-  const moduleOption = getModuleExportOptions((moduleData || []) as ModuleRow[])[0]
+  const assessmentOption = getAssessmentExportOptions((assessmentData || []) as AssessmentRow[])[0]
 
-  if (!moduleOption) {
+  if (!assessmentOption) {
     throw new Error('The selected score export option is no longer available.')
   }
 
@@ -592,10 +592,10 @@ export async function fetchEducatorScoreExportData(input: FetchEducatorScoreExpo
         studentId: student.id,
         studentUserId: student.user_id,
         studentName: `${student.given_name} ${student.surname}`.trim(),
-        subjectName: moduleOption.subjectName,
-        sectionName: moduleOption.sectionName,
-        moduleCode: moduleOption.moduleCode,
-        termName: moduleOption.termName,
+        subjectName: assessmentOption.subjectName,
+        sectionName: assessmentOption.sectionName,
+        assessmentCode: assessmentOption.assessmentCode,
+        termName: assessmentOption.termName,
         highestScore: 0,
         totalQuestions,
         percentage: 0,
@@ -609,10 +609,10 @@ export async function fetchEducatorScoreExportData(input: FetchEducatorScoreExpo
       studentId: student.id,
       studentUserId: student.user_id,
       studentName: `${student.given_name} ${student.surname}`.trim(),
-      subjectName: moduleOption.subjectName,
-      sectionName: moduleOption.sectionName,
-      moduleCode: moduleOption.moduleCode,
-      termName: moduleOption.termName,
+      subjectName: assessmentOption.subjectName,
+      sectionName: assessmentOption.sectionName,
+      assessmentCode: assessmentOption.assessmentCode,
+      termName: assessmentOption.termName,
       highestScore: bestScore.score || 0,
       totalQuestions: bestScore.total_questions || totalQuestions,
       percentage: getScorePercentage(bestScore),
@@ -624,10 +624,10 @@ export async function fetchEducatorScoreExportData(input: FetchEducatorScoreExpo
 
   return {
     summary: {
-      subjectName: moduleOption.subjectName,
-      sectionName: moduleOption.sectionName,
-      moduleCode: moduleOption.moduleCode,
-      termName: moduleOption.termName,
+      subjectName: assessmentOption.subjectName,
+      sectionName: assessmentOption.sectionName,
+      assessmentCode: assessmentOption.assessmentCode,
+      termName: assessmentOption.termName,
       totalEnrolled: rows.length,
       studentsWithSubmission: rows.filter((row) => row.statusLabel !== 'No Submission').length,
       studentsWithoutSubmission: rows.filter((row) => row.statusLabel === 'No Submission').length,
@@ -661,7 +661,7 @@ export async function fetchEducatorScoreReviewList() {
   const { data: scoreData, error: scoreError } = await supabase
     .from('tbl_scores')
     .select(
-      'id,student_id,module_id,subject_id,section_id,score,total_questions,student_answer,warning_attempts,taken_at,submitted_at,status,is_passed,module:module_id(module_code,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)),student:student_id(id,user_id,given_name,surname,is_active)'
+      'id,student_id,assessment_id,subject_id,section_id,score,total_questions,student_answer,warning_attempts,taken_at,submitted_at,status,is_passed,assessment:assessment_id(assessment_code,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)),student:student_id(id,user_id,given_name,surname,is_active)'
     )
     .eq('educator_id', educatorId)
     .not('submitted_at', 'is', null)
@@ -679,21 +679,21 @@ export async function fetchEducatorScoreReviewList() {
     return [] as EducatorScoreReviewItem[]
   }
 
-  const moduleIds = [...new Set(visibleScores.map((score) => score.module_id))]
+  const assessmentIds = [...new Set(visibleScores.map((score) => score.assessment_id))]
   const studentIds = [...new Set(visibleScores.map((score) => score.student_id))]
   const [{ data: quizData, error: quizError }, { data: retakeGrantData, error: retakeGrantError }] =
     await Promise.all([
       supabase
         .from('tbl_quizzes')
-        .select('id,module_id,question,quiz_type,choices,correct_answer')
-        .in('module_id', moduleIds)
+        .select('id,assessment_id,question,quiz_type,choices,correct_answer')
+        .in('assessment_id', assessmentIds)
         .order('id', { ascending: true }),
       supabase
-        .from('tbl_student_module_retakes')
-        .select('student_id,module_id,extra_retake_count,is_active')
+        .from('tbl_student_assessment_retakes')
+        .select('student_id,assessment_id,extra_retake_count,is_active')
         .eq('educator_id', educatorId)
         .eq('is_active', true)
-        .in('module_id', moduleIds)
+        .in('assessment_id', assessmentIds)
         .in('student_id', studentIds),
     ])
 
@@ -706,22 +706,22 @@ export async function fetchEducatorScoreReviewList() {
   }
 
   const quizMap = ((quizData || []) as QuizRow[]).reduce<Map<number, QuizRow[]>>((result, quiz) => {
-    const currentRows = result.get(quiz.module_id) || []
+    const currentRows = result.get(quiz.assessment_id) || []
     currentRows.push(quiz)
-    result.set(quiz.module_id, currentRows)
+    result.set(quiz.assessment_id, currentRows)
     return result
   }, new Map<number, QuizRow[]>())
   const scoreHistoryMap = visibleScores.reduce<Map<string, ScoreRow[]>>((result, score) => {
-    const historyKey = `${score.student_id}:${score.module_id}`
+    const historyKey = `${score.student_id}:${score.assessment_id}`
     const currentRows = result.get(historyKey) || []
     currentRows.push(score)
     result.set(historyKey, currentRows)
     return result
   }, new Map<string, ScoreRow[]>())
-  const retakeGrantMap = ((retakeGrantData || []) as StudentModuleRetakeRow[]).reduce<Map<string, number>>(
+  const retakeGrantMap = ((retakeGrantData || []) as StudentAssessmentRetakeRow[]).reduce<Map<string, number>>(
     (result, row) => {
       result.set(
-        `${row.student_id}:${row.module_id}`,
+        `${row.student_id}:${row.assessment_id}`,
         row.is_active ? Math.max(row.extra_retake_count, 0) : 0
       )
       return result
@@ -730,7 +730,7 @@ export async function fetchEducatorScoreReviewList() {
   )
 
   const groupedScoreMap = visibleScores.reduce<Map<string, ScoreRow[]>>((result, score) => {
-    const groupKey = `${score.student_id}:${score.module_id}`
+    const groupKey = `${score.student_id}:${score.assessment_id}`
     const currentRows = result.get(groupKey) || []
     currentRows.push(score)
     result.set(groupKey, currentRows)
@@ -739,20 +739,20 @@ export async function fetchEducatorScoreReviewList() {
 
   return Array.from(groupedScoreMap.values()).map((groupedScores) => {
     const representativeScore = groupedScores[0]
-    const module = getSingleRelation(representativeScore.module)
+    const assessment = getSingleRelation(representativeScore.assessment)
     const student = getSingleRelation(representativeScore.student)
 
-    if (!module || !student) {
+    if (!assessment || !student) {
       throw new Error('Score details are incomplete.')
     }
 
-    const subject = getSingleRelation(module.subject)
-    const section = getSingleRelation(module.section)
-    const term = getSingleRelation(module.academic_term)
-    const historyKey = `${representativeScore.student_id}:${representativeScore.module_id}`
+    const subject = getSingleRelation(assessment.subject)
+    const section = getSingleRelation(assessment.section)
+    const term = getSingleRelation(assessment.academic_term)
+    const historyKey = `${representativeScore.student_id}:${representativeScore.assessment_id}`
     const submittedScores = scoreHistoryMap.get(historyKey) || []
     const grantedRetakeCount = retakeGrantMap.get(historyKey) || 0
-    const retakeState = getRetakeState(module, submittedScores, grantedRetakeCount)
+    const retakeState = getRetakeState(assessment, submittedScores, grantedRetakeCount)
     const bestScore = getBestSubmittedScore(submittedScores)
     const latestScore = getLatestSubmittedScore(submittedScores)
     const reviewSourceScore = latestScore || bestScore || representativeScore
@@ -763,8 +763,8 @@ export async function fetchEducatorScoreReviewList() {
       studentId: student.id,
       studentUserId: student.user_id,
       studentName: `${student.given_name} ${student.surname}`.trim(),
-      moduleRowId: representativeScore.module_id,
-      moduleCode: module.module_code,
+      assessmentRowId: representativeScore.assessment_id,
+      assessmentCode: assessment.assessment_code,
       subjectId: representativeScore.subject_id,
       subjectName: subject?.subject_name || 'Unknown Subject',
       sectionId: representativeScore.section_id,
@@ -793,15 +793,15 @@ export async function fetchEducatorScoreReviewList() {
       bestScore: bestScore?.score ?? null,
       latestScoreId: latestScore?.id ?? null,
       canRetake: retakeState.canRetake,
-      startDate: module.start_date,
-      endDate: module.end_date,
-      startTime: module.start_time,
-      endTime: module.end_time,
-      timeLimitMinutes: Number(module.time_limit) || 0,
-      isShuffle: module.is_shuffle,
-      allowReview: module.allow_review,
+      startDate: assessment.start_date,
+      endDate: assessment.end_date,
+      startTime: assessment.start_time,
+      endTime: assessment.end_time,
+      timeLimitMinutes: Number(assessment.time_limit) || 0,
+      isShuffle: assessment.is_shuffle,
+      allowReview: assessment.allow_review,
       warningAttempts: reviewSourceScore.warning_attempts ?? 0,
-      questions: (quizMap.get(representativeScore.module_id) || []).map((quiz) => {
+      questions: (quizMap.get(representativeScore.assessment_id) || []).map((quiz) => {
         const correctAnswers = normalizeCorrectAnswers(quiz.quiz_type, quiz.correct_answer)
         const studentAnswer = studentAnswers[String(quiz.id)] || ''
 
@@ -820,7 +820,7 @@ export async function fetchEducatorScoreReviewList() {
   })
 }
 
-// updateEducatorRetakeGrant - save educator extra retake count for one student module
+// updateEducatorRetakeGrant - save educator extra retake count for one student assessment
 export async function updateEducatorRetakeGrant(input: UpdateEducatorRetakeGrantInput) {
   const supabase = createClient()
   const educatorId = await getCurrentEducatorId()
@@ -844,18 +844,18 @@ export async function updateEducatorRetakeGrant(input: UpdateEducatorRetakeGrant
   const nextRetakeCount = Math.max(input.retakeCount, 0)
   const now = new Date().toISOString()
   const { error } = await supabase
-    .from('tbl_student_module_retakes')
+    .from('tbl_student_assessment_retakes')
     .upsert(
       {
         educator_id: educatorId,
         student_id: input.studentId,
-        module_id: input.moduleRowId,
+        assessment_id: input.assessmentRowId,
         extra_retake_count: nextRetakeCount,
         is_active: nextRetakeCount > 0,
         updated_at: now,
       },
       {
-        onConflict: 'educator_id,student_id,module_id',
+        onConflict: 'educator_id,student_id,assessment_id',
       }
     )
 
@@ -864,7 +864,7 @@ export async function updateEducatorRetakeGrant(input: UpdateEducatorRetakeGrant
   }
 
   try {
-    const [{ data: studentData, error: studentError }, { data: moduleData, error: moduleError }] =
+    const [{ data: studentData, error: studentError }, { data: assessmentData, error: assessmentError }] =
       await Promise.all([
         supabase
           .from('tbl_users')
@@ -872,10 +872,10 @@ export async function updateEducatorRetakeGrant(input: UpdateEducatorRetakeGrant
           .eq('id', input.studentId)
           .single(),
         supabase
-          .from('tbl_modules')
-          .select('id,module_code,subject_id,section_id,subject:subject_id(subject_name),section:section_id(section_name)')
+          .from('tbl_assessments')
+          .select('id,assessment_code,subject_id,section_id,subject:subject_id(subject_name),section:section_id(section_name)')
           .eq('educator_id', educatorId)
-          .eq('id', input.moduleRowId)
+          .eq('id', input.assessmentRowId)
           .single(),
       ])
 
@@ -883,29 +883,29 @@ export async function updateEducatorRetakeGrant(input: UpdateEducatorRetakeGrant
       throw new Error(getSupabaseErrorMessage(studentError, 'Failed to load retake student details.'))
     }
 
-    if (moduleError) {
-      throw new Error(getSupabaseErrorMessage(moduleError, 'Failed to load retake module details.'))
+    if (assessmentError) {
+      throw new Error(getSupabaseErrorMessage(assessmentError, 'Failed to load retake assessment details.'))
     }
 
-    const moduleRow = moduleData as {
+    const assessmentRow = assessmentData as {
       id: number
-      module_code: string
+      assessment_code: string
       subject_id: number
       section_id: number
       subject: { subject_name: string } | { subject_name: string }[] | null
       section: { section_name: string } | { section_name: string }[] | null
     }
-    const moduleSubject = Array.isArray(moduleRow.subject) ? moduleRow.subject[0] : moduleRow.subject
-    const moduleSection = Array.isArray(moduleRow.section) ? moduleRow.section[0] : moduleRow.section
+    const assessmentSubject = Array.isArray(assessmentRow.subject) ? assessmentRow.subject[0] : assessmentRow.subject
+    const assessmentSection = Array.isArray(assessmentRow.section) ? assessmentRow.section[0] : assessmentRow.section
     const notificationContext = {
       studentId: input.studentId,
       studentName: `${(studentData as { given_name: string; surname: string }).given_name} ${(studentData as { given_name: string; surname: string }).surname}`.trim(),
-      moduleRowId: moduleRow.id,
-      moduleCode: moduleRow.module_code,
-      subjectId: moduleRow.subject_id,
-      subjectName: moduleSubject?.subject_name || 'Unknown Subject',
-      sectionId: moduleRow.section_id,
-      sectionName: moduleSection?.section_name || 'Unknown Section',
+      assessmentRowId: assessmentRow.id,
+      assessmentCode: assessmentRow.assessment_code,
+      subjectId: assessmentRow.subject_id,
+      subjectName: assessmentSubject?.subject_name || 'Unknown Subject',
+      sectionId: assessmentRow.section_id,
+      sectionName: assessmentSection?.section_name || 'Unknown Section',
       retakeCount: nextRetakeCount,
     } satisfies RetakeNotificationContext
     const notificationRows: NotificationInsertInput[] = [
@@ -916,15 +916,15 @@ export async function updateEducatorRetakeGrant(input: UpdateEducatorRetakeGrant
         title: 'Retake updated',
         message:
           notificationContext.retakeCount > 0
-            ? `Your retake count for ${notificationContext.moduleCode} in ${notificationContext.subjectName} is now ${notificationContext.retakeCount}.`
-            : `Your extra retake access for ${notificationContext.moduleCode} in ${notificationContext.subjectName} has been removed.`,
+            ? `Your retake count for ${notificationContext.assessmentCode} in ${notificationContext.subjectName} is now ${notificationContext.retakeCount}.`
+            : `Your extra retake access for ${notificationContext.assessmentCode} in ${notificationContext.subjectName} has been removed.`,
         linkPath: '/student/assessment/quiz',
-        moduleId: notificationContext.moduleRowId,
+        assessmentId: notificationContext.assessmentRowId,
         subjectId: notificationContext.subjectId,
         sectionId: notificationContext.sectionId,
         metadata: {
           studentName: notificationContext.studentName,
-          moduleCode: notificationContext.moduleCode,
+          assessmentCode: notificationContext.assessmentCode,
           subjectName: notificationContext.subjectName,
           sectionName: notificationContext.sectionName,
           retakeCount: notificationContext.retakeCount,
@@ -941,3 +941,4 @@ export async function updateEducatorRetakeGrant(input: UpdateEducatorRetakeGrant
     retakeCount: nextRetakeCount,
   }
 }
+

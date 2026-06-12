@@ -1,7 +1,7 @@
-export type NotificationEventType =
-  | 'module_created'
-  | 'module_updated'
-  | 'module_deleted'
+﻿export type NotificationEventType =
+  | 'assessment_created'
+  | 'assessment_updated'
+  | 'assessment_deleted'
   | 'learning_material_uploaded'
   | 'learning_material_deleted'
   | 'quiz_created'
@@ -15,7 +15,7 @@ export type NotificationEventType =
   | 'quiz_submitted'
 
 export interface NotificationMetadata {
-  moduleCode?: string
+  assessmentCode?: string
   subjectName?: string
   sectionName?: string
   studentName?: string
@@ -34,7 +34,7 @@ export interface NotificationRecord {
   title: string
   message: string
   linkPath: string | null
-  moduleId: number | null
+  assessmentId: number | null
   subjectId: number | null
   sectionId: number | null
   metadata: NotificationMetadata | null
@@ -51,8 +51,9 @@ export interface NotificationInsertInput {
   title: string
   message: string
   linkPath: string | null
-  moduleId?: number | null
+  assessmentId?: number | null
   subjectId?: number | null
   sectionId?: number | null
   metadata?: NotificationMetadata | null
 }
+

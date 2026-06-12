@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { IconChecklist, IconPercentage, IconReportAnalytics, IconRosetteDiscountCheck } from '@tabler/icons-react'
 
@@ -27,7 +27,7 @@ export function ScoresPageClient({ scores }: ScoresPageClientProps) {
       <div className="space-y-2">
         <h1 className="text-2xl font-bold tracking-tight">Scores</h1>
         <p className="text-muted-foreground">
-          Review your completed assessments, module results, and answered questions.
+          Review your completed assessments, assessment results, and answered questions.
         </p>
       </div>
 
@@ -85,7 +85,7 @@ export function ScoresPageClient({ scores }: ScoresPageClientProps) {
         <CardHeader>
           <CardTitle>Student Scores</CardTitle>
           <CardDescription>
-            Filter by module, subject, term, or status to review finished assessments.
+            Filter by assessment, subject, term, or status to review finished assessments.
           </CardDescription>
         </CardHeader>
         <CardContent className="min-w-0 px-3 pb-4 sm:px-6">
@@ -95,3 +95,4 @@ export function ScoresPageClient({ scores }: ScoresPageClientProps) {
     </div>
   )
 }
+

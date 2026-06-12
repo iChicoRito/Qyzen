@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation'
+﻿import { redirect } from 'next/navigation'
 
 import { requireServerAuthContext } from '@/lib/auth/server'
 import { fetchStudentQuizSession } from '@/lib/supabase/student-quiz'
@@ -7,7 +7,7 @@ import { TakeQuizPageClient } from './components/take-quiz-page-client'
 
 interface TakeQuizPageProps {
   searchParams: Promise<{
-    moduleId?: string
+    assessmentId?: string
   }>
 }
 
@@ -15,9 +15,9 @@ interface TakeQuizPageProps {
 export default async function TakeQuizPage({ searchParams }: TakeQuizPageProps) {
   // ==================== LOAD DATA ====================
   const params = await searchParams
-  const moduleId = Number(params.moduleId)
+  const assessmentId = Number(params.assessmentId)
 
-  if (!Number.isFinite(moduleId)) {
+  if (!Number.isFinite(assessmentId)) {
     redirect('/student/assessment/quiz')
   }
 
@@ -25,7 +25,7 @@ export default async function TakeQuizPage({ searchParams }: TakeQuizPageProps) 
   let session: Awaited<ReturnType<typeof fetchStudentQuizSession>>
 
   try {
-    session = await fetchStudentQuizSession(context.profile.id, moduleId)
+    session = await fetchStudentQuizSession(context.profile.id, assessmentId)
   } catch {
     redirect('/student/assessment/quiz')
   }
@@ -45,3 +45,4 @@ export default async function TakeQuizPage({ searchParams }: TakeQuizPageProps) 
     </div>
   )
 }
+

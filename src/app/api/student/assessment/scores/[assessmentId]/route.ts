@@ -1,0 +1,338 @@
+﻿import { NextResponse } from 'next/server'
+
+import { fetchAuthContext } from '@/lib/auth/auth-context'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { insertNotificationsWithClient } from '@/lib/supabase/notification-shared'
+import {
+  QUIZ_RESULT_PASSING_PERCENTAGE,
+  fetchStudentQuizGradingSession,
+} from '@/lib/supabase/student-quiz'
+import { createClient } from '@/lib/supabase/server'
+import { studentQuizAttemptSchema } from '@/lib/validations/student-quiz.schema'
+import type { NotificationInsertInput } from '@/types/notification'
+
+interface RouteContext {
+  params: Promise<{
+    assessmentId: string
+  }>
+}
+
+interface ScoreMutationRow {
+  id: number
+  taken_at: string | null
+  submitted_at: string | null
+}
+
+// getStudentApiContext - validate authenticated student session
+async function getStudentApiContext() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    return null
+  }
+
+  const context = await fetchAuthContext(supabase, user)
+
+  if (context.role !== 'student' || !context.isActive || !context.isEmailVerified) {
+    return null
+  }
+
+  return {
+    supabase,
+    context,
+  }
+}
+
+// normalizeAnswerValue - normalize answer text for score comparison
+function normalizeAnswerValue(value: string) {
+  return value.trim().toLowerCase()
+}
+
+// calculateScore - evaluate student answers server-side
+function calculateScore(
+  answers: Record<string, string>,
+  questions: Awaited<ReturnType<typeof fetchStudentQuizGradingSession>>['questions']
+) {
+  return questions.reduce((score, question) => {
+    const studentAnswer = normalizeAnswerValue(answers[String(question.id)] || '')
+
+    if (!studentAnswer) {
+      return score
+    }
+
+    if (question.quizType === 'multiple_choice') {
+      return studentAnswer === normalizeAnswerValue(question.correctAnswer) ? score + 1 : score
+    }
+
+    return question.correctAnswers.some(
+      (correctAnswer) => normalizeAnswerValue(correctAnswer) === studentAnswer
+    )
+      ? score + 1
+      : score
+  }, 0)
+}
+
+// ensureAttemptAllowed - block retakes when policy is exhausted
+function ensureAttemptAllowed(gradingSession: Awaited<ReturnType<typeof fetchStudentQuizGradingSession>>) {
+  if (gradingSession.hasInProgressAttempt) {
+    return
+  }
+
+  if (!gradingSession.isScheduleOpen) {
+    throw new Error(gradingSession.availabilityMessage)
+  }
+
+  if (gradingSession.canTake) {
+    return
+  }
+
+  if (gradingSession.submittedAttemptCount > 0 && !gradingSession.allowRetake) {
+    throw new Error('Retakes are disabled for this assessment.')
+  }
+
+  if (gradingSession.submittedAttemptCount > 0 && gradingSession.remainingRetakes <= 0) {
+    throw new Error('You have used all allowed retake attempts for this assessment.')
+  }
+
+  throw new Error('This assessment cannot be taken right now.')
+}
+
+// saveDraftScore - insert or update draft answers
+async function saveDraftScore(
+  studentId: number,
+  gradingSession: Awaited<ReturnType<typeof fetchStudentQuizGradingSession>>,
+  answers: Record<string, string>,
+  warningAttempts: number
+) {
+  ensureAttemptAllowed(gradingSession)
+
+  const adminClient = createAdminClient()
+  const takenAt = gradingSession.hasInProgressAttempt
+    ? gradingSession.takenAt || new Date().toISOString()
+    : new Date().toISOString()
+  const draftPayload = {
+    student_id: studentId,
+    educator_id: gradingSession.educatorId,
+    assessment_id: gradingSession.assessmentRowId,
+    subject_id: gradingSession.subjectId,
+    section_id: gradingSession.sectionId,
+    student_answer: answers,
+    warning_attempts: warningAttempts,
+    score: null,
+    total_questions: gradingSession.questions.length,
+    status: 'in_progress',
+    is_passed: false,
+    taken_at: takenAt,
+    updated_at: new Date().toISOString(),
+  }
+
+  if (gradingSession.currentAttemptId) {
+    const { data, error } = await adminClient
+      .from('tbl_scores')
+      .update(draftPayload)
+      .eq('id', gradingSession.currentAttemptId)
+      .select('id,taken_at,submitted_at')
+      .single()
+
+    if (error) {
+      throw new Error(error.message || 'Failed to save draft score.')
+    }
+
+    return data as ScoreMutationRow
+  }
+
+  const createdAt = new Date().toISOString()
+  const { data, error } = await adminClient
+    .from('tbl_scores')
+    .insert({
+      ...draftPayload,
+      created_at: createdAt,
+    })
+    .select('id,taken_at,submitted_at')
+    .single()
+
+  if (error) {
+    throw new Error(error.message || 'Failed to create draft score.')
+  }
+
+  return data as ScoreMutationRow
+}
+
+// submitScore - finalize quiz score and result
+async function submitScore(
+  studentId: number,
+  gradingSession: Awaited<ReturnType<typeof fetchStudentQuizGradingSession>>,
+  answers: Record<string, string>,
+  warningAttempts: number
+) {
+  ensureAttemptAllowed(gradingSession)
+
+  const adminClient = createAdminClient()
+  const score = calculateScore(answers, gradingSession.questions)
+  const totalQuestions = gradingSession.questions.length
+  const rawPercentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0
+  const percentage = Math.round(rawPercentage)
+  const isPassed = rawPercentage >= QUIZ_RESULT_PASSING_PERCENTAGE
+  const submittedAt = new Date().toISOString()
+  const submissionPayload = {
+    student_id: studentId,
+    educator_id: gradingSession.educatorId,
+    assessment_id: gradingSession.assessmentRowId,
+    subject_id: gradingSession.subjectId,
+    section_id: gradingSession.sectionId,
+    student_answer: answers,
+    warning_attempts: warningAttempts,
+    score,
+    total_questions: totalQuestions,
+    status: isPassed ? 'passed' : 'failed',
+    is_passed: isPassed,
+    taken_at: gradingSession.hasInProgressAttempt
+      ? gradingSession.takenAt || submittedAt
+      : submittedAt,
+    submitted_at: submittedAt,
+    updated_at: submittedAt,
+  }
+
+  if (gradingSession.currentAttemptId) {
+    const { data, error } = await adminClient
+      .from('tbl_scores')
+      .update(submissionPayload)
+      .eq('id', gradingSession.currentAttemptId)
+      .select('id,taken_at,submitted_at')
+      .single()
+
+    if (error) {
+      throw new Error(error.message || 'Failed to submit score.')
+    }
+
+    return {
+      ...(data as ScoreMutationRow),
+      score,
+      totalQuestions,
+      percentage,
+      isPassed,
+      status: isPassed ? 'passed' : 'failed',
+    }
+  }
+
+  const { data, error } = await adminClient
+    .from('tbl_scores')
+    .insert({
+      ...submissionPayload,
+      created_at: submittedAt,
+    })
+    .select('id,taken_at,submitted_at')
+    .single()
+
+  if (error) {
+    throw new Error(error.message || 'Failed to create submitted score.')
+  }
+
+  return {
+    ...(data as ScoreMutationRow),
+    score,
+    totalQuestions,
+    percentage,
+    isPassed,
+    status: isPassed ? 'passed' : 'failed',
+  }
+}
+
+// createEducatorSubmissionNotification - save a best-effort educator notification after submit
+async function createEducatorSubmissionNotification(
+  authContext: NonNullable<Awaited<ReturnType<typeof getStudentApiContext>>>,
+  gradingSession: Awaited<ReturnType<typeof fetchStudentQuizGradingSession>>
+) {
+  try {
+    const studentName =
+      `${authContext.context.profile.givenName} ${authContext.context.profile.surname}`.trim()
+    const notificationRows: NotificationInsertInput[] = [
+      {
+        recipientUserId: gradingSession.educatorId,
+        actorUserId: authContext.context.profile.id,
+        eventType: 'quiz_submitted',
+        title: 'New quiz submission',
+        message: `${studentName} submitted ${gradingSession.assessmentCode} for ${gradingSession.subjectName}.`,
+        linkPath: '/educator/scores',
+        assessmentId: gradingSession.assessmentRowId,
+        subjectId: gradingSession.subjectId,
+        sectionId: gradingSession.sectionId,
+        metadata: {
+          studentName,
+          assessmentCode: gradingSession.assessmentCode,
+          subjectName: gradingSession.subjectName,
+          sectionName: gradingSession.sectionName,
+        },
+      },
+    ]
+
+    await insertNotificationsWithClient(authContext.supabase, notificationRows)
+  } catch (notificationError) {
+    console.error('Failed to save educator submission notifications.', notificationError)
+  }
+}
+
+// POST - save draft answers or submit student score
+export async function POST(request: Request, context: RouteContext) {
+  try {
+    const authContext = await getStudentApiContext()
+
+    if (!authContext) {
+      return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 })
+    }
+
+    const { assessmentId } = await context.params
+    const parsedAssessmentId = Number(assessmentId)
+
+    if (!Number.isFinite(parsedAssessmentId)) {
+      return NextResponse.json({ message: 'Invalid assessment id.' }, { status: 400 })
+    }
+
+    const payload = studentQuizAttemptSchema.parse(await request.json())
+    const gradingSession = await fetchStudentQuizGradingSession(
+      authContext.context.profile.id,
+      parsedAssessmentId
+    )
+
+    if (payload.mode === 'draft') {
+      const draftScore = await saveDraftScore(
+        authContext.context.profile.id,
+        gradingSession,
+        payload.answers,
+        payload.warningAttempts
+      )
+
+      return NextResponse.json({
+        scoreId: draftScore.id,
+        takenAt: draftScore.taken_at,
+        submittedAt: draftScore.submitted_at,
+      })
+    }
+
+    const submittedScore = await submitScore(
+      authContext.context.profile.id,
+      gradingSession,
+      payload.answers,
+      payload.warningAttempts
+    )
+
+    await createEducatorSubmissionNotification(authContext, gradingSession)
+
+    return NextResponse.json({
+      ...submittedScore,
+      scoreId: submittedScore.id,
+    })
+  } catch (error) {
+    return NextResponse.json(
+      {
+        message: error instanceof Error ? error.message : 'Failed to save quiz attempt.',
+      },
+      { status: 400 }
+    )
+  }
+}
+

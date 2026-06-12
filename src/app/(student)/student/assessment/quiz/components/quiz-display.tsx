@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -66,7 +66,7 @@ function formatCountdownLabel(targetDate: Date, now: Date) {
   return `Starts in ${seconds}s`;
 }
 
-// getAvailabilityStatusLabel - format the module availability label
+// getAvailabilityStatusLabel - format the assessment availability label
 function getAvailabilityStatusLabel(
   availabilityStatus: StudentAssessmentRecord["availabilityStatus"],
   isExpiredOverrideActive: boolean,
@@ -91,7 +91,7 @@ function getAvailabilityStatusLabel(
   return "Schedule Issue";
 }
 
-// getAvailabilityStatusClassName - build the module availability badge color
+// getAvailabilityStatusClassName - build the assessment availability badge color
 function getAvailabilityStatusClassName(
   availabilityStatus: StudentAssessmentRecord["availabilityStatus"],
   isExpiredOverrideActive: boolean
@@ -297,7 +297,7 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
     }
 
     setIsTaking(true);
-    router.push(`/student/assessment/take-quiz?moduleId=${quiz.moduleRowId}`);
+    router.push(`/student/assessment/take-quiz?assessmentId=${quiz.assessmentRowId}`);
   };
 
   // handleViewResult - open submitted assessment result
@@ -375,7 +375,7 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   <Badge className="rounded-md border-0 bg-blue-500/10 px-2.5 py-0.5 text-blue-500 uppercase">
-                    {quiz.moduleCode}
+                    {quiz.assessmentCode}
                   </Badge>
                   {!quiz.hasQuestions ? (
                     <Badge className="rounded-md border-0 bg-rose-500/10 px-2.5 py-0.5 text-rose-500 uppercase">
@@ -410,10 +410,10 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
               <div className="mt-6 rounded-lg border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-500">
                 <div className="flex items-center gap-2 font-medium">
                   <IconAlertCircle size={18} />
-                  This module cannot be taken yet.
+                  This assessment cannot be taken yet.
                 </div>
                 <div className="mt-2 text-sm">
-                  The educator has not added quiz questions for this module yet.
+                  The educator has not added quiz questions for this assessment yet.
                 </div>
               </div>
             ) : null}
@@ -539,3 +539,4 @@ export function QuizDisplay({ quiz, isMobile = false }: QuizDisplayProps) {
     </div>
   );
 }
+

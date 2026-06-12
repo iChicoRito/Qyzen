@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { IconAlertTriangle, IconLoader2 as Loader2 } from '@tabler/icons-react'
@@ -22,7 +22,7 @@ interface DeleteConfirmationModalProps {
   trigger?: React.ReactNode
   open?: boolean
   onOpenChange?: (open: boolean) => void
-  onQuizDeleted?: (moduleRowId: number) => Promise<void> | void
+  onQuizDeleted?: (assessmentRowId: number) => Promise<void> | void
 }
 
 // DeleteConfirmationModal - confirm quiz deletion
@@ -43,8 +43,8 @@ export function DeleteConfirmationModal({
     try {
       setIsDeleting(true)
       await new Promise((resolve) => setTimeout(resolve, 200))
-      await onQuizDeleted?.(quizGroup.moduleRowId)
-      toast.success('Module quiz set deleted successfully.')
+      await onQuizDeleted?.(quizGroup.assessmentRowId)
+      toast.success('Assessment quiz set deleted successfully.')
       setDialogOpen(false)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to delete quiz.')
@@ -67,7 +67,7 @@ export function DeleteConfirmationModal({
               Are you absolutely sure you want to delete?
             </DialogTitle>
             <DialogDescription className="max-w-[34rem] text-center">
-              This will permanently delete all questions for module {quizGroup.moduleCode}. This action cannot be undone.
+              This will permanently delete all questions for assessment {quizGroup.assessmentCode}. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
 
@@ -99,3 +99,4 @@ export function DeleteConfirmationModal({
     </Dialog>
   )
 }
+

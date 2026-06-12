@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import {
   createQuiz,
   createQuizzes,
-  deleteQuizzesByModule,
+  deleteQuizzesByAssessment,
   fetchQuizzes,
   type QuizRecord,
 } from '@/lib/supabase/quizzes'
@@ -49,10 +49,10 @@ export function QuizzesPageClient() {
     await loadQuizzes()
   }
 
-  // handleDeleteModuleQuizzes - remove all quiz rows under one module
-  const handleDeleteModuleQuizzes = async (moduleRowId: number) => {
-    await deleteQuizzesByModule(moduleRowId)
-    setQuizzes((prev) => prev.filter((quiz) => quiz.moduleRowId !== moduleRowId))
+  // handleDeleteAssessmentQuizzes - remove all quiz rows under one assessment
+  const handleDeleteAssessmentQuizzes = async (assessmentRowId: number) => {
+    await deleteQuizzesByAssessment(assessmentRowId)
+    setQuizzes((prev) => prev.filter((quiz) => quiz.assessmentRowId !== assessmentRowId))
   }
 
   // handleUploadQuizzes - save uploaded quiz rows then refresh the list
@@ -104,14 +104,14 @@ export function QuizzesPageClient() {
           <CardHeader>
             <CardTitle>Quiz Management</CardTitle>
             <CardDescription>
-              View, filter, and create quizzes for the modules you already prepared.
+              View, filter, and create quizzes for the assessments you already prepared.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <DataTable
               data={quizzes}
               columns={getColumns({
-                onDeleteModuleQuizzes: handleDeleteModuleQuizzes,
+                onDeleteAssessmentQuizzes: handleDeleteAssessmentQuizzes,
               })}
               onAddQuiz={handleAddQuiz}
               onUploadQuizzes={handleUploadQuizzes}
@@ -122,3 +122,4 @@ export function QuizzesPageClient() {
     </>
   )
 }
+

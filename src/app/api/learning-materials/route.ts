@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 
 import { fetchAuthContext } from '@/lib/auth/auth-context'
 import { LEARNING_MATERIALS_BUCKET } from '@/lib/supabase/learning-materials'
@@ -429,7 +429,7 @@ export async function POST(request: Request) {
           title: notificationRow.title,
           message: notificationRow.message,
           link_path: notificationRow.linkPath,
-          module_id: notificationRow.moduleId ?? null,
+          assessment_id: notificationRow.assessmentId ?? null,
           subject_id: notificationRow.subjectId ?? null,
           section_id: notificationRow.sectionId ?? null,
           metadata: notificationRow.metadata ?? null,
@@ -453,3 +453,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ message }, { status })
   }
 }
+

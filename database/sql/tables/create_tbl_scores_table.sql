@@ -1,4 +1,4 @@
--- ==================== CREATE TBL_SCORES TABLE ====================
+﻿-- ==================== CREATE TBL_SCORES TABLE ====================
 -- File: database/sql/tables/create_tbl_scores_table.sql
 -- Created: 2026-03-30
 -- Purpose: Store student quiz attempts, draft answers, and final results.
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS public.tbl_scores (
   id bigint DEFAULT nextval('public.tbl_scores_id_seq'::regclass) NOT NULL,
   student_id bigint NOT NULL,
   educator_id bigint NOT NULL,
-  module_id bigint NOT NULL,
+  assessment_id bigint NOT NULL,
   subject_id bigint NOT NULL,
   section_id bigint NOT NULL,
   score integer,
@@ -25,10 +25,11 @@ CREATE TABLE IF NOT EXISTS public.tbl_scores (
   CONSTRAINT tbl_scores_pkey PRIMARY KEY (id),
   CONSTRAINT tbl_scores_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE,
   CONSTRAINT tbl_scores_educator_id_fkey FOREIGN KEY (educator_id) REFERENCES public.tbl_users(id) ON DELETE CASCADE,
-  CONSTRAINT tbl_scores_module_id_fkey FOREIGN KEY (module_id) REFERENCES public.tbl_modules(id) ON DELETE CASCADE,
+  CONSTRAINT tbl_scores_assessment_id_fkey FOREIGN KEY (assessment_id) REFERENCES public.tbl_assessments(id) ON DELETE CASCADE,
   CONSTRAINT tbl_scores_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.tbl_subjects(id) ON DELETE CASCADE,
   CONSTRAINT tbl_scores_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.tbl_sections(id) ON DELETE CASCADE,
   CONSTRAINT tbl_scores_status_check CHECK (status IN ('in_progress', 'submitted', 'passed', 'failed'))
 );
 
 ALTER TABLE public.tbl_scores ENABLE ROW LEVEL SECURITY;
+

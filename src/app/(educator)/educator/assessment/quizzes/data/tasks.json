@@ -1,4 +1,4 @@
-[
+﻿[
   {
     "id": "TASK-1001",
     "title": "Implement user authentication with OAuth 2.0 providers",
@@ -71,7 +71,7 @@
   },
   {
     "id": "TASK-1011",
-    "title": "Write unit tests for payment processing module",
+    "title": "Write unit tests for payment processing assessment",
     "status": "pending",
     "category": "improvement",
     "priority": "critical"
@@ -350,3 +350,4 @@
     "priority": "important"
   }
 ]
+

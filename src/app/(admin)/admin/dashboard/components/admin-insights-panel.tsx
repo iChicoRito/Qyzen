@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
@@ -238,7 +238,7 @@ export function AdminInsightsPanel({
               <Table>
                 <TableHeader>
                   <TableRow className="border-b">
-                    <TableHead className="py-5 px-6 font-semibold">Module</TableHead>
+                    <TableHead className="py-5 px-6 font-semibold">Assessment</TableHead>
                     <TableHead className="py-5 px-6 font-semibold">Subject</TableHead>
                     <TableHead className="py-5 px-6 font-semibold">Section</TableHead>
                     <TableHead className="py-5 px-6 font-semibold">Educator</TableHead>
@@ -251,8 +251,8 @@ export function AdminInsightsPanel({
                 <TableBody>
                   {assessmentRows.length > 0 ? (
                     assessmentRows.map((row) => (
-                      <TableRow key={row.moduleId} className="hover:bg-muted/30 transition-colors">
-                        <TableCell className="font-medium py-5 px-6">{row.moduleCode}</TableCell>
+                      <TableRow key={row.assessmentId} className="hover:bg-muted/30 transition-colors">
+                        <TableCell className="font-medium py-5 px-6">{row.assessmentCode}</TableCell>
                         <TableCell className="py-5 px-6">{row.subjectName}</TableCell>
                         <TableCell className="py-5 px-6">{row.sectionName}</TableCell>
                         <TableCell className="py-5 px-6">{row.educatorName}</TableCell>
@@ -291,3 +291,4 @@ export function AdminInsightsPanel({
     </Card>
   )
 }
+

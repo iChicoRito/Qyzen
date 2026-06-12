@@ -1,4 +1,4 @@
-export interface AdminSummaryCard {
+﻿export interface AdminSummaryCard {
   key: 'students' | 'educators' | 'sections' | 'subjects'
   label: string
   value: number
@@ -57,8 +57,8 @@ export interface AdminEducatorInsightRow {
 }
 
 export interface AdminAssessmentInsightRow {
-  moduleId: number
-  moduleCode: string
+  assessmentId: number
+  assessmentCode: string
   subjectName: string
   sectionName: string
   educatorName: string
@@ -80,4 +80,5 @@ export interface AdminDashboardAnalytics {
   educatorInsights: AdminEducatorInsightRow[]
   assessmentInsights: AdminAssessmentInsightRow[]
 }
+
 

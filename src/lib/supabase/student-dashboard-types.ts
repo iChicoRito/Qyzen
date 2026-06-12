@@ -1,4 +1,4 @@
-import type { StudentAssessmentRecord } from '@/lib/supabase/student-assessments'
+﻿import type { StudentAssessmentRecord } from '@/lib/supabase/student-assessments'
 import type { StudentLearningMaterialGroupRecord } from '@/lib/supabase/learning-materials'
 
 export interface StudentSummaryCard {
@@ -17,8 +17,8 @@ export interface StudentProgressMetrics {
 
 export interface StudentNextAssessment {
   id: string
-  moduleRowId: number
-  moduleCode: string
+  assessmentRowId: number
+  assessmentCode: string
   subjectName: string
   sectionName: string
   educatorName: string
@@ -35,8 +35,8 @@ export interface StudentNextAssessment {
 
 export interface StudentRecentResult {
   id: string
-  moduleRowId: number
-  moduleCode: string
+  assessmentRowId: number
+  assessmentCode: string
   subjectName: string
   sectionName: string
   educatorName: string
@@ -49,7 +49,7 @@ export interface StudentRecentResult {
 
 export interface StudentPerformanceTrendPoint {
   submittedAt: string | null
-  moduleCode: string
+  assessmentCode: string
   subjectName: string
   scorePercentage: number
   label: string
@@ -64,3 +64,4 @@ export interface StudentDashboardAnalytics {
   performanceTrend: StudentPerformanceTrendPoint[]
   assessmentCount: number
 }
+

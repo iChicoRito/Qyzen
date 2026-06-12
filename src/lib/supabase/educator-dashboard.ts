@@ -2,14 +2,14 @@ import { createClient } from '@/lib/supabase/server'
 import {
   getFullName,
   getLatestScoreContext,
-  getLatestScoresByStudentModule,
+  getLatestScoresByStudentAssessment,
   getPercentage,
 } from '@/lib/supabase/admin-dashboard-helpers'
 
 import type {
   EducatorAssessmentOverview,
   EducatorDashboardAnalytics,
-  EducatorModuleInsight,
+  EducatorAssessmentInsight,
   EducatorSectionInsight,
   EducatorSummaryCard,
   EducatorTopStudentRow,
@@ -42,7 +42,7 @@ interface SubjectRow {
   is_active: boolean
 }
 
-interface ModuleRelationRow {
+interface AssessmentRelationRow {
   subject_name: string
 }
 
@@ -55,10 +55,10 @@ interface TermRelationRow {
   semester: string
 }
 
-interface ModuleRow {
+interface AssessmentRow {
   id: number
   educator_id: number
-  module_code: string
+  assessment_code: string
   subject_id: number
   section_id: number
   term: number
@@ -69,7 +69,7 @@ interface ModuleRow {
   start_time: string
   end_time: string
   created_at: string
-  subject: ModuleRelationRow | ModuleRelationRow[] | null
+  subject: AssessmentRelationRow | AssessmentRelationRow[] | null
   section: SectionRelationRow | SectionRelationRow[] | null
   academic_term: TermRelationRow | TermRelationRow[] | null
 }
@@ -87,7 +87,7 @@ interface ScoreRow {
   id: number
   student_id: number
   educator_id: number
-  module_id: number
+  assessment_id: number
   subject_id: number
   section_id: number
   score: number | null
@@ -100,7 +100,7 @@ interface ScoreRow {
 
 interface QuizRow {
   id: number
-  module_id: number
+  assessment_id: number
   quiz_type: 'multiple_choice' | 'identification'
 }
 
@@ -108,7 +108,7 @@ interface SupabaseErrorResponse {
   message?: string
 }
 
-interface ModuleScoreSummary {
+interface AssessmentScoreSummary {
   finishedCount: number
   passedCount: number
   failedCount: number
@@ -134,10 +134,10 @@ function buildAcademicTermLabel(term: TermRelationRow | null) {
   return `${term.term_name} - ${term.semester}`
 }
 
-// formatModuleSchedule - format the module schedule into a compact label
-function formatModuleSchedule(module: Pick<ModuleRow, 'start_date' | 'end_date' | 'start_time' | 'end_time'>) {
-  const startDateTime = new Date(`${module.start_date}T${module.start_time}`)
-  const endDateTime = new Date(`${module.end_date}T${module.end_time}`)
+// formatAssessmentSchedule - format the assessment schedule into a compact label
+function formatAssessmentSchedule(assessment: Pick<AssessmentRow, 'start_date' | 'end_date' | 'start_time' | 'end_time'>) {
+  const startDateTime = new Date(`${assessment.start_date}T${assessment.start_time}`)
+  const endDateTime = new Date(`${assessment.end_date}T${assessment.end_time}`)
   const dateFormatter = new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
@@ -149,16 +149,16 @@ function formatModuleSchedule(module: Pick<ModuleRow, 'start_date' | 'end_date' 
   })
 
   const startDateLabel = Number.isNaN(startDateTime.getTime())
-    ? module.start_date
+    ? assessment.start_date
     : dateFormatter.format(startDateTime)
   const endDateLabel = Number.isNaN(endDateTime.getTime())
-    ? module.end_date
+    ? assessment.end_date
     : dateFormatter.format(endDateTime)
   const startTimeLabel = Number.isNaN(startDateTime.getTime())
-    ? module.start_time
+    ? assessment.start_time
     : timeFormatter.format(startDateTime)
   const endTimeLabel = Number.isNaN(endDateTime.getTime())
-    ? module.end_time
+    ? assessment.end_time
     : timeFormatter.format(endDateTime)
 
   if (startDateLabel === endDateLabel) {
@@ -168,8 +168,8 @@ function formatModuleSchedule(module: Pick<ModuleRow, 'start_date' | 'end_date' 
   return `${startDateLabel} ${startTimeLabel} - ${endDateLabel} ${endTimeLabel}`
 }
 
-// buildModuleScoreSummary - compute finished, passed, and failed counts for a module
-function buildModuleScoreSummary(scoreRows: ScoreRow[]): ModuleScoreSummary {
+// buildAssessmentScoreSummary - compute finished, passed, and failed counts for an assessment
+function buildAssessmentScoreSummary(scoreRows: ScoreRow[]): AssessmentScoreSummary {
   const latestContexts = scoreRows.map((scoreRow) => getLatestScoreContext(scoreRow))
   const finishedCount = latestContexts.filter((context) => context.isFinished).length
   const passedCount = latestContexts.filter((context) => context.isPassed).length
@@ -191,7 +191,7 @@ export async function fetchEducatorDashboardAnalytics(educatorId: number) {
     { data: usersData, error: usersError },
     { data: sectionsData, error: sectionsError },
     { data: subjectsData, error: subjectsError },
-    { data: modulesData, error: modulesError },
+    { data: assessmentsData, error: assessmentsError },
     { data: enrollmentsData, error: enrollmentsError },
     { data: scoresData, error: scoresError },
   ] = await Promise.all([
@@ -201,9 +201,9 @@ export async function fetchEducatorDashboardAnalytics(educatorId: number) {
     supabase.from('tbl_sections').select('id,educator_id,section_name,is_active'),
     supabase.from('tbl_subjects').select('id,educator_id,sections_id,subject_name,subject_code,is_active'),
     supabase
-      .from('tbl_modules')
+      .from('tbl_assessments')
       .select(
-        'id,educator_id,module_code,subject_id,section_id,term,time_limit,is_active,start_date,end_date,start_time,end_time,created_at,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
+        'id,educator_id,assessment_code,subject_id,section_id,term,time_limit,is_active,start_date,end_date,start_time,end_time,created_at,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
       )
       .eq('educator_id', educatorId)
       .order('created_at', { ascending: false }),
@@ -214,15 +214,15 @@ export async function fetchEducatorDashboardAnalytics(educatorId: number) {
     supabase
       .from('tbl_scores')
       .select(
-        'id,student_id,educator_id,module_id,subject_id,section_id,score,total_questions,status,is_passed,submitted_at,created_at'
+        'id,student_id,educator_id,assessment_id,subject_id,section_id,score,total_questions,status,is_passed,submitted_at,created_at'
       )
       .eq('educator_id', educatorId),
   ])
 
-  const moduleIds = ((modulesData || []) as ModuleRow[]).map((moduleRow) => moduleRow.id)
+  const assessmentIds = ((assessmentsData || []) as AssessmentRow[]).map((assessmentRow) => assessmentRow.id)
   const { data: quizzesData, error: quizzesError } =
-    moduleIds.length > 0
-      ? await supabase.from('tbl_quizzes').select('id,module_id,quiz_type').in('module_id', moduleIds)
+    assessmentIds.length > 0
+      ? await supabase.from('tbl_quizzes').select('id,assessment_id,quiz_type').in('assessment_id', assessmentIds)
       : { data: [], error: null as SupabaseErrorResponse | null }
 
   if (usersError) {
@@ -237,8 +237,8 @@ export async function fetchEducatorDashboardAnalytics(educatorId: number) {
     throw new Error(getSupabaseErrorMessage(subjectsError, 'Failed to load educator subjects.'))
   }
 
-  if (modulesError) {
-    throw new Error(getSupabaseErrorMessage(modulesError, 'Failed to load educator modules.'))
+  if (assessmentsError) {
+    throw new Error(getSupabaseErrorMessage(assessmentsError, 'Failed to load educator assessments.'))
   }
 
   if (enrollmentsError) {
@@ -263,8 +263,8 @@ export async function fetchEducatorDashboardAnalytics(educatorId: number) {
     (subjectRow) => subjectRow.educator_id === educatorId && subjectRow.is_active
   )
   const allSubjects = (subjectsData || []) as SubjectRow[]
-  const activeModules = ((modulesData || []) as ModuleRow[]).filter((moduleRow) => moduleRow.is_active)
-  const allModules = (modulesData || []) as ModuleRow[]
+  const activeAssessments = ((assessmentsData || []) as AssessmentRow[]).filter((assessmentRow) => assessmentRow.is_active)
+  const allAssessments = (assessmentsData || []) as AssessmentRow[]
   const activeEnrollments = ((enrollmentsData || []) as EnrollmentRow[]).filter((enrollmentRow) =>
     enrollmentRow.is_active && enrollmentRow.educator_id === educatorId
   )
@@ -274,14 +274,14 @@ export async function fetchEducatorDashboardAnalytics(educatorId: number) {
   const studentMap = new Map(studentUsers.map((studentRow) => [studentRow.id, studentRow]))
   const sectionMap = new Map(allSections.map((sectionRow) => [sectionRow.id, sectionRow]))
   const subjectMap = new Map(allSubjects.map((subjectRow) => [subjectRow.id, subjectRow]))
-  const quizzesByModuleMap = quizRows.reduce<Map<number, QuizRow[]>>((result, quizRow) => {
-    const currentRows = result.get(quizRow.module_id) || []
+  const quizzesByAssessmentMap = quizRows.reduce<Map<number, QuizRow[]>>((result, quizRow) => {
+    const currentRows = result.get(quizRow.assessment_id) || []
     currentRows.push(quizRow)
-    result.set(quizRow.module_id, currentRows)
+    result.set(quizRow.assessment_id, currentRows)
     return result
   }, new Map<number, QuizRow[]>())
 
-  const latestScoreMap = getLatestScoresByStudentModule(educatorScores)
+  const latestScoreMap = getLatestScoresByStudentAssessment(educatorScores)
   const latestScores = [...latestScoreMap.values()]
   const latestContexts = latestScores.map((scoreRow) => getLatestScoreContext(scoreRow))
 
@@ -305,17 +305,17 @@ export async function fetchEducatorDashboardAnalytics(educatorId: number) {
     return result
   }, new Map<number, Set<number>>())
 
-  const sectionModuleMap = activeModules.reduce<Map<number, ModuleRow[]>>((result, moduleRow) => {
-    const currentRows = result.get(moduleRow.section_id) || []
-    currentRows.push(moduleRow)
-    result.set(moduleRow.section_id, currentRows)
+  const sectionAssessmentMap = activeAssessments.reduce<Map<number, AssessmentRow[]>>((result, assessmentRow) => {
+    const currentRows = result.get(assessmentRow.section_id) || []
+    currentRows.push(assessmentRow)
+    result.set(assessmentRow.section_id, currentRows)
     return result
-  }, new Map<number, ModuleRow[]>())
+  }, new Map<number, AssessmentRow[]>())
 
-  const moduleScoreMap = latestScores.reduce<Map<number, ScoreRow[]>>((result, scoreRow) => {
-    const currentRows = result.get(scoreRow.module_id) || []
+  const assessmentScoreMap = latestScores.reduce<Map<number, ScoreRow[]>>((result, scoreRow) => {
+    const currentRows = result.get(scoreRow.assessment_id) || []
     currentRows.push(scoreRow)
-    result.set(scoreRow.module_id, currentRows)
+    result.set(scoreRow.assessment_id, currentRows)
     return result
   }, new Map<number, ScoreRow[]>())
 
@@ -333,10 +333,10 @@ export async function fetchEducatorDashboardAnalytics(educatorId: number) {
       helper: 'Active subject assignments',
     },
     {
-      key: 'modules',
-      label: 'Total Modules',
-      value: activeModules.length,
-      helper: 'Published assessment modules',
+      key: 'assessments',
+      label: 'Total Assessments',
+      value: activeAssessments.length,
+      helper: 'Published assessments',
     },
     {
       key: 'students',
@@ -348,7 +348,7 @@ export async function fetchEducatorDashboardAnalytics(educatorId: number) {
 
   const assessmentOverview: EducatorAssessmentOverview = {
     enrolledStudents: enrolledStudentIds.size,
-    activeModules: activeModules.length,
+    activeAssessments: activeAssessments.length,
     quizQuestions: quizRows.length,
     finishedAssessments: latestContexts.filter((context) => context.isFinished).length,
     inProgressAssessments: latestContexts.filter((context) => context.latestState === 'inProgress').length,
@@ -369,10 +369,10 @@ export async function fetchEducatorDashboardAnalytics(educatorId: number) {
 
   const sectionInsights: EducatorSectionInsight[] = activeSections
     .map((sectionRow) => {
-      const sectionModules = sectionModuleMap.get(sectionRow.id) || []
+      const sectionAssessments = sectionAssessmentMap.get(sectionRow.id) || []
       const sectionStudents = sectionEnrollmentMap.get(sectionRow.id) || new Set<number>()
       const sectionScores = latestScores.filter((scoreRow) => scoreRow.section_id === sectionRow.id)
-      const sectionScoreSummary = buildModuleScoreSummary(sectionScores)
+      const sectionScoreSummary = buildAssessmentScoreSummary(sectionScores)
       const sectionSubjects = allSubjects.filter((subjectRow) => subjectRow.sections_id === sectionRow.id)
 
       return {
@@ -380,7 +380,7 @@ export async function fetchEducatorDashboardAnalytics(educatorId: number) {
         sectionName: sectionRow.section_name,
         status: sectionRow.is_active ? 'active' : 'inactive',
         subjectCount: sectionSubjects.length,
-        moduleCount: sectionModules.length,
+        assessmentCount: sectionAssessments.length,
         studentCount: sectionStudents.size,
         finishedAssessmentCount: sectionScoreSummary.finishedCount,
         passRate: sectionScoreSummary.passRate,
@@ -388,37 +388,37 @@ export async function fetchEducatorDashboardAnalytics(educatorId: number) {
     })
     .sort((leftRow, rightRow) => rightRow.studentCount - leftRow.studentCount)
 
-  const moduleInsights: EducatorModuleInsight[] = activeModules
-    .map((moduleRow) => {
-      const subjectRow = subjectMap.get(moduleRow.subject_id)
-      const sectionRow = sectionMap.get(moduleRow.section_id)
-      const moduleQuizzes = quizzesByModuleMap.get(moduleRow.id) || []
-      const moduleScores = moduleScoreMap.get(moduleRow.id) || []
-      const moduleScoreSummary = buildModuleScoreSummary(moduleScores)
+  const assessmentInsights: EducatorAssessmentInsight[] = activeAssessments
+    .map((assessmentRow) => {
+      const subjectRow = subjectMap.get(assessmentRow.subject_id)
+      const sectionRow = sectionMap.get(assessmentRow.section_id)
+      const assessmentQuizzes = quizzesByAssessmentMap.get(assessmentRow.id) || []
+      const assessmentScores = assessmentScoreMap.get(assessmentRow.id) || []
+      const assessmentScoreSummary = buildAssessmentScoreSummary(assessmentScores)
       const enrolledStudentCount = activeEnrollments
-        .filter((enrollmentRow) => enrollmentRow.subject_id === moduleRow.subject_id)
+        .filter((enrollmentRow) => enrollmentRow.subject_id === assessmentRow.subject_id)
         .reduce((result, enrollmentRow) => result.add(enrollmentRow.student_id), new Set<number>()).size
-      const subjectRelation = getSingleRelation(moduleRow.subject)
-      const sectionRelation = getSingleRelation(moduleRow.section)
-      const termRelation = getSingleRelation(moduleRow.academic_term)
+      const subjectRelation = getSingleRelation(assessmentRow.subject)
+      const sectionRelation = getSingleRelation(assessmentRow.section)
+      const termRelation = getSingleRelation(assessmentRow.academic_term)
 
       return {
-        moduleId: moduleRow.id,
-        moduleCode: moduleRow.module_code,
+        assessmentId: assessmentRow.id,
+        assessmentCode: assessmentRow.assessment_code,
         subjectName: subjectRelation?.subject_name || subjectRow?.subject_name || 'Unknown Subject',
         sectionName: sectionRelation?.section_name || sectionRow?.section_name || 'Unknown Section',
         termName: buildAcademicTermLabel(termRelation),
-        schedule: formatModuleSchedule(moduleRow),
-        status: moduleRow.is_active ? 'active' : 'inactive',
-        questionCount: moduleQuizzes.length,
+        schedule: formatAssessmentSchedule(assessmentRow),
+        status: assessmentRow.is_active ? 'active' : 'inactive',
+        questionCount: assessmentQuizzes.length,
         enrolledStudentCount,
-        finishedAssessmentCount: moduleScoreSummary.finishedCount,
-        passedAssessmentCount: moduleScoreSummary.passedCount,
-        failedAssessmentCount: moduleScoreSummary.failedCount,
-        passRate: moduleScoreSummary.passRate,
-      } satisfies EducatorModuleInsight
+        finishedAssessmentCount: assessmentScoreSummary.finishedCount,
+        passedAssessmentCount: assessmentScoreSummary.passedCount,
+        failedAssessmentCount: assessmentScoreSummary.failedCount,
+        passRate: assessmentScoreSummary.passRate,
+      } satisfies EducatorAssessmentInsight
     })
-    .sort((leftRow, rightRow) => rightRow.moduleId - leftRow.moduleId)
+    .sort((leftRow, rightRow) => rightRow.assessmentId - leftRow.assessmentId)
 
   const topStudentsMap = latestScores.reduce<Map<number, EducatorTopStudentRow & { weightedScore: number; weightedTotal: number }>>(
     (result, scoreRow) => {
@@ -499,7 +499,8 @@ export async function fetchEducatorDashboardAnalytics(educatorId: number) {
     summaryCards,
     assessmentOverview,
     sectionInsights,
-    moduleInsights,
+    assessmentInsights,
     topStudents,
   } satisfies EducatorDashboardAnalytics
 }
+

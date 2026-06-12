@@ -98,7 +98,7 @@ export function EducatorAssessmentOverviewCard({
     <Card className="h-full">
       <CardHeader className="items-center pb-0">
         <CardTitle>Assessment Overview</CardTitle>
-        <CardDescription>Live assessment status distribution from your enrolled modules.</CardDescription>
+        <CardDescription>Live assessment status distribution from your enrolled assessments.</CardDescription>
       </CardHeader>
       <CardContent className="pb-0">
         {totalStatuses > 0 ? (
@@ -165,7 +165,7 @@ export function EducatorAssessmentOverviewCard({
           </span>
           <span className="flex items-center gap-1">
             <IconChecklist className="h-4 w-4" />
-            {assessmentOverview.activeModules.toLocaleString()} modules
+            {assessmentOverview.activeAssessments.toLocaleString()} assessments
           </span>
           <span className="flex items-center gap-1">
             <IconChartPie className="h-4 w-4" />
@@ -179,3 +179,4 @@ export function EducatorAssessmentOverviewCard({
     </Card>
   )
 }
+

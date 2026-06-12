@@ -207,7 +207,7 @@ function SortableTableHead({
   )
 }
 
-// ViewStudentsModal - display monitored students for one module
+// ViewStudentsModal - display monitored students for one assessment
 export function ViewStudentsModal({
   row,
   trigger,
@@ -254,7 +254,7 @@ export function ViewStudentsModal({
         <ResponsiveDialogHeader className="border-b px-4 pt-5 pb-4 sm:px-6 sm:pt-6">
           <ResponsiveDialogTitle>Monitor Students</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            Review live student activity for this assessment module.
+            Review live student activity for this assessment.
           </ResponsiveDialogDescription>
 
           <div className="mt-4 border-t pt-4">
@@ -266,9 +266,9 @@ export function ViewStudentsModal({
                 <AccordionContent className="pt-1">
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <div className="space-y-1">
-                      <div className="text-muted-foreground text-xs uppercase">Module</div>
-                      <div className="text-sm font-semibold sm:text-base">{row.moduleCode}</div>
-                      <div className="text-muted-foreground break-all text-sm">{row.moduleId}</div>
+                      <div className="text-muted-foreground text-xs uppercase">Assessment</div>
+                      <div className="text-sm font-semibold sm:text-base">{row.assessmentCode}</div>
+                      <div className="text-muted-foreground break-all text-sm">{row.assessmentId}</div>
                     </div>
                     <div className="space-y-1">
                       <div className="text-muted-foreground text-xs uppercase">Subject</div>
@@ -299,7 +299,7 @@ export function ViewStudentsModal({
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
           {row.students.length === 0 ? (
             <div className="text-muted-foreground py-8 text-center text-sm">
-              No enrolled students found for this module.
+              No enrolled students found for this assessment.
             </div>
           ) : (
             <div className="rounded-lg border">
@@ -449,3 +449,4 @@ export function ViewStudentsModal({
     </ResponsiveDialog>
   )
 }
+

@@ -1,10 +1,10 @@
-import { DashboardRealtimeShell } from '@/app/(admin)/admin/dashboard/components/dashboard-realtime-shell'
+﻿import { DashboardRealtimeShell } from '@/app/(admin)/admin/dashboard/components/dashboard-realtime-shell'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getServerAuthContext } from '@/lib/auth/server'
 import { fetchEducatorDashboardAnalytics } from '@/lib/supabase/educator-dashboard'
 
 import { EducatorAssessmentOverviewCard } from './components/educator-assessment-overview'
-import { EducatorModuleOverviewCard } from './components/educator-module-overview'
+import { EducatorAssessmentInsightsCard } from './components/educator-assessment-insights'
 import { EducatorSectionOverviewCard } from './components/educator-section-overview'
 import { EducatorSummaryCards } from './components/educator-summary-cards'
 import { EducatorTopStudentsCard } from './components/educator-top-students'
@@ -25,7 +25,7 @@ export default async function EducatorDashboardPage() {
         <div className="space-y-2">
           <h1 className="text-lg font-bold tracking-tight">Educator Dashboard</h1>
           <p className="text-sm text-muted-foreground mb-5">
-            Real-time classroom monitoring for sections, subjects, modules, quizzes, and student performance.
+            Real-time classroom monitoring for sections, subjects, assessments, quizzes, and student performance.
           </p>
         </div>
 
@@ -40,7 +40,7 @@ export default async function EducatorDashboardPage() {
 
             <div className="grid grid-cols-1 gap-4 xl:auto-rows-[25rem] xl:grid-cols-2">
               <EducatorSectionOverviewCard sections={analytics.sectionInsights} />
-              <EducatorModuleOverviewCard modules={analytics.moduleInsights} />
+              <EducatorAssessmentInsightsCard assessments={analytics.assessmentInsights} />
             </div>
           </div>
         </DashboardRealtimeShell>
@@ -63,3 +63,4 @@ export default async function EducatorDashboardPage() {
     )
   }
 }
+

@@ -6,7 +6,7 @@ import { requireServerAuthContext } from '@/lib/auth/server'
 
 import { SectionsPageClient } from './components/sections-page-client'
 
-// SectionsPage - protect educator section module by rbac
+// SectionsPage - protect educator section page by rbac
 export default async function SectionsPage() {
   // ==================== LOAD CONTEXT ====================
   const context = await requireServerAuthContext('educator')

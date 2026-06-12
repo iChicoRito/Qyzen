@@ -1,4 +1,4 @@
-import type { StudentAssessmentRecord } from '@/lib/supabase/student-assessments'
+﻿import type { StudentAssessmentRecord } from '@/lib/supabase/student-assessments'
 import type { StudentLearningMaterialGroupRecord } from '@/lib/supabase/learning-materials'
 import {
   type StudentDashboardAnalytics,
@@ -92,8 +92,8 @@ function formatTrendLabel(value: string | null) {
 function mapNextAssessment(assessment: StudentAssessmentRecord): StudentNextAssessment {
   return {
     id: assessment.id,
-    moduleRowId: assessment.moduleRowId,
-    moduleCode: assessment.moduleCode,
+    assessmentRowId: assessment.assessmentRowId,
+    assessmentCode: assessment.assessmentCode,
     subjectName: assessment.subjectName,
     sectionName: assessment.sectionName,
     educatorName: assessment.educatorName,
@@ -113,8 +113,8 @@ function mapNextAssessment(assessment: StudentAssessmentRecord): StudentNextAsse
 function mapRecentResult(assessment: StudentAssessmentRecord): StudentRecentResult {
   return {
     id: assessment.id,
-    moduleRowId: assessment.moduleRowId,
-    moduleCode: assessment.moduleCode,
+    assessmentRowId: assessment.assessmentRowId,
+    assessmentCode: assessment.assessmentCode,
     subjectName: assessment.subjectName,
     sectionName: assessment.sectionName,
     educatorName: assessment.educatorName,
@@ -132,7 +132,7 @@ function mapPerformanceTrendPoint(assessment: StudentAssessmentRecord): StudentP
 
   return {
     submittedAt: latestAttempt?.submittedAt || getLatestSubmissionAt(assessment),
-    moduleCode: assessment.moduleCode,
+    assessmentCode: assessment.assessmentCode,
     subjectName: assessment.subjectName,
     scorePercentage: latestAttempt?.percentage ?? getAssessmentScorePercentage(assessment),
     label: formatTrendLabel(latestAttempt?.submittedAt || getLatestSubmissionAt(assessment)),
@@ -179,7 +179,7 @@ export function buildStudentDashboardAnalytics(
         return rightTime - leftTime
       }
 
-      return rightAssessment.moduleRowId - leftAssessment.moduleRowId
+      return rightAssessment.assessmentRowId - leftAssessment.assessmentRowId
     })
     .slice(0, 3)
     .map(mapRecentResult)
@@ -193,7 +193,7 @@ export function buildStudentDashboardAnalytics(
         return leftTime - rightTime
       }
 
-      return leftAssessment.moduleRowId - rightAssessment.moduleRowId
+      return leftAssessment.assessmentRowId - rightAssessment.assessmentRowId
     })
     .slice(-6)
     .map(mapPerformanceTrendPoint)
@@ -240,3 +240,4 @@ export function buildStudentDashboardAnalytics(
     assessmentCount: assessments.length,
   }
 }
+

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -63,7 +63,7 @@ export function AllowRetakeModal({
     try {
       await updateEducatorRetakeGrant({
         studentId: score.studentId,
-        moduleRowId: score.moduleRowId,
+        assessmentRowId: score.assessmentRowId,
         subjectId: score.subjectId,
         retakeCount: Number(values.retakeCount),
       })
@@ -82,7 +82,7 @@ export function AllowRetakeModal({
         <ResponsiveDialogHeader className="pb-0">
           <ResponsiveDialogTitle>Allow Retake</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            Grant extra retake chances for {score.studentName} in {score.moduleCode}.
+            Grant extra retake chances for {score.studentName} in {score.assessmentCode}.
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
@@ -144,3 +144,4 @@ export function AllowRetakeModal({
     </ResponsiveDialog>
   )
 }
+

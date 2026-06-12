@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import type { ColumnDef } from '@tanstack/react-table'
 
@@ -16,13 +16,13 @@ import { DataTableRowActions } from './data-table-row-actions'
 
 // columns - build the monitoring table columns
 export function columns(
-  onMonitorStudents: (moduleRowId: number) => void
+  onMonitorStudents: (assessmentRowId: number) => void
 ): ColumnDef<EducatorRealtimeMonitoringRow>[] {
   return [
     {
       id: 'search',
       accessorFn: (row) =>
-        `${row.moduleCode} ${row.moduleId} ${row.subjectName} ${row.sectionName} ${row.termName}`,
+        `${row.assessmentCode} ${row.assessmentId} ${row.subjectName} ${row.sectionName} ${row.termName}`,
       enableHiding: true,
       header: () => null,
       cell: () => null,
@@ -30,12 +30,12 @@ export function columns(
         String(row.getValue(id)).toLowerCase().includes(String(value).toLowerCase()),
     },
     {
-      accessorKey: 'moduleCode',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Module" />,
+      accessorKey: 'assessmentCode',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Assessment" />,
       cell: ({ row }) => (
         <div className="min-w-[200px]">
-          <div className="font-medium whitespace-normal">{row.original.moduleCode}</div>
-          <div className="text-muted-foreground text-sm whitespace-normal">{row.original.moduleId}</div>
+          <div className="font-medium whitespace-normal">{row.original.assessmentCode}</div>
+          <div className="text-muted-foreground text-sm whitespace-normal">{row.original.assessmentId}</div>
         </div>
       ),
       filterFn: (row, id, value) => row.getValue(id) === value,
@@ -132,3 +132,4 @@ export function columns(
     },
   ]
 }
+

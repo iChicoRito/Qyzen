@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import type { Table } from '@tanstack/react-table'
 import { IconRefresh } from '@tabler/icons-react'
@@ -21,7 +21,7 @@ interface DataTableToolbarProps<TData> {
 }
 
 // getSelectOptions - build unique select options from table rows
-function getSelectOptions<TData>(table: Table<TData>, key: 'moduleCode' | 'subjectName' | 'termName') {
+function getSelectOptions<TData>(table: Table<TData>, key: 'assessmentCode' | 'subjectName' | 'termName') {
   const rows = table.getCoreRowModel().rows
   const values = rows
     .map((row) => String((row.original as Record<string, unknown>)[key] || ''))
@@ -35,10 +35,10 @@ function getSelectOptions<TData>(table: Table<TData>, key: 'moduleCode' | 'subje
 // DataTableToolbar - render student score filters and actions
 export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0
-  const moduleOptions = getSelectOptions(table, 'moduleCode')
+  const assessmentOptions = getSelectOptions(table, 'assessmentCode')
   const subjectOptions = getSelectOptions(table, 'subjectName')
   const termOptions = getSelectOptions(table, 'termName')
-  const moduleFilter = table.getColumn('moduleCode')?.getFilterValue() as string | undefined
+  const assessmentFilter = table.getColumn('assessmentCode')?.getFilterValue() as string | undefined
   const subjectFilter = table.getColumn('subjectName')?.getFilterValue() as string | undefined
   const termFilter = table.getColumn('termName')?.getFilterValue() as string | undefined
   const statusFilter = table.getColumn('status')?.getFilterValue() as string | undefined
@@ -47,19 +47,19 @@ export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>)
     <div className="min-w-0 space-y-4">
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Select
-          value={moduleFilter || 'all'}
+          value={assessmentFilter || 'all'}
           onValueChange={(value) =>
-            table.getColumn('moduleCode')?.setFilterValue(value === 'all' ? undefined : value)
+            table.getColumn('assessmentCode')?.setFilterValue(value === 'all' ? undefined : value)
           }
         >
           <SelectTrigger className="w-full cursor-pointer">
-            <SelectValue placeholder="Module" />
+            <SelectValue placeholder="Assessment" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all" className="cursor-pointer">
-              All Modules
+              All Assessments
             </SelectItem>
-            {moduleOptions.map((option) => (
+            {assessmentOptions.map((option) => (
               <SelectItem key={option} value={option} className="cursor-pointer">
                 {option}
               </SelectItem>
@@ -134,7 +134,7 @@ export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>)
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
           <Input
-            placeholder="Search module or subject"
+            placeholder="Search assessment or subject"
             value={(table.getColumn('search')?.getFilterValue() as string) ?? ''}
             onChange={(event) => {
               const nextValue = event.target.value
@@ -159,3 +159,4 @@ export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>)
     </div>
   )
 }
+

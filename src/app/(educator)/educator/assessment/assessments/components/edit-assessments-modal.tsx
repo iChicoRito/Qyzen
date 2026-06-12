@@ -1,0 +1,875 @@
+'use client'
+
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { format, parseISO } from 'date-fns'
+import { zodResolver } from '@hookform/resolvers/zod'
+import {
+  IconCalendarEvent,
+  IconChevronDown,
+  IconEdit,
+  IconLoader2 as Loader2,
+} from '@tabler/icons-react'
+import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
+
+import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from '@/components/ui/responsive-dialog'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { cn } from '@/lib/utils'
+import {
+  fetchAssessmentSubjectOptions,
+  type AssessmentRecord,
+  type AssessmentSubjectOption,
+  type AssessmentUpdateInput,
+} from '@/lib/supabase/assessments'
+import {
+  getAssessmentCodeValue,
+  assessmentCodeOptions,
+  assessmentFormSchema,
+  type AssessmentFormSchema,
+} from '@/lib/validations/assessment.schema'
+
+interface EditAssessmentsModalProps {
+  assessment: AssessmentRecord
+  onUpdateAssessment?: (input: AssessmentUpdateInput) => Promise<AssessmentRecord>
+  onAssessmentUpdated?: (assessment: AssessmentRecord) => void
+  trigger?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+// getDefaultFormValues - build edit form defaults
+function getDefaultFormValues(
+  assessment: AssessmentRecord,
+  subjectOptions: AssessmentSubjectOption[]
+): AssessmentFormSchema {
+  const isPresetCode = assessmentCodeOptions.includes(assessment.assessmentCode as (typeof assessmentCodeOptions)[number])
+  const matchingOption = subjectOptions.find((option) => option.subjectId === assessment.subjectId)
+
+  return {
+    assessmentCodeMode: isPresetCode ? 'preset' : 'manual',
+    assessmentCodePreset: isPresetCode ? assessment.assessmentCode : undefined,
+    assessmentCodeManual: isPresetCode ? '' : assessment.assessmentCode,
+    subjectIds: matchingOption ? [matchingOption.subjectId] : [assessment.subjectId],
+    academicTermId: assessment.termId,
+    timeLimit: assessment.timeLimit,
+    cheatingAttempts: String(assessment.cheatingAttempts),
+    isShuffle: assessment.isShuffle,
+    allowReview: assessment.allowReview,
+    allowRetake: assessment.allowRetake,
+    retakeCount: assessment.allowRetake ? String(assessment.retakeCount) : '',
+    allowHint: assessment.allowHint,
+    hintCount: assessment.allowHint ? String(assessment.hintCount) : '',
+    status: assessment.status,
+    startDate: parseISO(assessment.startDate),
+    endDate: parseISO(assessment.endDate),
+    startTime: assessment.startTime,
+    endTime: assessment.endTime,
+  }
+}
+
+// DatePickerField - pick a single calendar date
+function DatePickerField({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: Date | undefined
+  onChange: (value: Date | undefined) => void
+  placeholder: string
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn(
+            'w-full justify-between text-left font-normal',
+            !value && 'text-muted-foreground'
+          )}
+        >
+          {value ? format(value, 'MMMM dd, yyyy') : placeholder}
+          <IconCalendarEvent size={18} className="text-muted-foreground" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar mode="single" selected={value} onSelect={onChange} />
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+// EditAssessmentsModal - update one assessment row
+export function EditAssessmentsModal({
+  assessment,
+  onUpdateAssessment,
+  onAssessmentUpdated,
+  trigger,
+  open: openProp,
+  onOpenChange,
+}: EditAssessmentsModalProps) {
+  // ==================== STATE ====================
+  const [internalOpen, setInternalOpen] = useState(false)
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [subjectOptions, setSubjectOptions] = useState<AssessmentSubjectOption[]>([])
+  const subjectListRef = useRef<HTMLDivElement | null>(null)
+  const open = openProp ?? internalOpen
+
+  // ==================== FORM SETUP ====================
+  const form = useForm<AssessmentFormSchema>({
+    resolver: zodResolver(assessmentFormSchema),
+    defaultValues: {
+      assessmentCodeMode: 'preset',
+      assessmentCodePreset: assessmentCodeOptions[0],
+      assessmentCodeManual: '',
+      subjectIds: [assessment.subjectId],
+      academicTermId: assessment.termId,
+      timeLimit: assessment.timeLimit,
+      cheatingAttempts: String(assessment.cheatingAttempts),
+      isShuffle: assessment.isShuffle,
+      allowReview: assessment.allowReview,
+      allowRetake: assessment.allowRetake,
+      retakeCount: assessment.allowRetake ? String(assessment.retakeCount) : '',
+      allowHint: assessment.allowHint,
+      hintCount: assessment.allowHint ? String(assessment.hintCount) : '',
+      status: assessment.status,
+      startDate: parseISO(assessment.startDate),
+      endDate: parseISO(assessment.endDate),
+      startTime: assessment.startTime,
+      endTime: assessment.endTime,
+    },
+  })
+
+  const selectedSubjectIds = form.watch('subjectIds')
+  const assessmentCodeMode = form.watch('assessmentCodeMode')
+  const allowRetake = form.watch('allowRetake')
+  const allowHint = form.watch('allowHint')
+  const selectedSubjects = useMemo(
+    () => subjectOptions.filter((option) => selectedSubjectIds.includes(option.subjectId)),
+    [selectedSubjectIds, subjectOptions]
+  )
+  const availableAcademicTerms = useMemo(() => {
+    if (!selectedSubjects[0]) {
+      return []
+    }
+
+    return selectedSubjects[0].academicTerms
+  }, [selectedSubjects])
+
+  // loadSubjectOptions - fetch available subject and section pairs
+  const loadSubjectOptions = async () => {
+    try {
+      setIsLoadingSubjects(true)
+      const options = await fetchAssessmentSubjectOptions()
+      setSubjectOptions(options)
+      form.reset(getDefaultFormValues(assessment, options))
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to load subject options.')
+    } finally {
+      setIsLoadingSubjects(false)
+    }
+  }
+
+  useEffect(() => {
+    if (open) {
+      loadSubjectOptions()
+      return
+    }
+
+    form.reset(getDefaultFormValues(assessment, subjectOptions))
+  }, [form, assessment, open])
+
+  useEffect(() => {
+    const currentAcademicTermId = form.getValues('academicTermId')
+
+    if (
+      typeof currentAcademicTermId === 'number' &&
+      currentAcademicTermId > 0 &&
+      availableAcademicTerms.some((term) => term.id === currentAcademicTermId)
+    ) {
+      return
+    }
+
+    form.setValue('academicTermId', availableAcademicTerms[0]?.id, {
+      shouldDirty: false,
+      shouldValidate: false,
+    })
+  }, [availableAcademicTerms, form])
+
+  // handleSubjectCheckedChange - switch selected subject option
+  const handleSubjectCheckedChange = (subjectId: number, checked: boolean) => {
+    if (checked) {
+      form.setValue('subjectIds', [subjectId], {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+      return
+    }
+
+    form.setValue('subjectIds', [], {
+      shouldDirty: true,
+      shouldValidate: true,
+    })
+  }
+
+  // handleSubjectListWheel - keep wheel scrolling inside the subject list
+  const handleSubjectListWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    const container = subjectListRef.current
+
+    if (!container) {
+      return
+    }
+
+    container.scrollTop += event.deltaY
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  // handleOpenChange - reset form on close
+  const handleOpenChange = (nextOpen: boolean) => {
+    setInternalOpen(nextOpen)
+    onOpenChange?.(nextOpen)
+
+    if (!nextOpen) {
+      form.reset(getDefaultFormValues(assessment, subjectOptions))
+    }
+  }
+
+  // handleSubmit - update assessment row
+  const handleSubmit = async (values: AssessmentFormSchema) => {
+    const selection = subjectOptions.find((option) => option.subjectId === values.subjectIds[0])
+
+    if (!selection) {
+      toast.error('Select one subject and section option.')
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      const updatedAssessment = await onUpdateAssessment?.({
+        id: assessment.id,
+        assessmentCode: getAssessmentCodeValue(values),
+        selection,
+        academicTermId: values.academicTermId as number,
+        timeLimit: values.timeLimit.trim(),
+        cheatingAttempts: Number(values.cheatingAttempts),
+        isShuffle: values.isShuffle,
+        allowReview: values.allowReview,
+        allowRetake: values.allowRetake,
+        retakeCount: values.allowRetake ? Number(values.retakeCount || '0') : 0,
+        allowHint: values.allowHint,
+        hintCount: values.allowHint ? Number(values.hintCount || '0') : 0,
+        status: values.status,
+        startDate: format(values.startDate, 'yyyy-MM-dd'),
+        endDate: format(values.endDate, 'yyyy-MM-dd'),
+        startTime: values.startTime,
+        endTime: values.endTime,
+      })
+
+      if (updatedAssessment) {
+        onAssessmentUpdated?.(updatedAssessment)
+      }
+
+      toast.success('Assessment updated successfully.')
+      handleOpenChange(false)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update assessment.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // ==================== RENDER ====================
+  return (
+    <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
+      {trigger !== null ? (
+        <ResponsiveDialogTrigger asChild>
+          {trigger || (
+            <Button variant="outline" size="sm" className="cursor-pointer">
+              <IconEdit size={18} />
+              Edit Assessment
+            </Button>
+          )}
+        </ResponsiveDialogTrigger>
+      ) : null}
+      <ResponsiveDialogContent
+        showCloseButton={false}
+        className="gap-0 p-0"
+        desktopClassName="sm:max-w-[720px]"
+      >
+        <ResponsiveDialogHeader className="border-b">
+          <ResponsiveDialogTitle>Edit Assessment</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>Update the selected assessment details.</ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)}>
+            <ResponsiveDialogBody className="max-h-[68vh] space-y-6 mb-3">
+                {/* assessment code */}
+                <FormField
+                  control={form.control}
+                  name="assessmentCodeMode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Assessment Code</FormLabel>
+                      <div className="flex flex-col gap-3 md:flex-row">
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value)
+
+                            if (value === 'preset') {
+                              form.setValue('assessmentCodeManual', '', { shouldValidate: true })
+                            } else {
+                              form.setValue('assessmentCodePreset', undefined, { shouldValidate: true })
+                            }
+                          }}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full cursor-pointer md:w-[220px]">
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="preset" className="cursor-pointer">
+                              Dropdown Option
+                            </SelectItem>
+                            <SelectItem value="manual" className="cursor-pointer">
+                              Manual Input
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        <div className="flex-1">
+                          {assessmentCodeMode === 'preset' ? (
+                            <FormField
+                              control={form.control}
+                              name="assessmentCodePreset"
+                              render={({ field: assessmentCodeField }) => (
+                                <FormItem>
+                                  <Select
+                                    onValueChange={assessmentCodeField.onChange}
+                                    value={assessmentCodeField.value}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger className="w-full cursor-pointer">
+                                        <SelectValue placeholder="Select assessment code" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {assessmentCodeOptions.map((option) => (
+                                        <SelectItem key={option} value={option} className="cursor-pointer">
+                                          {option}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          ) : (
+                            <FormField
+                              control={form.control}
+                              name="assessmentCodeManual"
+                              render={({ field: assessmentCodeField }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input placeholder="Type assessment code" {...assessmentCodeField} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                {/* subject option */}
+                <FormField
+                  control={form.control}
+                  name="subjectIds"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>Select Subject Designated in the Section</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button type="button" variant="outline" className="w-full justify-between">
+                            <span className="truncate text-left">
+                              {selectedSubjects[0]
+                                ? `${selectedSubjects[0].subjectName} | ${selectedSubjects[0].sectionName}`
+                                : 'Select subject and section option'}
+                            </span>
+                            <IconChevronDown size={18} className="text-muted-foreground" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="z-50 w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
+                          align="start"
+                          sideOffset={6}
+                        >
+                          <div
+                            ref={subjectListRef}
+                            className="max-h-64 overflow-y-auto p-4"
+                            onWheel={handleSubjectListWheel}
+                          >
+                            <div className="space-y-2">
+                              {isLoadingSubjects ? (
+                                <p className="text-sm text-muted-foreground">Loading subject options...</p>
+                              ) : subjectOptions.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">No subjects found.</p>
+                              ) : (
+                                subjectOptions.map((option) => {
+                                  const isChecked = selectedSubjectIds.includes(option.subjectId)
+
+                                  return (
+                                    <div
+                                      key={option.subjectId}
+                                      className="flex w-full items-start gap-3 rounded-md border p-3"
+                                    >
+                                      <Checkbox
+                                        checked={isChecked}
+                                        onCheckedChange={(checked) =>
+                                          handleSubjectCheckedChange(option.subjectId, Boolean(checked))
+                                        }
+                                        className="mt-0.5 cursor-pointer"
+                                      />
+                                      <div className="min-w-0 flex-1 space-y-1">
+                                        <p className="text-sm font-medium uppercase">{option.subjectName}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {option.subjectCode} | {option.sectionName}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {option.academicTerms.length} academic term
+                                          {option.academicTerms.length > 1 ? 's' : ''} available
+                                        </p>
+                                      </div>
+                                    </div>
+                                  )
+                                })
+                              )}
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      {selectedSubjects[0] ? (
+                        <div className="rounded-md border bg-card px-4 py-2">
+                          <div className="py-3 text-sm">
+                            <p className="font-medium uppercase">{selectedSubjects[0].subjectName}</p>
+                            <p className="text-muted-foreground">
+                              {selectedSubjects[0].subjectCode} | {selectedSubjects[0].sectionName}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {selectedSubjects[0].academicTerms.length} academic term
+                              {selectedSubjects[0].academicTerms.length > 1 ? 's' : ''} available
+                            </p>
+                          </div>
+                        </div>
+                      ) : null}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* academic term */}
+                <FormField
+                  control={form.control}
+                  name="academicTermId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Academic Term</FormLabel>
+                      <Select
+                          onValueChange={(value) => field.onChange(Number(value))}
+                        value={field.value && field.value > 0 ? String(field.value) : undefined}
+                        disabled={selectedSubjects.length === 0 || availableAcademicTerms.length === 0}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full cursor-pointer">
+                            <SelectValue
+                              placeholder={
+                                selectedSubjects.length === 0
+                                  ? 'Select subject and section option first'
+                                  : availableAcademicTerms.length === 0
+                                    ? 'No academic term found'
+                                    : 'Select academic term'
+                              }
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {availableAcademicTerms.map((term) => (
+                            <SelectItem key={term.id} value={String(term.id)} className="cursor-pointer">
+                              {term.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* time limit */}
+                <FormField
+                  control={form.control}
+                  name="timeLimit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Time Limit</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter time limit" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* shuffle */}
+                <FormField
+                  control={form.control}
+                  name="isShuffle"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-md border p-4">
+                      <div className="space-y-1">
+                        <FormLabel>Shuffle</FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Enable shuffle for this assessment.
+                        </p>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className="cursor-pointer"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="allowReview"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-md border p-4">
+                      <div className="space-y-1">
+                        <FormLabel>Allow Review</FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Let students review their answers after submission.
+                        </p>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className="cursor-pointer"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="allowRetake"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-md border p-4">
+                      <div className="space-y-1">
+                        <FormLabel>Allow Retake</FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Allow students to submit additional assessment attempts.
+                        </p>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked)
+
+                            if (!checked) {
+                              form.setValue('retakeCount', '', {
+                                shouldDirty: true,
+                                shouldValidate: false,
+                              })
+                            }
+                          }}
+                          className="cursor-pointer"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {allowRetake ? (
+                  <FormField
+                    control={form.control}
+                    name="retakeCount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Retake Count</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="Enter number of allowed retakes"
+                            value={field.value ?? ''}
+                            onChange={(event) => {
+                              const nextValue = event.target.value.replace(/\D/g, '')
+                              field.onChange(nextValue)
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : null}
+
+                <FormField
+                  control={form.control}
+                  name="allowHint"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-md border p-4">
+                      <div className="space-y-1">
+                        <FormLabel>Allow Hint</FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Allow random answer hints during the student assessment.
+                        </p>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked)
+
+                            if (!checked) {
+                              form.setValue('hintCount', '', {
+                                shouldDirty: true,
+                                shouldValidate: false,
+                              })
+                            }
+                          }}
+                          className="cursor-pointer"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {allowHint ? (
+                  <FormField
+                    control={form.control}
+                    name="hintCount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Hint Count</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="Enter number of hints"
+                            value={field.value ?? ''}
+                            onChange={(event) => {
+                              const nextValue = event.target.value.replace(/\D/g, '')
+                              field.onChange(nextValue)
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : null}
+
+                {/* status and cheating attempts */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="w-full cursor-pointer">
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="active" className="cursor-pointer">
+                              Active
+                            </SelectItem>
+                            <SelectItem value="inactive" className="cursor-pointer">
+                              Inactive
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="cheatingAttempts"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cheating Attempts</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={field.value ?? ''}
+                            onChange={(event) => {
+                              const nextValue = event.target.value.replace(/\D/g, '')
+                              field.onChange(nextValue)
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* dates */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start Date</FormLabel>
+                        <FormControl>
+                          <DatePickerField
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Select start date"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="endDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>End Date</FormLabel>
+                        <FormControl>
+                          <DatePickerField
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Select end date"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* times */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="startTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start Time</FormLabel>
+                        <FormControl>
+                          <Input type="time" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="endTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>End Time</FormLabel>
+                        <FormControl>
+                          <Input type="time" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+            </ResponsiveDialogBody>
+
+              <ResponsiveDialogFooter>
+                <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleOpenChange(false)}
+                  className="w-full cursor-pointer"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="w-full cursor-pointer"
+                  disabled={isSubmitting || isLoadingSubjects}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={18} className="mr-0 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <IconEdit size={18} className="mr-0" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+                </div>
+              </ResponsiveDialogFooter>
+          </form>
+        </Form>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
+  )
+}
+

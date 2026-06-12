@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import type { Table } from '@tanstack/react-table'
 import { IconRefresh } from '@tabler/icons-react'
@@ -29,9 +29,9 @@ export function DataTableToolbar<TData>({
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0
 
-  // handleModuleChange - update module filter
-  const handleModuleChange = (value: string) => {
-    const column = table.getColumn('moduleCode')
+  // handleAssessmentChange - update assessment filter
+  const handleAssessmentChange = (value: string) => {
+    const column = table.getColumn('assessmentCode')
 
     if (value === 'all') {
       column?.setFilterValue(undefined)
@@ -73,16 +73,16 @@ export function DataTableToolbar<TData>({
     }
   }
 
-  const moduleFilter = table.getColumn('moduleCode')?.getFilterValue() as string | undefined
+  const assessmentFilter = table.getColumn('assessmentCode')?.getFilterValue() as string | undefined
   const termFilter = table.getColumn('termName')?.getFilterValue() as string[] | undefined
   const subjectFilter = table.getColumn('subjectName')?.getFilterValue() as string | undefined
   const sectionFilter = table.getColumn('sectionName')?.getFilterValue() as string | undefined
-  const moduleOptions = Array.from(
+  const assessmentOptions = Array.from(
     new Set(
       table
         .getCoreRowModel()
         .rows
-        .map((row) => String(row.getValue('moduleCode')))
+        .map((row) => String(row.getValue('assessmentCode')))
         .filter(Boolean)
     )
   ).sort((left, right) => left.localeCompare(right))
@@ -117,17 +117,17 @@ export function DataTableToolbar<TData>({
   return (
     <div className="min-w-0 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        <Select value={moduleFilter || 'all'} onValueChange={handleModuleChange}>
+        <Select value={assessmentFilter || 'all'} onValueChange={handleAssessmentChange}>
           <SelectTrigger className="w-full cursor-pointer sm:w-[180px]">
-            <SelectValue placeholder="Module" />
+            <SelectValue placeholder="Assessment" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all" className="cursor-pointer">
-              All Modules
+              All Assessments
             </SelectItem>
-            {moduleOptions.map((moduleCode) => (
-              <SelectItem key={moduleCode} value={moduleCode} className="cursor-pointer">
-                {moduleCode}
+            {assessmentOptions.map((assessmentCode) => (
+              <SelectItem key={assessmentCode} value={assessmentCode} className="cursor-pointer">
+                {assessmentCode}
               </SelectItem>
             ))}
           </SelectContent>
@@ -194,3 +194,4 @@ export function DataTableToolbar<TData>({
     </div>
   )
 }
+
