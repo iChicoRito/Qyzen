@@ -41,7 +41,7 @@ export function buildGroupedFileName(summary: EducatorScoreExportSummary): strin
 }
 
 // buildMultiSheetWorkbook - create one workbook with one sheet per assessment
-export function buildMultiSheetWorkbook(results: EducatorScoreExportResult[]): ExcelJS.Workbook {
+export function buildMultiSheetWorkbook(results: EducatorScoreExportResult[]): InstanceType<typeof ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook()
   const usedSheetNames = new Set<string>()
   const columns = [
