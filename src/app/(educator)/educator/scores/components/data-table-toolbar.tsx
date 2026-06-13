@@ -199,7 +199,7 @@ export function DataTableToolbar<TData>({
                 disabled={!onDownloadGrades && !onDownloadAllGrades}
               >
                 <IconDownload size={16} className="mr-0" />
-                Download Grades
+                Export Grade
                 <IconChevronDown size={14} className="ml-1" />
               </Button>
             </DropdownMenuTrigger>
@@ -210,7 +210,7 @@ export function DataTableToolbar<TData>({
                 className="cursor-pointer"
               >
                 <IconDownload size={14} className="mr-2" />
-                Download Grades
+                Export Grade
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={onDownloadAllGrades}
@@ -218,7 +218,7 @@ export function DataTableToolbar<TData>({
                 className="cursor-pointer"
               >
                 <IconDownload size={14} className="mr-2" />
-                Download All Grades
+                Export Section Grades (All)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
