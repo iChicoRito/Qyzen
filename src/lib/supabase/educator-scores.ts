@@ -88,8 +88,11 @@ export interface EducatorScoreExportOption {
   termName: string
   subjectId: number
   subjectName: string
+  subjectCode: string
   sectionId: number
   sectionName: string
+  semester: string
+  academicYear: string
 }
 
 export interface EducatorScoreExportRow {
@@ -109,10 +112,16 @@ export interface EducatorScoreExportRow {
 }
 
 export interface EducatorScoreExportSummary {
+  subjectId: number
+  sectionId: number
+  termId: number
   subjectName: string
+  subjectCode: string
   sectionName: string
   assessmentCode: string
   termName: string
+  semester: string
+  academicYear: string
   totalEnrolled: number
   studentsWithSubmission: number
   studentsWithoutSubmission: number
@@ -173,15 +182,21 @@ interface StudentRow {
 
 interface AssessmentSubjectRow {
   subject_name: string
+  subject_code: string
 }
 
 interface AssessmentSectionRow {
   section_name: string
 }
 
+interface AssessmentAcademicYearRow {
+  year: string
+}
+
 interface AssessmentTermRow {
   term_name: string
   semester: string
+  academic_year: AssessmentAcademicYearRow | AssessmentAcademicYearRow[] | null
 }
 
 interface AssessmentRow {
@@ -475,6 +490,7 @@ function getAssessmentExportOptions(assessmentRows: AssessmentRow[]) {
     const subject = getSingleRelation(row.subject)
     const section = getSingleRelation(row.section)
     const term = getSingleRelation(row.academic_term)
+    const academicYearRow = term ? getSingleRelation(term.academic_year) : null
 
     return {
       assessmentRowId: row.id || 0,
@@ -484,8 +500,11 @@ function getAssessmentExportOptions(assessmentRows: AssessmentRow[]) {
       termName: buildAcademicTermLabel(term),
       subjectId: row.subject_id,
       subjectName: subject?.subject_name || 'Unknown Subject',
+      subjectCode: subject?.subject_code || '',
       sectionId: row.section_id,
       sectionName: section?.section_name || 'Unknown Section',
+      semester: term?.semester || '',
+      academicYear: academicYearRow?.year || '',
     } satisfies EducatorScoreExportOption
   })
 }
@@ -497,7 +516,7 @@ export async function fetchEducatorScoreExportOptions() {
   const { data, error } = await supabase
     .from('tbl_assessments')
     .select(
-      'id,assessment_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
+      'id,assessment_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name,subject_code),section:section_id(section_name),academic_term:term(term_name,semester,academic_year:academic_year_id(year))'
     )
     .eq('educator_id', educatorId)
     .order('created_at', { ascending: false })
@@ -518,7 +537,7 @@ export async function fetchEducatorScoreExportData(input: FetchEducatorScoreExpo
       supabase
         .from('tbl_assessments')
         .select(
-          'id,assessment_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
+          'id,assessment_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name,subject_code),section:section_id(section_name),academic_term:term(term_name,semester,academic_year:academic_year_id(year))'
         )
         .eq('educator_id', educatorId)
         .eq('id', input.assessmentRowId)
@@ -624,10 +643,16 @@ export async function fetchEducatorScoreExportData(input: FetchEducatorScoreExpo
 
   return {
     summary: {
+      subjectId: assessmentOption.subjectId,
+      sectionId: assessmentOption.sectionId,
+      termId: assessmentOption.termId,
       subjectName: assessmentOption.subjectName,
+      subjectCode: assessmentOption.subjectCode,
       sectionName: assessmentOption.sectionName,
       assessmentCode: assessmentOption.assessmentCode,
       termName: assessmentOption.termName,
+      semester: assessmentOption.semester,
+      academicYear: assessmentOption.academicYear,
       totalEnrolled: rows.length,
       studentsWithSubmission: rows.filter((row) => row.statusLabel !== 'No Submission').length,
       studentsWithoutSubmission: rows.filter((row) => row.statusLabel === 'No Submission').length,
@@ -645,7 +670,7 @@ export async function fetchAllEducatorScoreExportData(): Promise<EducatorScoreEx
   const { data: assessmentsData, error: assessmentsError } = await supabase
     .from('tbl_assessments')
     .select(
-      'id,assessment_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
+      'id,assessment_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name,subject_code),section:section_id(section_name),academic_term:term(term_name,semester,academic_year:academic_year_id(year))'
     )
     .eq('educator_id', educatorId)
     .order('created_at', { ascending: false })
@@ -786,10 +811,16 @@ export async function fetchAllEducatorScoreExportData(): Promise<EducatorScoreEx
 
     return {
       summary: {
+        subjectId: assessmentOption.subjectId,
+        sectionId: assessmentOption.sectionId,
+        termId: assessmentOption.termId,
         subjectName: assessmentOption.subjectName,
+        subjectCode: assessmentOption.subjectCode,
         sectionName: assessmentOption.sectionName,
         assessmentCode: assessmentOption.assessmentCode,
         termName: assessmentOption.termName,
+        semester: assessmentOption.semester,
+        academicYear: assessmentOption.academicYear,
         totalEnrolled: rows.length,
         studentsWithSubmission: rows.filter((row) => row.statusLabel !== 'No Submission').length,
         studentsWithoutSubmission: rows.filter((row) => row.statusLabel === 'No Submission').length,
