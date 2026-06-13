@@ -636,6 +636,169 @@ export async function fetchEducatorScoreExportData(input: FetchEducatorScoreExpo
   } satisfies EducatorScoreExportResult
 }
 
+// fetchAllEducatorScoreExportData - bulk-fetch export data for every educator assessment
+export async function fetchAllEducatorScoreExportData(): Promise<EducatorScoreExportResult[]> {
+  const supabase = createClient()
+  const educatorId = await getCurrentEducatorId()
+
+  // Round-trip 1: all assessments for this educator
+  const { data: assessmentsData, error: assessmentsError } = await supabase
+    .from('tbl_assessments')
+    .select(
+      'id,assessment_code,term,subject_id,section_id,start_date,end_date,start_time,end_time,time_limit,is_shuffle,allow_review,allow_retake,retake_count,subject:subject_id(subject_name),section:section_id(section_name),academic_term:term(term_name,semester)'
+    )
+    .eq('educator_id', educatorId)
+    .order('created_at', { ascending: false })
+
+  if (assessmentsError) {
+    throw new Error(getSupabaseErrorMessage(assessmentsError, 'Failed to load assessments for bulk export.'))
+  }
+
+  const assessmentRows = (assessmentsData || []) as AssessmentRow[]
+
+  if (assessmentRows.length === 0) {
+    return []
+  }
+
+  const assessmentOptions = getAssessmentExportOptions(assessmentRows)
+  const assessmentIds = assessmentRows.map((row) => row.id).filter((id): id is number => id !== undefined)
+  const subjectIds = [...new Set(assessmentRows.map((row) => row.subject_id))]
+
+  // Round-trip 2: enrollments, scores, and quizzes in parallel
+  const [
+    { data: enrollmentData, error: enrollmentError },
+    { data: scoreData, error: scoreError },
+    { data: quizData, error: quizError },
+  ] = await Promise.all([
+    supabase
+      .from('tbl_enrolled')
+      .select('student_id,subject_id,is_active,student:student_id(id,user_id,given_name,surname,is_active)')
+      .eq('educator_id', educatorId)
+      .in('subject_id', subjectIds)
+      .eq('is_active', true),
+    supabase
+      .from('tbl_scores')
+      .select(
+        'id,student_id,assessment_id,subject_id,section_id,score,total_questions,student_answer,warning_attempts,taken_at,submitted_at,status,is_passed'
+      )
+      .eq('educator_id', educatorId)
+      .in('assessment_id', assessmentIds)
+      .not('submitted_at', 'is', null),
+    supabase
+      .from('tbl_quizzes')
+      .select('id,assessment_id')
+      .in('assessment_id', assessmentIds),
+  ])
+
+  if (enrollmentError) {
+    throw new Error(getSupabaseErrorMessage(enrollmentError, 'Failed to load enrollments for bulk export.'))
+  }
+
+  if (scoreError) {
+    throw new Error(getSupabaseErrorMessage(scoreError, 'Failed to load scores for bulk export.'))
+  }
+
+  if (quizError) {
+    throw new Error(getSupabaseErrorMessage(quizError, 'Failed to load quizzes for bulk export.'))
+  }
+
+  // Build quiz count map: assessmentId → question count
+  const quizCountMap = new Map<number, number>()
+  ;(quizData || []).forEach((quiz: Pick<QuizRow, 'id' | 'assessment_id'>) => {
+    quizCountMap.set(quiz.assessment_id, (quizCountMap.get(quiz.assessment_id) || 0) + 1)
+  })
+
+  // Build enrollment map: subjectId → sorted StudentRow[]
+  const enrollmentMap = new Map<number, StudentRow[]>()
+  ;((enrollmentData || []) as EnrollmentWithStudentRow[]).forEach((row) => {
+    const student = getSingleRelation(row.student)
+    if (!student) return
+    const existing = enrollmentMap.get(row.subject_id) || []
+    existing.push(student)
+    enrollmentMap.set(row.subject_id, existing)
+  })
+  enrollmentMap.forEach((students, subjectId) => {
+    enrollmentMap.set(
+      subjectId,
+      students.sort((leftStudent, rightStudent) => {
+        const leftName = `${leftStudent.given_name} ${leftStudent.surname}`.trim()
+        const rightName = `${rightStudent.given_name} ${rightStudent.surname}`.trim()
+        return leftName.localeCompare(rightName)
+      })
+    )
+  })
+
+  // Build score map: assessmentId → studentId → ScoreSnapshot[]
+  const scoreMap = new Map<number, Map<number, ScoreSnapshot[]>>()
+  ;((scoreData || []) as ScoreSnapshot[]).forEach((score) => {
+    if (!scoreMap.has(score.assessment_id)) {
+      scoreMap.set(score.assessment_id, new Map())
+    }
+    const assessmentScores = scoreMap.get(score.assessment_id)!
+    const studentScores = assessmentScores.get(score.student_id) || []
+    studentScores.push(score)
+    assessmentScores.set(score.student_id, studentScores)
+  })
+
+  // Build one EducatorScoreExportResult per assessment
+  return assessmentOptions.map((assessmentOption) => {
+    const totalQuestions = quizCountMap.get(assessmentOption.assessmentRowId) || 0
+    const enrolledStudents = enrollmentMap.get(assessmentOption.subjectId) || []
+    const assessmentScoreMap = scoreMap.get(assessmentOption.assessmentRowId) || new Map<number, ScoreSnapshot[]>()
+
+    const rows: EducatorScoreExportRow[] = enrolledStudents.map((student) => {
+      const bestScore = getBestSubmittedScore(assessmentScoreMap.get(student.id) || [])
+
+      if (!bestScore) {
+        return {
+          studentId: student.id,
+          studentUserId: student.user_id,
+          studentName: `${student.given_name} ${student.surname}`.trim(),
+          subjectName: assessmentOption.subjectName,
+          sectionName: assessmentOption.sectionName,
+          assessmentCode: assessmentOption.assessmentCode,
+          termName: assessmentOption.termName,
+          highestScore: 0,
+          totalQuestions,
+          percentage: 0,
+          statusLabel: 'No Submission',
+          remark: 'No Submission',
+          highestSubmittedAt: null,
+        } satisfies EducatorScoreExportRow
+      }
+
+      return {
+        studentId: student.id,
+        studentUserId: student.user_id,
+        studentName: `${student.given_name} ${student.surname}`.trim(),
+        subjectName: assessmentOption.subjectName,
+        sectionName: assessmentOption.sectionName,
+        assessmentCode: assessmentOption.assessmentCode,
+        termName: assessmentOption.termName,
+        highestScore: bestScore.score || 0,
+        totalQuestions: bestScore.total_questions || totalQuestions,
+        percentage: getScorePercentage(bestScore),
+        statusLabel: bestScore.status === 'passed' ? 'Passed' : 'Failed',
+        remark: 'Highest Submitted Score',
+        highestSubmittedAt: bestScore.submitted_at,
+      } satisfies EducatorScoreExportRow
+    })
+
+    return {
+      summary: {
+        subjectName: assessmentOption.subjectName,
+        sectionName: assessmentOption.sectionName,
+        assessmentCode: assessmentOption.assessmentCode,
+        termName: assessmentOption.termName,
+        totalEnrolled: rows.length,
+        studentsWithSubmission: rows.filter((row) => row.statusLabel !== 'No Submission').length,
+        studentsWithoutSubmission: rows.filter((row) => row.statusLabel === 'No Submission').length,
+      },
+      rows,
+    } satisfies EducatorScoreExportResult
+  })
+}
+
 // fetchEducatorScoreReviewList - load all visible score review rows for an educator
 export async function fetchEducatorScoreReviewList() {
   const supabase = createClient()
