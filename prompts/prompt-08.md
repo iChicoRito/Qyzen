@@ -1,1 +1,1 @@
-Objective: Download All Grades 
+Objective: Download All Grades at once
