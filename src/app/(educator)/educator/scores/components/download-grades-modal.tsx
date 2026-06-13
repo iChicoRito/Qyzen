@@ -50,11 +50,12 @@ import {
   educatorScoreExportSchema,
   type EducatorScoreExportSchema,
 } from '@/lib/validations/educator-score-export.schema'
-import { buildFileName, buildWorkbook, downloadWorkbook, workbookToBuffer } from '../utils/workbook-utils'
+import { buildFileName, buildGroupedFileName, buildMultiSheetWorkbook, buildWorkbook, downloadWorkbook, workbookToBuffer } from '../utils/workbook-utils'
 
 interface DownloadGradesModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  educatorName: string
 }
 
 // getUniqueOptions - build sorted dropdown options
@@ -74,6 +75,7 @@ function getUniqueOptions<T>(items: T[], getKey: (item: T) => string, getLabel: 
 export function DownloadGradesModal({
   open,
   onOpenChange,
+  educatorName,
 }: DownloadGradesModalProps) {
   // ==================== STATE ====================
   const [options, setOptions] = useState<EducatorScoreExportOption[]>([])
@@ -156,7 +158,7 @@ export function DownloadGradesModal({
     }
   }
 
-  // handleDownloadAll - bulk-export all assessments as a zip
+  // handleDownloadAll - bulk-export all assessments grouped by subject/section/term
   const handleDownloadAll = async () => {
     try {
       setIsDownloadingAll(true)
@@ -167,24 +169,38 @@ export function DownloadGradesModal({
         return
       }
 
+      // Group results by unique subject/section/term combination
+      const groups = new Map<string, EducatorScoreExportResult[]>()
+      for (const result of allResults) {
+        const key = `${result.summary.subjectId}:${result.summary.sectionId}:${result.summary.termId}`
+        const group = groups.get(key) ?? []
+        group.push(result)
+        groups.set(key, group)
+      }
+
       const zip = new JSZip()
 
-      for (const result of allResults) {
-        const workbook = buildWorkbook(result)
+      for (const [, groupResults] of groups) {
+        const workbook = buildMultiSheetWorkbook(groupResults)
         const buffer = await workbookToBuffer(workbook)
-        zip.file(buildFileName(result.summary), buffer)
+        zip.file(buildGroupedFileName(groupResults[0].summary), buffer)
       }
 
       const zipBlob = await zip.generateAsync({ type: 'blob' })
+      const educatorSlug = educatorName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'educator'
       const today = new Date().toISOString().slice(0, 10)
       const url = URL.createObjectURL(zipBlob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `qyzen-all-grades-${today}.zip`
+      link.download = `${educatorSlug}-all-grades-${today}.zip`
       link.click()
       URL.revokeObjectURL(url)
 
-      toast.success(`Downloaded ${allResults.length} grade sheet${allResults.length === 1 ? '' : 's'}.`)
+      const groupCount = groups.size
+      toast.success(`Downloaded ${groupCount} grade workbook${groupCount === 1 ? '' : 's'}.`)
       onOpenChange(false)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to download all grades.')
