@@ -34,6 +34,13 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# database local artifacts
+/database/backups/
+/database/functions/
+/database/policies/
+/database/schema/
+/database/sql/
+
 # vercel
 .vercel
 
