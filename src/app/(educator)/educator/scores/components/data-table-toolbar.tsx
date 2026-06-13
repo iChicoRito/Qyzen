@@ -1,15 +1,9 @@
 ﻿'use client'
 
 import type { Table } from '@tanstack/react-table'
-import { IconChevronDown, IconDownload, IconRefresh } from '@tabler/icons-react'
+import { IconDownload, IconRefresh } from '@tabler/icons-react'
 
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -25,7 +19,6 @@ import { DataTableViewOptions } from './data-table-view-options'
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
   onDownloadGrades?: () => void
-  onDownloadAllGrades?: () => void
 }
 
 // getSelectOptions - build unique select options from table rows
@@ -47,7 +40,6 @@ function getSelectOptions<TData>(
 export function DataTableToolbar<TData>({
   table,
   onDownloadGrades,
-  onDownloadAllGrades,
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0
   const studentOptions = getSelectOptions(table, 'studentName')
@@ -191,37 +183,15 @@ export function DataTableToolbar<TData>({
           </Button>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full cursor-pointer sm:w-auto"
-                disabled={!onDownloadGrades && !onDownloadAllGrades}
-              >
-                <IconDownload size={16} className="mr-0" />
-                Export Grade
-                <IconChevronDown size={14} className="ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={onDownloadGrades}
-                disabled={!onDownloadGrades}
-                className="cursor-pointer"
-              >
-                <IconDownload size={14} className="mr-2" />
-                Export Grade
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={onDownloadAllGrades}
-                disabled={!onDownloadAllGrades}
-                className="cursor-pointer"
-              >
-                <IconDownload size={14} className="mr-2" />
-                Export Section Grades (All)
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="outline"
+            onClick={onDownloadGrades}
+            className="w-full cursor-pointer sm:w-auto"
+            disabled={!onDownloadGrades}
+          >
+            <IconDownload size={16} className="mr-0" />
+            Download Grades
+          </Button>
           <DataTableViewOptions table={table} />
         </div>
       </div>

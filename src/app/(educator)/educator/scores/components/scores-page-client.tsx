@@ -9,7 +9,6 @@ import { fetchEducatorScoreReviewList } from '@/lib/supabase/educator-scores'
 import { columns } from './columns'
 import { DataTable } from './data-table'
 import { DownloadGradesModal } from './download-grades-modal'
-import { DownloadAllGradesModal } from './download-all-grades-modal'
 import { educatorScoreSchema, type EducatorScore } from '../data/schema'
 
 // ScoresPageClient - render educator score monitoring
@@ -19,7 +18,6 @@ export function ScoresPageClient() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isDownloadOpen, setIsDownloadOpen] = useState(false)
-  const [isDownloadAllOpen, setIsDownloadAllOpen] = useState(false)
 
   // ==================== LOAD SCORES ====================
   // loadScores - fetch educator score rows
@@ -79,16 +77,10 @@ export function ScoresPageClient() {
           </CardDescription>
         </CardHeader>
         <CardContent className="min-w-0 px-3 pb-4 sm:px-6">
-          <DataTable
-            data={scores}
-            columns={columns(loadScores)}
-            onDownloadGrades={() => setIsDownloadOpen(true)}
-            onDownloadAllGrades={() => setIsDownloadAllOpen(true)}
-          />
+          <DataTable data={scores} columns={columns(loadScores)} onDownloadGrades={() => setIsDownloadOpen(true)} />
         </CardContent>
       </Card>
       <DownloadGradesModal open={isDownloadOpen} onOpenChange={setIsDownloadOpen} />
-      <DownloadAllGradesModal open={isDownloadAllOpen} onOpenChange={setIsDownloadAllOpen} />
     </div>
   )
 }

@@ -2,12 +2,19 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { IconDownload, IconLoader2 as Loader2 } from '@tabler/icons-react'
+import { IconChevronDown, IconDownload, IconLoader2 as Loader2 } from '@tabler/icons-react'
+import JSZip from 'jszip'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   ResponsiveDialog,
   ResponsiveDialogBody,
@@ -33,6 +40,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  fetchAllEducatorScoreExportData,
   fetchEducatorScoreExportData,
   fetchEducatorScoreExportOptions,
   type EducatorScoreExportOption,
@@ -42,7 +50,7 @@ import {
   educatorScoreExportSchema,
   type EducatorScoreExportSchema,
 } from '@/lib/validations/educator-score-export.schema'
-import { buildFileName, buildWorkbook, downloadWorkbook } from '../utils/workbook-utils'
+import { buildFileName, buildWorkbook, downloadWorkbook, workbookToBuffer } from '../utils/workbook-utils'
 
 interface DownloadGradesModalProps {
   open: boolean
@@ -71,6 +79,7 @@ export function DownloadGradesModal({
   const [options, setOptions] = useState<EducatorScoreExportOption[]>([])
   const [isLoadingOptions, setIsLoadingOptions] = useState(false)
   const [isLoadingPreview, setIsLoadingPreview] = useState(false)
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false)
   const [previewData, setPreviewData] = useState<EducatorScoreExportResult | null>(null)
 
   // ==================== FORM SETUP ====================
@@ -144,6 +153,43 @@ export function DownloadGradesModal({
       toast.error(error instanceof Error ? error.message : 'Failed to load score export options.')
     } finally {
       setIsLoadingOptions(false)
+    }
+  }
+
+  // handleDownloadAll - bulk-export all assessments as a zip
+  const handleDownloadAll = async () => {
+    try {
+      setIsDownloadingAll(true)
+      const allResults = await fetchAllEducatorScoreExportData()
+
+      if (allResults.length === 0) {
+        toast.error('No assessments found to download.')
+        return
+      }
+
+      const zip = new JSZip()
+
+      for (const result of allResults) {
+        const workbook = buildWorkbook(result)
+        const buffer = await workbookToBuffer(workbook)
+        zip.file(buildFileName(result.summary), buffer)
+      }
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' })
+      const today = new Date().toISOString().slice(0, 10)
+      const url = URL.createObjectURL(zipBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `qyzen-all-grades-${today}.zip`
+      link.click()
+      URL.revokeObjectURL(url)
+
+      toast.success(`Downloaded ${allResults.length} grade sheet${allResults.length === 1 ? '' : 's'}.`)
+      onOpenChange(false)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to download all grades.')
+    } finally {
+      setIsDownloadingAll(false)
     }
   }
 
@@ -438,26 +484,47 @@ export function DownloadGradesModal({
             </ResponsiveDialogBody>
 
             <ResponsiveDialogFooter className="gap-2 sm:justify-end">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isDownloadingAll}>
                 Cancel
               </Button>
-              <Button
-                type="button"
-                onClick={handleDownload}
-                disabled={isLoadingOptions || isLoadingPreview || !previewData}
-              >
-                {isLoadingPreview ? (
-                  <>
-                    <Loader2 size={18} className="mr-0 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <IconDownload size={18} className="mr-0" />
-                    Download Grades
-                  </>
-                )}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    disabled={isLoadingOptions || isLoadingPreview || isDownloadingAll}
+                  >
+                    {isLoadingPreview || isDownloadingAll ? (
+                      <>
+                        <Loader2 size={18} className="mr-0 animate-spin" />
+                        {isDownloadingAll ? 'Downloading...' : 'Loading...'}
+                      </>
+                    ) : (
+                      <>
+                        <IconDownload size={18} className="mr-0" />
+                        Export Grade
+                        <IconChevronDown size={14} className="ml-1" />
+                      </>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={handleDownload}
+                    disabled={!previewData}
+                    className="cursor-pointer"
+                  >
+                    <IconDownload size={14} className="mr-2" />
+                    Export Grade
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleDownloadAll}
+                    className="cursor-pointer"
+                  >
+                    <IconDownload size={14} className="mr-2" />
+                    Export Section Grades (All)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </ResponsiveDialogFooter>
           </form>
         </Form>

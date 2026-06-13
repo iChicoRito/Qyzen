@@ -32,7 +32,6 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   onDownloadGrades?: () => void
-  onDownloadAllGrades?: () => void
 }
 
 // DataTable - render the educator scores table
@@ -40,7 +39,6 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   onDownloadGrades,
-  onDownloadAllGrades,
 }: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
@@ -75,7 +73,6 @@ export function DataTable<TData, TValue>({
       <DataTableToolbar
         table={table}
         onDownloadGrades={onDownloadGrades}
-        onDownloadAllGrades={onDownloadAllGrades}
       />
       <div className="min-w-0 overflow-x-auto rounded-md border">
         <Table className="min-w-[1100px]">
