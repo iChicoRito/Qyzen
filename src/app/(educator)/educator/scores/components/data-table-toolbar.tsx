@@ -19,6 +19,7 @@ import { DataTableViewOptions } from './data-table-view-options'
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
   onDownloadGrades?: () => void
+  onDownloadAllGrades?: () => void
 }
 
 // getSelectOptions - build unique select options from table rows
@@ -40,6 +41,7 @@ function getSelectOptions<TData>(
 export function DataTableToolbar<TData>({
   table,
   onDownloadGrades,
+  onDownloadAllGrades,
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0
   const studentOptions = getSelectOptions(table, 'studentName')
@@ -191,6 +193,15 @@ export function DataTableToolbar<TData>({
           >
             <IconDownload size={16} className="mr-0" />
             Download Grades
+          </Button>
+          <Button
+            variant="outline"
+            onClick={onDownloadAllGrades}
+            className="w-full cursor-pointer sm:w-auto"
+            disabled={!onDownloadAllGrades}
+          >
+            <IconDownload size={16} className="mr-0" />
+            Download All Grades
           </Button>
           <DataTableViewOptions table={table} />
         </div>
