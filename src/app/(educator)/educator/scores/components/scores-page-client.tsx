@@ -11,8 +11,12 @@ import { DataTable } from './data-table'
 import { DownloadGradesModal } from './download-grades-modal'
 import { educatorScoreSchema, type EducatorScore } from '../data/schema'
 
+interface ScoresPageClientProps {
+  educatorName: string
+}
+
 // ScoresPageClient - render educator score monitoring
-export function ScoresPageClient() {
+export function ScoresPageClient({ educatorName }: ScoresPageClientProps) {
   // ==================== STATE ====================
   const [scores, setScores] = useState<EducatorScore[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -80,7 +84,7 @@ export function ScoresPageClient() {
           <DataTable data={scores} columns={columns(loadScores)} onDownloadGrades={() => setIsDownloadOpen(true)} />
         </CardContent>
       </Card>
-      <DownloadGradesModal open={isDownloadOpen} onOpenChange={setIsDownloadOpen} />
+      <DownloadGradesModal open={isDownloadOpen} onOpenChange={setIsDownloadOpen} educatorName={educatorName} />
     </div>
   )
 }
