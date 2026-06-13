@@ -1,9 +1,15 @@
 ﻿'use client'
 
 import type { Table } from '@tanstack/react-table'
-import { IconDownload, IconRefresh } from '@tabler/icons-react'
+import { IconChevronDown, IconDownload, IconRefresh } from '@tabler/icons-react'
 
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -185,24 +191,37 @@ export function DataTableToolbar<TData>({
           </Button>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <Button
-            variant="outline"
-            onClick={onDownloadGrades}
-            className="w-full cursor-pointer sm:w-auto"
-            disabled={!onDownloadGrades}
-          >
-            <IconDownload size={16} className="mr-0" />
-            Download Grades
-          </Button>
-          <Button
-            variant="outline"
-            onClick={onDownloadAllGrades}
-            className="w-full cursor-pointer sm:w-auto"
-            disabled={!onDownloadAllGrades}
-          >
-            <IconDownload size={16} className="mr-0" />
-            Download All Grades
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full cursor-pointer sm:w-auto"
+                disabled={!onDownloadGrades && !onDownloadAllGrades}
+              >
+                <IconDownload size={16} className="mr-0" />
+                Download Grades
+                <IconChevronDown size={14} className="ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={onDownloadGrades}
+                disabled={!onDownloadGrades}
+                className="cursor-pointer"
+              >
+                <IconDownload size={14} className="mr-2" />
+                Download Grades
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={onDownloadAllGrades}
+                disabled={!onDownloadAllGrades}
+                className="cursor-pointer"
+              >
+                <IconDownload size={14} className="mr-2" />
+                Download All Grades
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <DataTableViewOptions table={table} />
         </div>
       </div>
